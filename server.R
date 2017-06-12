@@ -1,10 +1,12 @@
-# Visualization of expression patterns + q-values comparison (of the marked ones) + usetR package for comparison of what is regulated
+# Visualization of expression patterns + q-values comparison (of the marked ones) + usetR package for comparison of what is regulated (select directly them to display)
 # BUtton to deselect all features. Click on figures to select for expressions?
 # In q-q plots: visualize by areas? visual helps? correlations?
 
 
 # library(shinyBS)
 library(DT)
+library(circlize)
+library(UpSetR)
 library(matrixStats)
 library(qvalue)
 library(gplots)
@@ -23,6 +25,7 @@ shinyServer(function(input, output,clientData,session) {
     ttt[sel] <- col2
     return(ttt)
   }
+  
   output$messages <- renderText("")
   output$thead <- renderText("Multiple statistical tests for the detection for differentially regulated features")
   output$description <- renderText("The methods are designed to carry out statistical tests on data with few replicates and 
@@ -84,6 +87,7 @@ The tests check for differentially regulated features
     refCond <- input$refCond
     isPaired <- input$is_paired
     # print(dat)
+    
     if (!is.null(dat)) {
       if (dat == "EXAMPLE")  {
         dat <- read.csv("LiverAllProteins.csv",row.names=1)
@@ -100,8 +104,8 @@ The tests check for differentially regulated features
           if (input$ColQuant > 2) {
             addInfo <- dat[,1:(input$ColQuant-2),drop=F]
             for (c in 1:ncol(addInfo))
-            addInfo[,c] <- as.character(addInfo[,c])
-             print(head(addInfo))
+              addInfo[,c] <- as.character(addInfo[,c])
+            print(head(addInfo))
             dat <- dat[,-(1:(input$ColQuant-2))]
           }
         } else {
@@ -184,19 +188,21 @@ The tests check for differentially regulated features
             else 
               FullReg <- cbind(LogRatios, Qvalue)#, WhereReg)
             
-            output$stat_table <- DT::renderDataTable(FullReg,server=F,extensions=c("Buttons","FixedColumns"),
+            output$stat_table <- DT::renderDataTable(FullReg,server=T,extensions=c("Buttons","FixedColumns"),
                                                      options = list(scrollX = TRUE,dom = 'Blfrtip',#fixedColumns=T,
                                                                     lengthMenu = c(5, 10, 50,100),
-                                                                    buttons = list('colvis', 'copy', 'print', 
-                                                                                   list(
-                                                                      extend = 'collection',
-                                                                      buttons = c('csv',  'pdf'),
-                                                                      text = 'Download'))))
+                                                                    buttons = list('colvis', 'copy', 'print' 
+                                                                    )))
             
             proxy = dataTableProxy('stat_table')
             
             observeEvent(input$resetSelection, {
               proxy %>% selectRows(NULL)
+            })
+            
+            observeEvent(input$plotregdistr_click, {
+              print(input$plotregdistr_click$x)
+              print(input$plotregdistr_click$y)
             })
             
             
@@ -209,7 +215,7 @@ The tests check for differentially regulated features
             par(mfrow=c(NumCond-1,length(testNames)))
             for (i in 1:(NumCond-1)) {
               hist(Pvalue[,i],100, main="t-test",col="#333366",xlab="p-value")
-              hist(Pvalue[,(NumCond-1)+i],100, main=paste("Comparison",i,"\nlimma"),col="#336633",xlab="p-value")
+              hist(Pvalue[,(NumCond-1)+i],100, main=paste(compNames[i],"\nlimma",sep="\n"),col="#336633",xlab="p-value")
               hist(Pvalue[,(NumCond-1)*2+i],100, main="rank products",col="#663333",xlab="p-value")
               hist(Pvalue[,(NumCond-1)*3+i],100, main="Permutation test",col="#663366",xlab="p-value")
               hist(Pvalue[,(NumCond-1)*4+i],100, main="NA test",col="#666633",xlab="p-value")
@@ -226,7 +232,7 @@ The tests check for differentially regulated features
                      cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
                      col=colSelected("#33336655",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
                 abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)+i]), main=paste("Comparison",i,"\nlimma"),xlab="log fold-change",ylab="-log10(q)",
+                plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)+i]), main=paste(compNames[i],"limma",sep="\n"),xlab="log fold-change",ylab="-log10(q)",
                      cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
                      col=colSelected("#33663355",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
                 abline(h=-log10(qlim),col="#AA3333",lwd=2)
@@ -252,32 +258,108 @@ The tests check for differentially regulated features
               input$stat_table
               qlim <- input$qval
               indices <- input$stat_table_rows_selected
-              SubSet <- FullReg[input$stat_table_rows_selected,]
+              SubSet <- FullReg[input$stat_table_rows_selected,,drop=F]
               if (length(SubSet)> 0) {
                 par(mfrow=c(2,2))
                 plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
-                print(rownames(SubSet))
-                legend("topright",lwd=1,col=rainbow(nrow(SubSet)),legend=rownames(SubSet))
-                plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,xlab="Conditions",ylab="log-ratios",col=rainbow(nrow(SubSet))[1],
+                # print(colnames(SubSet))
+                legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
+                plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
+                       xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
+                       ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
                        uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
-                       ylim=range(LogRatios,na.rm=T),xaxt="none")
+                       ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
                 axis(1,at=1:(NumCond-1),labels = compNames)
                 if (nrow(SubSet)>1) {
                   for (i in 2:min(nrow(SubSet),20)){
-                    plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],add = T,pch=16,col=rainbow(nrow(SubSet))[i],
-                           uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF") 
+                    plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
+                           add = T,pch=16,col=rainbow(nrow(SubSet))[i],
+                           uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
                     
                   }
                 }
                 # Missing values
                 # find descent visualization 
                 
-                # Full q-values for each protein
-                # Find method
+                # Compare q-values for each protein and method
+                SubSet <- Qvalue[input$stat_table_rows_selected,,drop=F]
+                # validate(
+                #   need(length(SubSet)>0, "Please select features from the data table")
+                # )
+                
+                if (length(SubSet)> 0) {
+            
+                par(mar=rep(0,4))
+                circos.clear()
+                circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
+                           track.margin=c(0,0.02),start.degree=90,gap.degree=4)
+                circos.initialize(1:(NumCond-1),xlim=c(0,1))
+                for (t in 1:5) {
+                  tsign <- SubSet[,(t-1)*(NumCond-1)+(1:(NumCond-1)),drop=F]<qlim
+                  tsign[is.na(tsign)] <- F
+                  # print(tsign)
+                  nfeat <- min(nrow(SubSet),20)
+                  cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
+
+                  circos.trackPlotRegion(ylim=c(-3,2),track.height=1/10, bg.border="#777777", 
+                                         panel.fun = function(x, y) {
+                                           name = get.cell.meta.data("sector.index")
+                                           i = get.cell.meta.data("sector.numeric.index")
+                                           xlim = get.cell.meta.data("xlim")
+                                           # print(nfeat)
+                                           ylim = get.cell.meta.data("ylim")
+                                           xdiff <- (xlim[2]-xlim[1])/nfeat
+                                           if(t == 1) {
+                                             circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
+                                             circos.axis("top", labels = rownames(SubSet),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
+                                                         labels.cex = 1,labels.facing = "reverse.clockwise")
+                                           }
+                                           for (j in 1:nfeat) {
+                                             if (tsign[j,i])
+                                               circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                                           xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                                           col = cols[j], border=cols[j]
+                                               )
+                                           }})
+                }
+                fccols <- redblue(1001)
+                SubSet <- LogRatios[input$stat_table_rows_selected,,drop=F]
+                # print(SubSet)
+                circos.trackPlotRegion(ylim=c(-3,2),track.height=1/4, bg.border=NA, panel.fun = function(x, y) {
+                  name = get.cell.meta.data("sector.index")
+                  i = get.cell.meta.data("sector.numeric.index")
+                  xlim = get.cell.meta.data("xlim")
+                  ylim = get.cell.meta.data("ylim")
+                  #circos.text(x=mean(xlim), y=1.7,
+                  #            labels=name, facing = dd, cex=0.6,  adj = aa),
+                  xdiff <- (xlim[2]-xlim[1])/nfeat
+                  for (j in 1:nfeat) {
+                    print((SubSet[j,i]/max(LogRatios,na.rm=T))*500+500)
+                    circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                col = fccols[(SubSet[j,i]/max(LogRatios,na.rm=T))*500+500], border=0)
+                  }})
+                text(0,0,"Log\nratios",cex=0.7)
+                }
               }
             },height=600)
             
             incProgress(0.8, detail = paste("Plotting more results"))
+            output$plotregdistr <- renderPlot({
+              input$button
+              qlim <- input$qval
+              WhereRegs <-Qvalue
+              WhereRegs[!is.null(WhereRegs)] <- 0
+              WhereRegs[Qvalue<qlim] <- 1
+              WhereRegs <- WhereRegs[,rep(0:4, NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=5)]
+              tcols <- rep(rainbow(NumCond-1),each=1)
+             names(tcols) = rep(paste("A",1:(NumCond-1)),1)
+              upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
+                    decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
+                                   set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=paste("A",rep(1:(NumCond-1),each=5)),crab=1:ncol(WhereRegs)) , 
+                                         plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+            },height=600)
+            
             output$plotreg <- renderPlot({
               input$button
               qlim <- input$qval
