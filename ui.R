@@ -1,4 +1,5 @@
 library(shinyBS)
+# library(d3heatmap)
 library(shinydashboard)
 shinyUI(dashboardPage(
   dashboardHeader(title="PolySTest"),
@@ -46,26 +47,34 @@ shinyUI(dashboardPage(
               column(width=6,htmlOutput("input_stats")),
               conditionalPanel(
                 condition = "input.button > 0",
-                column(width=6,numericInput("qval","q-value threshold",value=0.01,min=0,max=1),
-                     bsTooltip("qval","q-value threshold to assign significant features",trigger="hover")
-              ),
-              column(width=6,
-                     actionButton("resetSelection","Clear selected rows in table"),
+                column(width=3,numericInput("qval","q-value threshold",value=0.01,min=0,max=1,step=0.01,width = "100px"),
+                       bsTooltip("qval","q-value threshold to assign significant features",trigger="hover"),
+                       sliderInput("fcval","fold-change threshold",value=c(-1,1),min=-1,max=1,step=0.1,width = "200px"),
+                              bsTooltip("fcval","Filter table for fold-change threshold",trigger="hover")
+                       ),
+              column(width=3,
+                     actionButton("allLimsSelection","Select all features filterd by q-value and fold-change"),
+                     actionButton("allPageSelection","Select all shown features"),
+                     actionButton("allSelection","Select all (filtered) features"),
+                     actionButton("resetSelection","Clear selected features in table"),
                      downloadButton('downloadData', 'Download results',style="background-color:#FFAAAA"),
                      bsTooltip("downloadData","Download the entire data table with log-ratios and q-values",trigger="hover")
               ))),br(),hr(),
             # conditionalPanel("$('#dtable_out').hasClass('recalculating')",tags$div('Loading ... ')),
-            column(DT::dataTableOutput("stat_table"),width=12),width = 12),
+            column(div(DT::dataTableOutput("stat_table"),style="font-size:100%"),width=12),width = 12),
+        box(title="Expression profiles",
+            plotOutput("plotexpression",height="auto"),width=9),
+        box(title="Clustered data",
+            # d3heatmapOutput("plotheatmap",height="auto"),width=3),
+            plotOutput("plotheatmap",height="auto"),width=3),
         box(title="Volcano plots",
             plotOutput("plotvolc",height="auto"),width=12),
-        box(title="p-value histograms",
-            plotOutput("plotpval",height="auto")),
-        box(title="Expression profiles",
-            plotOutput("plotexpression",height="auto")),
         box(title="Distribution regulated features over different tests and conditions",
             plotOutput("plotregdistr",click="plotregdistr_click",height="auto"),width=12),
         box(title="Percentage of regulated features",
-            plotOutput("plotreg",height="auto"),width=12)
+            plotOutput("plotreg",height="auto"),width=12),
+        box(title="p-value histograms",
+            plotOutput("plotpval",height="auto"),width=12)
       )
     )
   

@@ -7,7 +7,7 @@ library(limma)
 source("rankprodbounds.R")
 
 NumThreads <- 4
-NTests <- 10 # for permutation tests
+NTests <- 100 # for permutation tests
 NumPermCols <- 7 # minimum number of columns for permutation tests (to ensure sufficient combinations)
 
 StatsForPermutTest <- function(Data, Paired) {
@@ -108,7 +108,10 @@ Paired <- function(MAData,NumCond,NumReps) {
   pRPvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("RP p-values",1:NumCond)))
   pPermutvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("Permutation p-values",1:NumCond)))
   for (vs in 1:NumCond) {
-    tMAData<-MAData[,MAReps==vs]
+    if (!is.null(getDefaultReactiveDomain()))
+      incProgress(0.1+0.3/NumCond, detail = paste("tests for comparison",vs,"of",NumCond))
+    
+        tMAData<-MAData[,MAReps==vs]
     ptMAvalues<-NULL
     ## MA t-test_pvalues
     for (pep in 1:(dim(tMAData)[1])) {
@@ -203,6 +206,8 @@ Unpaired <- function(Data,NumCond,NumReps) {
   pRPvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumCond-1))))
   pPermutvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumCond-1))))
   for (vs in 2:NumCond) {
+    if (!is.null(getDefaultReactiveDomain()))
+      incProgress(0.1+0.3/(NumCond-1), detail = paste("tests for comparison",vs,"of",NumCond-1))
     tData<-Data[,Reps==vs]
     trefData <- Data[,Reps==1]
     tptvalues<-NULL
@@ -304,3 +309,47 @@ MissingStats <- function(Data, NumCond, NumReps) {
   
 }
 
+# Function to determine "optimal" fold-change and q-value thresholds
+# the idea is to maximize the percental output of features commonly found for limma, rank products, permutation and NA tests
+FindFCandQlim <- function(Qvalue, LogRatios) {
+  
+  BestComb <- c(0,0)
+  BestRegs <- 0
+  NumCond <- ncol(LogRatios)+1
+  
+  Qvalue <-Qvalue[,-(1:(NumCond-1))]
+  Qvalue[is.na(Qvalue)] <- 1
+
+  smallestq <- signif(min(Qvalue,na.rm=T))
+  qrange <- c(0.1,0.2,0.5)*10^(rep(-10:0,each=3))
+  qrange <- qrange[which.min(abs(smallestq-qrange)):(length(qrange)-2)]
+  
+  # Run over different FC thresholds 
+  for (fc in seq(0,max(abs(range(LogRatios,na.rm=T))),length=100)) {
+    for (t in 0:3) {
+      tvals <- Qvalue[,(NumCond-1)*t+1:(NumCond-1)]
+      tvals[LogRatios < fc & LogRatios > -fc] <- 1
+      Qvalue[,(NumCond-1)*t+1:(NumCond-1)] <- tvals
+    }
+    # Run over range of q-values
+    for (qlim in qrange) {
+      alldistr <- vector("numeric",NumCond-1)
+      for (t in 1:(NumCond-1)) {
+        distr <- table(rowSums(Qvalue[,seq(t,ncol(Qvalue),NumCond-1)] < qlim, na.rm=T))
+        allregs <- sum(distr[2:length(distr)],na.rm=T)
+        # print(distr)
+        if (length(distr) > 1 & !is.na(distr["4"]))
+          alldistr[t] <- distr["4"]/allregs
+      }
+      # print(alldistr)
+      if (mean(alldistr) > BestRegs) {
+        BestRegs <- mean(alldistr)
+        BestComb <- c(fc,qlim)
+        print(BestRegs)
+        
+      }
+    }
+  }
+  return(BestComb)
+  
+}
