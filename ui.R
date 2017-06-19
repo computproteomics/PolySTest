@@ -8,6 +8,7 @@ shinyUI(dashboardPage(
                      h5("A tool to determine differentially regulated features using multiple approaches"),
                      fileInput("in_file", "Input file:",accept=c("txt/csv", "text/comma-separated-values,text/plain", ".csv")),
                      actionButton("button","Run analysis"),
+                     bsTooltip("button","Run statistical tests and their evaluation",trigger="hover"),
                      actionLink("example","Load example"),
                      bsTooltip("example","Example data set from proteomics data (4 conditions, 3 replicates)",trigger="hover"),
                      checkboxInput(inputId="is_paired", label="Paired tests?", value=T),
@@ -44,25 +45,26 @@ shinyUI(dashboardPage(
         
         box(title="Data details", 
             fluidRow(
-              column(width=6,htmlOutput("input_stats")),
+              column(width=4,htmlOutput("input_stats")),
               conditionalPanel(
                 condition = "input.button > 0",
-                column(width=3,numericInput("qval","q-value threshold",value=0.01,min=0,max=1,step=0.01,width = "100px"),
+                column(width=4,numericInput("qval","q-value threshold",value=0.01,min=0,max=1,step=0.01,width = "100px"),
                        bsTooltip("qval","q-value threshold to assign significant features",trigger="hover"),
                        sliderInput("fcval","fold-change threshold",value=c(-1,1),min=-1,max=1,step=0.1,width = "200px"),
-                              bsTooltip("fcval","Filter table for fold-change threshold",trigger="hover")
+                              bsTooltip("fcval","Filter table for fold-change threshold",trigger="hover"),
+                       actionButton("allLimsSelection","Select all features filterd by q-value and fold-change")
                        ),
-              column(width=3,
-                     actionButton("allLimsSelection","Select all features filterd by q-value and fold-change"),
+              column(width=4,
+                     htmlOutput("table_stats"),
                      actionButton("allPageSelection","Select all shown features"),
                      actionButton("allSelection","Select all (filtered) features"),
-                     actionButton("resetSelection","Clear selected features in table"),
+                     actionButton("resetSelection","Clear selected features in table"),br(),
                      downloadButton('downloadData', 'Download results',style="background-color:#FFAAAA"),
                      bsTooltip("downloadData","Download the entire data table with log-ratios and q-values",trigger="hover")
               ))),br(),hr(),
             # conditionalPanel("$('#dtable_out').hasClass('recalculating')",tags$div('Loading ... ')),
             column(div(DT::dataTableOutput("stat_table"),style="font-size:100%"),width=12),width = 12),
-        box(title="Expression profiles",
+        box(title="Expression profiles (max. 30 with lowest unified q-values shown)",
             plotOutput("plotexpression",height="auto"),width=9),
         box(title="Clustered data",
             # d3heatmapOutput("plotheatmap",height="auto"),width=3),

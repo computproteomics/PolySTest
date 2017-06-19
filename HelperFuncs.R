@@ -111,7 +111,7 @@ Paired <- function(MAData,NumCond,NumReps) {
     if (!is.null(getDefaultReactiveDomain()))
       incProgress(0.1+0.3/NumCond, detail = paste("tests for comparison",vs,"of",NumCond))
     
-        tMAData<-MAData[,MAReps==vs]
+    tMAData<-MAData[,MAReps==vs]
     ptMAvalues<-NULL
     ## MA t-test_pvalues
     for (pep in 1:(dim(tMAData)[1])) {
@@ -311,22 +311,21 @@ MissingStats <- function(Data, NumCond, NumReps) {
 
 # Function to determine "optimal" fold-change and q-value thresholds
 # the idea is to maximize the percental output of features commonly found for limma, rank products, permutation and NA tests
-FindFCandQlim <- function(Qvalue, LogRatios) {
+FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
   
   BestComb <- c(0,0)
   BestRegs <- 0
   NumCond <- ncol(LogRatios)+1
   
-  Qvalue <-Qvalue[,-(1:(NumCond-1))]
   Qvalue[is.na(Qvalue)] <- 1
-
+  
   smallestq <- signif(min(Qvalue,na.rm=T))
   qrange <- c(0.1,0.2,0.5)*10^(rep(-10:0,each=3))
   qrange <- qrange[which.min(abs(smallestq-qrange)):(length(qrange)-2)]
   
   # Run over different FC thresholds 
   for (fc in seq(0,max(abs(range(LogRatios,na.rm=T))),length=100)) {
-    for (t in 0:3) {
+    for (t in 1:(NumTests-2)) {
       tvals <- Qvalue[,(NumCond-1)*t+1:(NumCond-1)]
       tvals[LogRatios < fc & LogRatios > -fc] <- 1
       Qvalue[,(NumCond-1)*t+1:(NumCond-1)] <- tvals
@@ -345,7 +344,7 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
       if (mean(alldistr) > BestRegs) {
         BestRegs <- mean(alldistr)
         BestComb <- c(fc,qlim)
-        print(BestRegs)
+        # print(BestRegs)
         
       }
     }
@@ -353,3 +352,18 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
   return(BestComb)
   
 }
+
+
+# calculated common q-value over different tests. Hommel methods gives 
+# upper bound for p-values coming from independent or positively dependent tests
+UnifyQvals <- function(Qvalue, NumCond, NumTests) {
+  UnifiedQvalue <- matrix(NA,ncol=NumCond-1,nrow=nrow(Qvalue))
+  for (i in 1:(NumCond-1)) {
+    # print(seq(i,ncol(Qvalue)-NumCond+1,NumCond-1))
+    UnifiedQvalue[,i] <- colMins(apply(Qvalue[,seq(i,ncol(Qvalue)-NumCond+1,NumCond-1)], 1, p.adjust, "hommel"),na.rm=T)
+  }
+  UnifiedQvalue
+  
+  
+}
+

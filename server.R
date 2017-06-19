@@ -1,6 +1,3 @@
-# Remove t-test from all evaluations or only from upset plot?
-# Button for selectin all features according to qlim,fclim criteria
-# heatmap or alike? General stats about selected features: numbers, regulated, ...
 # Use hommel test (see https://stats.stackexchange.com/questions/76643/combining-p-values-from-different-statistical-tests-applied-on-the-same-data) for details and then smallest p-value for results
 
 # library(shinyBS)
@@ -14,7 +11,8 @@ library(gplots)
 source("HelperFuncs.R")
 shinyServer(function(input, output,clientData,session) {
   dat <- NULL
-  NumTests <- 5
+  NumTests <- 6
+  TestCols <- c("#33AAAA","#33AA33","#AA3333","#AA33AA","#AAAA33","#3333AA")
   addInfo <- NULL # additional info to be re-added after analysis
   heightSize = function() {
     (input$NumCond-1)*200
@@ -66,7 +64,6 @@ The tests check for differentially regulated features
   
   observeEvent(input$example, {
     dat <<- "EXAMPLE"
-    # TODO update first column slider
     updateSliderInput(session,"NumCond",value=4)
     updateSliderInput(session,"NumReps",value=3)
     updateSliderInput(session,"refCond",value=1)
@@ -133,8 +130,8 @@ The tests check for differentially regulated features
                                              "Number of features: ",nrow(dat),
                                              "<br/>Percentage of missing values:",
                                              round(sum(is.na(dat))/nrow(dat)/ncol(dat)*100,digits = 2),"<br/>",
-                                             paste("<br/>Comparison",1:(NumCond-1),": Condition",
-                                                   (1:NumCond)[-(input$refCond)],"versus",input$refCond,collapse=""),"<br/>"))
+                                             paste("<br/>Comparison ",1:(NumCond-1),": Condition C",
+                                                   (1:NumCond)[-(input$refCond)]," versus C",input$refCond,collapse=""),"<br/>"))
       isolate({
         if (input$button == 0)
           return()
@@ -173,15 +170,18 @@ The tests check for differentially regulated features
             incProgress(0.5, detail = paste("Preparing data"))
             
             LogRatios <- qvalues$lratios
-            Pvalue <- cbind(qvalues$ptvalues, qvalues$plvalues, qvalues$pRPvalues, qvalues$pPermutvalues, MissingStats$pNAvalues)
-            Qvalue <- cbind(qvalues$qtvalues, qvalues$qlvalues, qvalues$qRPvalues, qvalues$qPermutvalues, MissingStats$qNAvalues)
+            Pvalue <- cbind(qvalues$plvalues, qvalues$pRPvalues, qvalues$pPermutvalues, MissingStats$pNAvalues, qvalues$ptvalues)
+            Qvalue <- cbind(qvalues$qlvalues, qvalues$qRPvalues, qvalues$qPermutvalues, MissingStats$qNAvalues,qvalues$qtvalues)
+            Qvalue <- cbind(UnifyQvals(Qvalue,NumCond,NumTests),Qvalue)
             # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
             
             compNames <- paste("C",RR[1,1:(NumCond-1)]," vs C",RR[2,1:(NumCond-1)],sep="")
-            testNames <- c("t-test","limma","rank products","Permutation test","NA test")
+            testNames <- c("limma","rank products","Permutation test","NA test","t-test")
             colnames(LogRatios) <- paste("log-ratios",compNames)
             colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
-            colnames(Qvalue) <- paste("q-values",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
+            testNames2 <- c("unified tests",testNames)
+            names(TestCols) <- testNames2
+            colnames(Qvalue) <- paste("q-values",rep(testNames2,each=NumCond-1),rep(compNames,length(testNames2)))
             # colnames(WhereReg) <- paste("Differentially regulated",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
             
             # print(cor(log10(Pvalue),use="na.or.complete"))
@@ -192,16 +192,19 @@ The tests check for differentially regulated features
             
             # Calculate best fc and qlim combination
             incProgress(0.7, detail = paste("Calculating favorable q-value and fc thresholds"))
-            tcomb <- FindFCandQlim(Qvalue, LogRatios)
+            tcomb <- FindFCandQlim(Qvalue, LogRatios, NumTests)
             print(tcomb)
             
             # Set fold-change slider range
             updateSliderInput(session,"fcval",min=round(min(LogRatios,na.rm=T),1),
                               max=round(max(LogRatios,na.rm=T),1), value=c(-tcomb[1],tcomb[1]))
-
+            
             # Set q-value threshold
             updateNumericInput(session,"qval",value=tcomb[2])
-                        
+            
+            output$table_stats <- renderText(paste("Number selected features:",length(input$stat_table_rows_selected)))
+                                                   
+            
             # Arrange table header
             sketch = htmltools::withTags(table(
               class = 'display',
@@ -218,17 +221,18 @@ The tests check for differentially regulated features
                   if(!is.null(addInfo))
                     th(rowspan = ncol(addInfo), ''),
                   th(colspan = NumCond-1, '',style="text-align: center;border-left:thin solid;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 't-test',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = (NumCond-1), 'unified',style="text-align: center;border-left:thin solid;color: #AA3333;"),
                   th(colspan = (NumCond-1), 'limma',style="text-align: center;border-left:thin solid;"),
                   th(colspan = (NumCond-1), 'rank products',style="text-align: center;border-left:thin solid;"),
                   th(colspan = (NumCond-1), 'permutation test',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 'NA test',style="text-align: center;border-left:thin solid;")
+                  th(colspan = (NumCond-1), 'NA test',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = (NumCond-1), 't-test',style="text-align: center;border-left:thin solid;")
                 ),
                 tr(
                   th('Feature',style="text-align: center;"),
                   if(!is.null(addInfo))
                     lapply(colnames(addInfo),th,style="text-align: center;border-left:thin solid;"),
-                  lapply(rep(compNames,6), th,style="text-align: center;border-left:thin solid;")
+                  lapply(rep(compNames,NumTests+1), th,style="text-align: center;border-left:thin solid;")
                 )
               )
             ))
@@ -280,6 +284,8 @@ The tests check for differentially regulated features
               print(input$stat_table_rows_selected)
               SubSetLR <<- LogRatios[input$stat_table_rows_selected,,drop=F]
               SubSetQval <<- Qvalue[input$stat_table_rows_selected,,drop=F]
+              SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumCond-1)],na.rm=T)),]
+              SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumCond-1)],na.rm=T)),]
               ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
               FCRegs <<- Qvalue
               for (t in 1:NumTests) {
@@ -298,11 +304,9 @@ The tests check for differentially regulated features
             ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
             par(mfrow=c(NumCond-1,length(testNames)))
             for (i in 1:(NumCond-1)) {
-              hist(Pvalue[,i],100, main="t-test",col="#333366",xlab="p-value")
-              hist(Pvalue[,(NumCond-1)+i],100, main=paste(compNames[i],"\nlimma",sep="\n"),col="#336633",xlab="p-value")
-              hist(Pvalue[,(NumCond-1)*2+i],100, main="rank products",col="#663333",xlab="p-value")
-              hist(Pvalue[,(NumCond-1)*3+i],100, main="Permutation test",col="#663366",xlab="p-value")
-              hist(Pvalue[,(NumCond-1)*4+i],100, main="NA test",col="#666633",xlab="p-value")
+              for (j in 2:NumTests) {
+                hist(Pvalue[,(NumCond-1)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+              }
             }
             par(mfrow=c(1,1))
             # volcano plots
@@ -313,50 +317,20 @@ The tests check for differentially regulated features
               fclim <- input$fcval
               par(mfrow=c(NumCond-1,NumTests))
               for (i in 1:(NumCond-1)) {
-                plot(LogRatios[,i],-log10(Qvalue[,i]), main="t-test",xlab="log fold-change",ylab="-log10(q)",
-                     cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
-                     col=colSelected("#33336655",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                abline(v=fclim)
-                plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)+i]), main=paste(compNames[i],"limma",sep="\n"),xlab="log fold-change",ylab="-log10(q)",
-                     cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
-                     col=colSelected("#33663355",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                abline(v=fclim)
-                plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*2+i]), main="rank products",xlab="log fold-change",ylab="-log10(q)",
-                     cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
-                     col=colSelected("#66333355",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                abline(v=fclim)
-                plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*3+i]), main="Permutation tests",xlab="log fold-change",ylab="-log10(q)",
-                     cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
-                     col=colSelected("#66336655",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                abline(v=fclim)
-                plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*4+i]), main="NA tests",xlab="log fold-change",ylab="-log10(q)",
-                     cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
-                     col=colSelected("#66663355",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                abline(v=fclim)
+                for (j in 1:NumTests) {
+                  plot(LogRatios[,i],-log10(Qvalue[,i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
+                       cex=colSelected(0.5,nrow(Qvalue),input$stat_table_rows_selected,1),
+                       col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
+                  abline(h=-log10(qlim),col="#AA3333",lwd=2)
+                  abline(v=fclim,col="#AA3333",lwd=2)
+                }
               }
               
-              # # TESTING
-              # ttt <- colMins(apply(Qvalue[,seq(NumCond,ncol(Qvalue),NumCond-1)], 1, p.adjust, "hommel"),na.rm=T)
-              # print(ttt)
-              # plot(LogRatios[,i],-log10(ttt), main="NA tests",xlab="log fold-change",ylab="-log10(q)",
-              #      cex=colSelected(1,nrow(Qvalue),input$stat_table_rows_selected,2),
-              #      col=colSelected("#66663355",nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-              # abline(h=-log10(qlim),col="#AA3333",lwd=2)
-              # plot(Qvalue[,NumCond],ttt,log="xy")
-              # plot(Qvalue[,NumCond+NumCond-1],ttt,log="xy")
-              # plot(Qvalue[,NumCond+2*NumCond-2],ttt,log="xy")
-              # plot(Qvalue[,NumCond+3*NumCond-3],ttt,log="xy")
-              # abline(v=fclim)
               par(mfrow=c(1,1))
               
-            },height=heightSize2)
+            },height=heightSize)
             
-
+            
             
             output$plotexpression <- renderPlot({
               input$button
@@ -368,8 +342,8 @@ The tests check for differentially regulated features
               if (length(SubSetLR)> 0) {
                 
                 
-                # CI plots of max 20 features
-                SubSet <- SubSetLR[1:min(nrow(SubSetLR),20),,drop=F]
+                # CI plots of max 30 features
+                SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                 indices <- rownames(SubSet)
                 par(mfrow=c(1,3))
                 plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
@@ -394,7 +368,7 @@ The tests check for differentially regulated features
                 # find descent visualization 
                 
                 # Compare q-values for each protein and method
-                                # validate(
+                # validate(
                 #   need(length(SubSet)>0, "Please select features from the data table")
                 # )
                 
@@ -405,12 +379,12 @@ The tests check for differentially regulated features
                   circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
                              track.margin=c(0,0.02),start.degree=90,gap.degree=4)
                   circos.initialize(1:(NumCond-1),xlim=c(0,1))
-                  for (t in 1:5) {
+                  for (t in 1:NumTests) {
                     # print(tsign)
-                    nfeat <- min(nrow(SubSet),20)
+                    nfeat <- min(nrow(SubSet),30)
                     cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
                     tsign <- FCRegs[indices,(t-1)*(NumCond-1)+(1:(NumCond-1)),drop=F]<qlim
-                    circos.trackPlotRegion(ylim=c(-3,2),track.height=1/10, bg.border="#777777", 
+                    circos.trackPlotRegion(ylim=c(-3,2),track.height=1/12, bg.border="#777777", 
                                            panel.fun = function(x, y) {
                                              name = get.cell.meta.data("sector.index")
                                              i = get.cell.meta.data("sector.numeric.index")
@@ -421,7 +395,7 @@ The tests check for differentially regulated features
                                              if(t == 1) {
                                                circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
                                                circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                           labels.cex = 1,labels.facing = "reverse.clockwise")
+                                                           labels.cex = 0.7,labels.facing = "reverse.clockwise")
                                              }
                                              for (j in 1:nfeat) {
                                                if (tsign[j,i])
@@ -448,12 +422,15 @@ The tests check for differentially regulated features
                                   col = fccols[(SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500], border=0)
                     }})
                   text(0,0,"Log\nratios",cex=0.7)
+                  # label the different tracks
+                  mtext(paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),
+                        side=1,outer=T,adj=0,line=-1,cex=0.5)
                 }
                 
               }
             },height=400)
             
-              output$plotheatmap <- renderPlot({
+            output$plotheatmap <- renderPlot({
               # d3heatmap(SubSetLR)
               input$button
               input$stat_table
@@ -462,7 +439,7 @@ The tests check for differentially regulated features
               input$stat_table_rows_selected
               # print(head(SubSetLR))
               if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
-                heatmap(SubSetLR)
+                heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
               }
             },height=400)
             
@@ -471,7 +448,7 @@ The tests check for differentially regulated features
               qlim <- input$qval
               input$fcval
               input$button
-              WhereRegs <- FCRegs[,rep(0:(NumTests-1), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests)]<qlim
+              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests)]<qlim
               WhereRegs[WhereRegs] <- 1
               deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
               WhereRegs <- WhereRegs[,-deleted_cols]
@@ -492,13 +469,14 @@ The tests check for differentially regulated features
               tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
               for (i in 1:(NumCond-1)) {
                 plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="q-value threshold",
-                     ylab="Number significant",type="l",col="#3333FF",ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
+                     ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
                 if (i==1)
-                  legend("topleft",legend = testNames,col=c("#3333FF","#33FF33","#ff3333","#FFFF33","#FF33FF"),lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)+i]),"<",tmpX),na.rm=T),col="#33FF33",lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col="#FF3333",lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col="#FFFF33",lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col="#FF33FF",lwd=2)
+                  legend("topleft",legend = testNames2,col=TestCols,lwd=2)
+                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
+                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
+                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
+                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
+                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
                 abline(v=qlim,col=2)
               }
               par(mfrow=c(1,1))
@@ -512,7 +490,7 @@ The tests check for differentially regulated features
                 paste("Results", Sys.Date(), ".csv", sep="");
               },
               content = function(file) {
-                write.csv(FullReg, file)
+                write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected)), file)
               })
             # output$downloadFigure <- downloadHandler(
             #   filename = function() {
