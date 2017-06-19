@@ -284,8 +284,8 @@ The tests check for differentially regulated features
               print(input$stat_table_rows_selected)
               SubSetLR <<- LogRatios[input$stat_table_rows_selected,,drop=F]
               SubSetQval <<- Qvalue[input$stat_table_rows_selected,,drop=F]
-              SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumCond-1)],na.rm=T)),]
-              SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumCond-1)],na.rm=T)),]
+              SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
+              SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
               ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
               FCRegs <<- Qvalue
               for (t in 1:NumTests) {
@@ -318,7 +318,7 @@ The tests check for differentially regulated features
               par(mfrow=c(NumCond-1,NumTests))
               for (i in 1:(NumCond-1)) {
                 for (j in 1:NumTests) {
-                  plot(LogRatios[,i],-log10(Qvalue[,i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
+                  plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
                        cex=colSelected(0.5,nrow(Qvalue),input$stat_table_rows_selected,1),
                        col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
                   abline(h=-log10(qlim),col="#AA3333",lwd=2)
@@ -438,7 +438,7 @@ The tests check for differentially regulated features
               fclim <- input$fcval
               input$stat_table_rows_selected
               # print(head(SubSetLR))
-              if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
+              if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
                 heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
               }
             },height=400)
@@ -448,16 +448,17 @@ The tests check for differentially regulated features
               qlim <- input$qval
               input$fcval
               input$button
-              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests)]<qlim
+              print(head(FCRegs))
+              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests-1),drop=F]<qlim
               WhereRegs[WhereRegs] <- 1
               deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
-              WhereRegs <- WhereRegs[,-deleted_cols]
+              WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
               tcols <- rep(rainbow(NumCond-1),each=1)
               names(tcols) = rep(paste("A",1:(NumCond-1)),1)
               # print(tcols)
               upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
                     decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
-                    set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=paste("A",rep(1:(NumCond-1),each=NumTests))[-deleted_cols],crab=1:ncol(WhereRegs)) , 
+                    set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=paste("A",rep(1:(NumCond-1),each=NumTests-1))[-deleted_cols],crab=1:ncol(WhereRegs)) , 
                                         plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
             },height=600)
             
