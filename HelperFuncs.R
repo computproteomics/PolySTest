@@ -1,4 +1,3 @@
-# TODO Parallize to make it superfast, e.g. NumPairs loop or unique d loop in RP stats
 # Permutations: min 10 replicates, if not available, then generate from entire data
 
 
@@ -51,7 +50,9 @@ RPStats <- function(tRPMAData,NumReps) {
   NumElements<-rowSums(!is.na(tRPMAData))
   Rank <- NULL
   RP.own <- 0
-  for (d in unique(NumElements)) {
+  
+  RPMADown_pvalues <- parallel::mclapply(unique(NumElements),function (d) {
+    tRPMADown_pvalues <- NULL
     RPMAData<-tRPMAData[NumElements==d,]
     if(d>0 && length(as.matrix(RPMAData))>ncol(tRPMAData)) {
       RP.own<-0
@@ -74,10 +75,12 @@ RPStats <- function(tRPMAData,NumReps) {
       RP.own <- round(RP.own)
       tRPout <- rankprodbounds(RP.own, tNumFeat, tNumReps, "geometric")
       names(tRPout) <- names(RP.own)
-      RPMADown_pvalues <- c(RPMADown_pvalues,tRPout)
+      tRPMADown_pvalues <- c(tRPMADown_pvalues,tRPout)
+      tRPMADown_pvalues
     }
-  }
-  return(RPMADown_pvalues);
+  },mc.cores=NumThreads)
+  # print(head(unlist(RPMADown_pvalues)))
+  return(unlist(RPMADown_pvalues))
 }
 
 
@@ -109,7 +112,7 @@ Paired <- function(MAData,NumCond,NumReps) {
   pPermutvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("Permutation p-values",1:NumCond)))
   for (vs in 1:NumCond) {
     if (!is.null(getDefaultReactiveDomain()))
-      incProgress(0.1+0.3/NumCond, detail = paste("tests for comparison",vs,"of",NumCond))
+      setProgress(0.1+0.3/NumCond*vs, detail = paste("tests for comparison",vs,"of",NumCond))
     
     tMAData<-MAData[,MAReps==vs]
     ptMAvalues<-NULL
@@ -207,7 +210,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
   pPermutvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumCond-1))))
   for (vs in 2:NumCond) {
     if (!is.null(getDefaultReactiveDomain()))
-      incProgress(0.1+0.3/(NumCond-1), detail = paste("tests for comparison",vs,"of",NumCond-1))
+      setProgress(0.1+0.3/(NumCond-1)*vs, detail = paste("tests for comparison",vs-1,"of",NumCond-1))
     tData<-Data[,Reps==vs]
     trefData <- Data[,Reps==1]
     tptvalues<-NULL
@@ -324,7 +327,8 @@ FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
   qrange <- qrange[which.min(abs(smallestq-qrange)):(length(qrange)-2)]
   
   # Run over different FC thresholds 
-  for (fc in seq(0,max(abs(range(LogRatios,na.rm=T))),length=100)) {
+  fcRange <- seq(0,max(abs(range(LogRatios,na.rm=T))),length=100)
+  BestVals <- parallel::mclapply(fcRange, function(fc) { 
     for (t in 1:(NumTests-2)) {
       tvals <- Qvalue[,(NumCond-1)*t+1:(NumCond-1)]
       tvals[LogRatios < fc & LogRatios > -fc] <- 1
@@ -348,6 +352,16 @@ FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
         
       }
     }
+    c(BestRegs,BestComb)
+  },mc.cores=NumThreads)
+  
+  BestRegs <- 0
+  for (i in 1:length(BestVals)) {
+    if (BestRegs < BestVals[[i]][1]){
+      BestComb <- BestVals[[i]][2:3]
+      BestRegs <- BestVals[[i]][1]
+    }
+    # print(BestVals)
   }
   return(BestComb)
   
