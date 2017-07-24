@@ -1,7 +1,8 @@
-# Permutations: min 10 replicates, if not available, then generate from entire data
+# Permutations: min 7 replicates, if not available, then generate from entire data
 
-
+library(matrixStats)
 library(parallel)
+library(qvalue)
 library(limma)
 source("rankprodbounds.R")
 
@@ -50,36 +51,36 @@ RPStats <- function(tRPMAData,NumReps) {
   NumElements<-rowSums(!is.na(tRPMAData))
   Rank <- NULL
   RP.own <- 0
-  
-  RPMADown_pvalues <- parallel::mclapply(unique(NumElements),function (d) {
+  # Restrict to >0 replicated values
+  iterNumEl <- unique(NumElements)
+  iterNumEl <- iterNumEl[iterNumEl>0]
+  RPMADown_pvalues <- parallel::mclapply(iterNumEl,function (d) {
     tRPMADown_pvalues <- NULL
     RPMAData<-tRPMAData[NumElements==d,]
-    if(d>0 && length(as.matrix(RPMAData))>ncol(tRPMAData)) {
+    if(d>1 && length(as.matrix(RPMAData))>ncol(tRPMAData)) {
       RP.own<-0
-      Rank<-NULL
-      
-      RankNAs<-0
       for (r in 1:NumReps) {
-        Rank[[r]]<-rank(RPMAData[,r],na.last="keep")#/(sum(!is.na(RPMAData[,r]))+1)
-        names(Rank[[r]]) <-rownames(RPMAData)
-        Rank[[r]][is.na(Rank[[r]])]<-1
-        RP.own<-RP.own+log(Rank[[r]])
-        RankNAs<-RankNAs+sum(Rank[[r]]>1)
+        Rank<-rank(RPMAData[,r],na.last="keep")/(sum(!is.na(RPMAData[,r]))+1)
+        names(Rank) <-rownames(RPMAData)
+        Rank[is.na(Rank)]<- 1
+        RP.own<-RP.own+log(Rank)
       }
       RP.own<-exp(RP.own)
-      tNumReps <- d
       tNumFeat <- length(RP.own)
       # print(range(RP.own))
-      # print(tNumFeat)
+      # print(tNumReps)
       # print(RP.own)
-      RP.own <- round(RP.own)
-      tRPout <- rankprodbounds(RP.own, tNumFeat, tNumReps, "geometric")
+      # RP.own <- round(RP.own)
+      tRPout <- pgamma(-log(RP.own),d)
+      # tRPout <- rankprodbounds(RP.own, tNumFeat, d, "geometric")
       names(tRPout) <- names(RP.own)
       tRPMADown_pvalues <- c(tRPMADown_pvalues,tRPout)
       tRPMADown_pvalues
     }
   },mc.cores=NumThreads)
   # print(head(unlist(RPMADown_pvalues)))
+  # hist(unlist(RPMADown_pvalues))
+  # print(min(unlist(RPMADown_pvalues),na.rm=T))
   return(unlist(RPMADown_pvalues))
 }
 
@@ -164,12 +165,11 @@ Paired <- function(MAData,NumCond,NumReps) {
     tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
     qPermutvalues[names(tqs),i] <- tqs
     # print(range(na.omit(pRPvalues[,i])))
-    tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
+    tqs <- p.adjust(na.omit(pRPvalues[,i]),method="BH")
+    # tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
     qRPvalues[names(tqs),i] <- tqs
     lratios <- cbind(lratios, rowMeans(MAData[,MAReps==i],na.rm=T))
   }
-  
-  
   
   return(list(lratios=lratios,ptvalues=ptvalues, plvalues=plvalues, pRPvalues=pRPvalues,pPermutvalues=pPermutvalues,
               qtvalues=qtvalues, qlvalues=qlvalues, qRPvalues=qRPvalues, qPermutvalues=qPermutvalues,Sds=sqrt(lm.bayesMA$s2.post)))
@@ -187,7 +187,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
   First <- 1
   for (i in (1:NumCond)[-First]) contrasts<-append(contrasts,paste(colnames(design)[i],"-",colnames(design)[First],sep=""))
   contrast.matrix<-makeContrasts(contrasts=contrasts,levels=design)
-  print(dim(Data))
+  # print(dim(Data))
   lm.fitted <- lmFit(Data,design)
   
   lm.contr <- contrasts.fit(lm.fitted,contrast.matrix)
@@ -200,9 +200,6 @@ Unpaired <- function(Data,NumCond,NumReps) {
     tqs <- qvalue(na.omit(plvalues[,i]))$qvalues
     qlvalues[names(tqs),i] <- tqs
   }
-  
-  ## Permutation tests: try individual an full data set???
-  
   
   ## rank products + t-test
   ptvalues<-NULL
@@ -226,7 +223,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     ptvalues <- cbind(ptvalues,tptvalues)
     
     ## rank products
-    # calculate 10 random pairing combinations and then take average of p-values
+    # calculate 10 random pairing combinations and then take maximum of p-values
     NumPairs <- 10
     tpRPvalues<-matrix(NA,ncol=NumPairs,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:NumPairs))
     for (p in 1:NumPairs) {
@@ -240,6 +237,8 @@ Unpaired <- function(Data,NumCond,NumReps) {
       tpRPvalues[names(RPMAUp_pvalues),p] <- ttt
     }
     pRPvalues[,vs-1] <- rowMeans(tpRPvalues,na.rm=T)
+    
+     # print(tail(tpRPvalues,1))
     
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
@@ -264,6 +263,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     # print(pPermutvalues)
   }
   lratios <- NULL
+  pRPvalues[!is.finite(pRPvalues)] <- NA
   qRPvalues <- qtvalues <- qPermutvalues <- matrix(NA,nrow=nrow(Data),ncol=NumCond-1,dimnames=list(rows=rownames(Data), cols=1:(NumCond-1)))
   for (i in 1:(NumCond-1)) {
     tqs <- qvalue(na.omit(ptvalues[,i]))$qvalues
@@ -272,7 +272,9 @@ Unpaired <- function(Data,NumCond,NumReps) {
     tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
     qPermutvalues[names(tqs),i] <- tqs
     print(range(na.omit(pRPvalues[,i])))
-    tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
+    # print(sort(pRPvalues[,i]))
+    tqs <- p.adjust(na.omit(pRPvalues[,i]),method="BH")
+    # tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
     qRPvalues[names(tqs),i] <- tqs
     lratios <- cbind(lratios, rowMeans(Data[,Reps==i+1],na.rm=T)-rowMeans(Data[,Reps==1],na.rm=T))
     
