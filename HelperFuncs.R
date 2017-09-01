@@ -21,7 +21,7 @@ StatsForPermutTest <- function(Data, Paired) {
     # pooled standard deviation
     Stats <- apply(Data, 1, function(x) (mean(x[1:NumReps],na.rm=T)-mean(x[(NumReps+1):(NumReps*2)],na.rm=T))/
                      (sqrt((var(x[1:NumReps],na.rm=T)+var(x[(NumReps+1):(NumReps*2)],na.rm=T)))))
-    Stats <- abs(Stats)/((NumRealReps-1)*(2*NumRealReps))*((2*NumRealReps-2)*(NumRealReps*NumRealReps)) 
+    Stats <- abs(Stats)/((NumRealReps-1)*2)*((2*NumRealReps-2)*NumRealReps)
   }
   return(Stats)
 }
@@ -242,6 +242,9 @@ Unpaired <- function(Data,NumCond,NumReps) {
     
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
+    # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects
+    tData <- tData - mean(as.numeric(unlist(tData)),na.rm=T)
+    trefData <- trefData - mean(as.numeric(unlist(trefData)),na.rm=T)
     if (ncol(tData)*2<NumPermCols) {
       AddDat <- matrix(sample(as.vector(unlist(tData)),(NumPermCols*0.5-ncol(tData))*nrow(tData),replace=T),nrow=nrow(tData))
       PermData <- cbind(tData, AddDat)
@@ -259,8 +262,10 @@ Unpaired <- function(Data,NumCond,NumReps) {
     PermutOut[!is.finite(PermutOut)] <- NA
     RealStats[!is.finite(RealStats)] <- NA
     pPermutvalues[,vs-1] <- apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]) | sum(!is.na(x)) == 0,NA,(1+sum(x[1] < x[-1],na.rm=T))/(sum(!is.na(x)))))
-    # print(PermMAData[1,])
-    # print(pPermutvalues)
+  # print(table(apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]) | sum(!is.na(x)) == 0,NA,(1+sum(x[1] < x[-1],na.rm=T))))))
+    # print(hist(PermutOut[1,],plot = F, 50)$counts)
+    # print(hist(PermutOut[1,],plot = F, 50)$breaks)
+    # head(print(PermutOut))
   }
   lratios <- NULL
   pRPvalues[!is.finite(pRPvalues)] <- NA
@@ -270,6 +275,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     qtvalues[names(tqs),i] <- tqs
     print(range(pPermutvalues[,i]))
     tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
+    # tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
     qPermutvalues[names(tqs),i] <- tqs
     print(range(na.omit(pRPvalues[,i])))
     # print(sort(pRPvalues[,i]))
