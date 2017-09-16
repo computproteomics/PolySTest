@@ -9,6 +9,11 @@ library(qvalue)
 # library(d3heatmap)
 library(gplots)
 source("HelperFuncs.R")
+
+
+options(shiny.maxRequestSize=2000*1024^2)
+
+
 shinyServer(function(input, output,clientData,session) {
   dat <- FullReg <- NULL
   NumTests <- 6
@@ -192,7 +197,7 @@ The tests check for differentially regulated features
             #           output$messages <- renderText("running")
             incProgress(0.1, detail = paste("Running statistical tests"))
             dat [!is.finite(as.matrix(dat))] <- NA
-            
+            dat <<- dat
             MAData<-NULL
             # Rearranged dat (reference condition comes first)
             UData <- NULL
@@ -307,7 +312,7 @@ The tests check for differentially regulated features
             })
             
             observeEvent(input$allLimsSelection, {
-              proxy %>% DT::selectRows(as.numeric(which(rowSums(FCRegs<input$qval)>0)))
+              proxy %>% DT::selectRows(as.numeric(which(rowSums(FCRegs[,1:(NumCond-1),drop=F]<input$qval)>0)))
             })
             
             observeEvent(input$allPageSelection, {
@@ -486,8 +491,8 @@ The tests check for differentially regulated features
               qlim <- input$qval
               fclim <- input$fcval
               input$stat_table_rows_selected
-              # print(head(SubSetLR))
-              if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
+              SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,]
+                            if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
                 heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
               }
             },height=400)
@@ -547,7 +552,7 @@ The tests check for differentially regulated features
                 paste("Results", Sys.Date(), ".csv", sep="");
               },
               content = function(file) {
-                write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected)), file)
+                write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
               })
             # output$downloadFigure <- downloadHandler(
             #   filename = function() {
