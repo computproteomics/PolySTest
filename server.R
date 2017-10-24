@@ -232,6 +232,8 @@ The tests check for differentially regulated features
             colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
             testNames2 <- c("unified tests",testNames)
             names(TestCols) <- testNames2
+            updateCheckboxGroupInput(session,"selTests",choices = testNames2, selected = "unified tests")
+            updateCheckboxGroupInput(session,"selComps",choices = compNames, selected=compNames[1])
             colnames(Qvalue) <- paste("q-values",rep(testNames2,each=NumCond-1),rep(compNames,length(testNames2)))
             # colnames(WhereReg) <- paste("Differentially regulated",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
             
@@ -312,7 +314,11 @@ The tests check for differentially regulated features
             })
             
             observeEvent(input$allLimsSelection, {
-              proxy %>% DT::selectRows(as.numeric(which(rowSums(FCRegs[,1:(NumCond-1),drop=F]<input$qval)>0)))
+              selCols <- paste("q-values",apply(expand.grid(input$selTests, input$selComps), 1, paste, collapse=" "))
+              print(colnames(FCRegs))
+              selFeat <- which(rowSums(FCRegs[,selCols,drop=F]<input$qval)>0)
+              if (length(selFeat) > 0)
+              proxy %>% DT::selectRows(as.numeric(selFeat))
             })
             
             observeEvent(input$allPageSelection, {
@@ -335,6 +341,9 @@ The tests check for differentially regulated features
               qlim <- input$qval
               fclim <- input$fcval
               # print(input$stat_table_rows_selected)
+              # Selecting only features from selected tests and conditions
+              # print(input$selComps)
+              # print(input$selTests)
               SubSetLR <<- LogRatios[input$stat_table_rows_selected,,drop=F]
               SubSetQval <<- Qvalue[input$stat_table_rows_selected,,drop=F]
               SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
@@ -492,10 +501,13 @@ The tests check for differentially regulated features
               fclim <- input$fcval
               input$stat_table_rows_selected
               SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,]
-                            if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
-                heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
-              }
-            },height=400)
+              if (!is.null(SubSetLR))
+                if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
+                  # print(SubSetLR)
+                  heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
+                }
+              
+            },height=800)
             
             incProgress(0.8, detail = paste("Plotting more results"))
             output$plotregdistr <- renderPlot({
