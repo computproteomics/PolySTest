@@ -1,5 +1,6 @@
 library(shinyBS)
 # library(d3heatmap)
+library(heatmaply)
 library(shinydashboard)
 shinyUI(dashboardPage(skin="blue",
                       dashboardHeader(title="PolySTest"),
@@ -72,19 +73,31 @@ shinyUI(dashboardPage(skin="blue",
                           condition = "input.button > 0",
                           box(title="Expression profiles (max. 30 with lowest unified q-values shown)",
                               collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
-                              plotOutput("plotexpression",height="auto"),width=12),
+                              plotOutput("plotexpression",height="auto"),
+                              downloadButton("downloadExprPdf","Download as pdf"),width=12),
                           box(title="Clustered data",collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
                               # d3heatmapOutput("plotheatmap",height="auto"),width=3),
-                              plotOutput("plotheatmap",height="auto"),width=12),
+                              # plotOutput("plotheatmap",height="auto")
+                              plotlyOutput("plotheatmap", height = "700px")
+                              ,width=12),
                           box(title="Volcano plots",collapsible = TRUE,status="success",solidHeader = T,
-                              plotOutput("plotvolc",height="auto"),width=12),
+                              plotOutput("plotvolc",height="auto"),
+                              downloadButton("downloadVolcanoPdf","Download as pdf")
+                          ,width=12),
                           box(title="Distribution regulated features over different tests and conditions",
                               collapsible = TRUE,status="success",solidHeader = T,
-                              plotOutput("plotregdistr",click="plotregdistr_click",height="auto"),width=12),
+                              plotOutput("plotregdistr",click="plotregdistr_click",height="auto"),
+                              downloadButton("downloadUpSetPdf","Download as pdf")
+                          ,width=12),
+                          
                           box(title="Percentage of regulated features",collapsible = TRUE,status="success",solidHeader = T,
-                              plotOutput("plotreg",height="auto"),width=12)),
+                              plotOutput("plotreg",height="auto"),
+                              downloadButton("downloadRegDistrPdf","Download as pdf")
+                              ,width=12)),
                           box(title="p-value histograms",collapsible = TRUE,status="success",solidHeader = T,
-                              plotOutput("plotpval",height="auto"),width=12)
+                              plotOutput("plotpval",height="auto"),
+                              downloadButton("downloadPvalueDistrPdf","Download as pdf")
+                              ,width=12)
                         
                       )
 )

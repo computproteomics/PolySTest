@@ -6,6 +6,7 @@ library(circlize)
 library(UpSetR)
 library(matrixStats)
 library(qvalue)
+library(heatmaply)
 # library(d3heatmap)
 library(gplots)
 source("HelperFuncs.R")
@@ -364,12 +365,25 @@ The tests check for differentially regulated features
             
             
             ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
+            plotPvalueDistr <- function() {
             par(mfrow=c(NumCond-1,length(testNames)))
             for (i in 1:(NumCond-1)) {
               for (j in 2:NumTests) {
                 hist(Pvalue[,(NumCond-1)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
               }
             }
+            }
+            plotPvalueDistr()
+            output$downloadPvalueDistrPdf <- downloadHandler(
+              filename = function() {
+                paste("PvalueDistrPlots", Sys.Date(), ".pdf", sep="");
+              },
+              content = function(file) {
+                pdf(file,height=12,width=20)
+                plotPvalueDistr()
+                dev.off()  
+              })
+            
             par(mfrow=c(1,1))
             # volcano plots
             output$plotvolc <- renderPlot({
@@ -377,6 +391,7 @@ The tests check for differentially regulated features
               input$stat_table
               qlim <- input$qval
               fclim <- input$fcval
+              plotVolcano <- function() {
               par(mfrow=c(NumCond-1,NumTests))
               for (i in 1:(NumCond-1)) {
                 for (j in 1:NumTests) {
@@ -387,8 +402,19 @@ The tests check for differentially regulated features
                   abline(v=fclim,col="#AA3333",lwd=2)
                 }
               }
-              
+              }
+              plotVolcano()
               par(mfrow=c(1,1))
+              output$downloadVolcanoPdf <- downloadHandler(
+                filename = function() {
+                  paste("VolcanoPlots", Sys.Date(), ".pdf", sep="");
+                },
+                content = function(file) {
+                  pdf(file,height=12,width=20)
+                  plotVolcano()
+                  dev.off()  
+                })
+              
               
             },height=heightSize)
             
@@ -408,7 +434,8 @@ The tests check for differentially regulated features
                 SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                 indices <- rownames(SubSet)
                 # par(mfrow=c(1,3))
-                layout(t(c(1,2,2,3,3)))
+                plotExpression <- function() {
+                layout(t(c(1,1,2,2,3,3)))
                 plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
                 # print(colnames(SubSet))
                 legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
@@ -427,6 +454,7 @@ The tests check for differentially regulated features
                     
                   }
                 }
+                
                 # Missing values
                 # find descent visualization 
                 
@@ -489,11 +517,23 @@ The tests check for differentially regulated features
                   mtext(paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),
                         side=1,outer=T,adj=1,line=-1,cex=0.7)
                 }
+                }
+                plotExpression()
+                
+                output$downloadExprPdf <- downloadHandler(
+                  filename = function() {
+                    paste("SelExpressionProfiles", Sys.Date(), ".pdf", sep="");
+                  },
+                  content = function(file) {
+                    pdf(file,height=8,width=12)
+                    plotExpression()
+                    dev.off()  
+                  })
                 
               }
             },height=400)
             
-            output$plotheatmap <- renderPlot({
+            output$plotheatmap <- renderPlotly({
               # d3heatmap(SubSetLR)
               input$button
               input$stat_table
@@ -501,13 +541,16 @@ The tests check for differentially regulated features
               fclim <- input$fcval
               input$stat_table_rows_selected
               SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,]
+              p <- NULL
               if (!is.null(SubSetLR))
                 if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
                   # print(SubSetLR)
-                  heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
+                  p <- heatmaply(SubSetLR)
+                  # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
                 }
+              p
               
-            },height=800)
+            })#,height=800)
             
             incProgress(0.8, detail = paste("Plotting more results"))
             output$plotregdistr <- renderPlot({
@@ -529,10 +572,23 @@ The tests check for differentially regulated features
               tcols <- rep(rainbow(NumCond-1),each=1)
               names(tcols) = rep(paste("A",1:(NumCond-1)),1)
               # print(head(WhereRegs))
+              plotUpset <- function () {
               upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
                     decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
                     set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
                                         plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+              }
+              plotUpset()
+              output$downloadUpSetPdf <- downloadHandler(
+                filename = function() {
+                  paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
+                },
+                content = function(file) {
+                  pdf(file,height=8,width=8)
+                  plotUpset()
+                  dev.off()  
+                })
+              
             },height=600)
             
             output$plotreg <- renderPlot({
@@ -541,6 +597,7 @@ The tests check for differentially regulated features
               input$button
               par(mfrow=c(1,NumCond-1))
               tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
+              plotRegDistr <- function() {
               for (i in 1:(NumCond-1)) {
                 plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="q-value threshold",
                      ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
@@ -553,7 +610,18 @@ The tests check for differentially regulated features
                 lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
                 abline(v=qlim,col=2)
               }
+              }
+              plotRegDistr()
               par(mfrow=c(1,1))
+              output$downloadRegDistrPdf <- downloadHandler(
+                filename = function() {
+                  paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
+                },
+                content = function(file) {
+                  pdf(file,height=8,width=8)
+                  plotRegDistr()
+                  dev.off()  
+                })
               
               
             },height=400)
