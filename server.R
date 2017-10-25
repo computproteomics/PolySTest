@@ -319,7 +319,7 @@ The tests check for differentially regulated features
               print(colnames(FCRegs))
               selFeat <- which(rowSums(FCRegs[,selCols,drop=F]<input$qval)>0)
               if (length(selFeat) > 0)
-              proxy %>% DT::selectRows(as.numeric(selFeat))
+                proxy %>% DT::selectRows(as.numeric(selFeat))
             })
             
             observeEvent(input$allPageSelection, {
@@ -366,12 +366,12 @@ The tests check for differentially regulated features
             
             ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
             plotPvalueDistr <- function() {
-            par(mfrow=c(NumCond-1,length(testNames)))
-            for (i in 1:(NumCond-1)) {
-              for (j in 2:NumTests) {
-                hist(Pvalue[,(NumCond-1)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+              par(mfrow=c(NumCond-1,length(testNames)))
+              for (i in 1:(NumCond-1)) {
+                for (j in 2:NumTests) {
+                  hist(Pvalue[,(NumCond-1)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+                }
               }
-            }
             }
             plotPvalueDistr()
             output$downloadPvalueDistrPdf <- downloadHandler(
@@ -392,16 +392,16 @@ The tests check for differentially regulated features
               qlim <- input$qval
               fclim <- input$fcval
               plotVolcano <- function() {
-              par(mfrow=c(NumCond-1,NumTests))
-              for (i in 1:(NumCond-1)) {
-                for (j in 1:NumTests) {
-                  plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
-                       cex=colSelected(0.5,nrow(Qvalue),input$stat_table_rows_selected,1),
-                       col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                  abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                  abline(v=fclim,col="#AA3333",lwd=2)
+                par(mfrow=c(NumCond-1,NumTests))
+                for (i in 1:(NumCond-1)) {
+                  for (j in 1:NumTests) {
+                    plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
+                         cex=colSelected(0.5,nrow(Qvalue),input$stat_table_rows_selected,1),
+                         col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
+                    abline(h=-log10(qlim),col="#AA3333",lwd=2)
+                    abline(v=fclim,col="#AA3333",lwd=2)
+                  }
                 }
-              }
               }
               plotVolcano()
               par(mfrow=c(1,1))
@@ -435,88 +435,88 @@ The tests check for differentially regulated features
                 indices <- rownames(SubSet)
                 # par(mfrow=c(1,3))
                 plotExpression <- function() {
-                layout(t(c(1,1,2,2,3,3)))
-                plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
-                # print(colnames(SubSet))
-                legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
-                plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
-                       xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
-                       ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
-                       uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
-                       ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
-                axis(1,at=1:(NumCond-1),labels = compNames)
-                abline(h=fclim)
-                if (nrow(SubSet)>1) {
-                  for (i in 2:nrow(SubSet)){
-                    plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
-                           add = T,pch=16,col=rainbow(nrow(SubSet))[i],
-                           uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
-                    
+                  layout(t(c(1,1,2,2,3,3)))
+                  plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
+                  # print(colnames(SubSet))
+                  legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
+                  plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
+                         xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
+                         ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
+                         uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
+                         ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
+                  axis(1,at=1:(NumCond-1),labels = compNames)
+                  abline(h=fclim)
+                  if (nrow(SubSet)>1) {
+                    for (i in 2:nrow(SubSet)){
+                      plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
+                             add = T,pch=16,col=rainbow(nrow(SubSet))[i],
+                             uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
+                      
+                    }
                   }
-                }
-                
-                # Missing values
-                # find descent visualization 
-                
-                # Compare q-values for each protein and method
-                # validate(
-                #   need(length(SubSet)>0, "Please select features from the data table")
-                # )
-                
-                if (length(SubSet)> 0) {
                   
-                  par(mar=rep(0,4))
-                  circos.clear()
-                  circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
-                             track.margin=c(0,0.02),start.degree=90,gap.degree=4)
-                  circos.initialize(1:(NumCond-1),xlim=c(0,1))
-                  for (t in 1:NumTests) {
-                    # print(tsign)
-                    nfeat <- min(nrow(SubSet),30)
-                    cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
-                    tsign <- FCRegs[indices,(t-1)*(NumCond-1)+(1:(NumCond-1)),drop=F]<qlim
-                    circos.trackPlotRegion(ylim=c(-3,2),track.height=1/12, bg.border="#777777", 
-                                           panel.fun = function(x, y) {
-                                             name = get.cell.meta.data("sector.index")
-                                             i = get.cell.meta.data("sector.numeric.index")
-                                             xlim = get.cell.meta.data("xlim")
-                                             # print(nfeat)
-                                             ylim = get.cell.meta.data("ylim")
-                                             xdiff <- (xlim[2]-xlim[1])/nfeat
-                                             if(t == 1) {
-                                               circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
-                                               circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                           labels.cex = 0.7,labels.facing = "reverse.clockwise")
-                                             }
-                                             for (j in 1:nfeat) {
-                                               if (tsign[j,i])
-                                                 circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
-                                                             xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                                             col = cols[j], border=cols[j]
-                                                 )
-                                             }})
+                  # Missing values
+                  # find descent visualization 
+                  
+                  # Compare q-values for each protein and method
+                  # validate(
+                  #   need(length(SubSet)>0, "Please select features from the data table")
+                  # )
+                  
+                  if (length(SubSet)> 0) {
+                    
+                    par(mar=rep(0,4))
+                    circos.clear()
+                    circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
+                               track.margin=c(0,0.02),start.degree=90,gap.degree=4)
+                    circos.initialize(1:(NumCond-1),xlim=c(0,1))
+                    for (t in 1:NumTests) {
+                      # print(tsign)
+                      nfeat <- min(nrow(SubSet),30)
+                      cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
+                      tsign <- FCRegs[indices,(t-1)*(NumCond-1)+(1:(NumCond-1)),drop=F]<qlim
+                      circos.trackPlotRegion(ylim=c(-3,2),track.height=1/12, bg.border="#777777", 
+                                             panel.fun = function(x, y) {
+                                               name = get.cell.meta.data("sector.index")
+                                               i = get.cell.meta.data("sector.numeric.index")
+                                               xlim = get.cell.meta.data("xlim")
+                                               # print(nfeat)
+                                               ylim = get.cell.meta.data("ylim")
+                                               xdiff <- (xlim[2]-xlim[1])/nfeat
+                                               if(t == 1) {
+                                                 circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
+                                                 circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
+                                                             labels.cex = 0.7,labels.facing = "reverse.clockwise")
+                                               }
+                                               for (j in 1:nfeat) {
+                                                 if (tsign[j,i])
+                                                   circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                                               xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                                               col = cols[j], border=cols[j]
+                                                   )
+                                               }})
+                    }
+                    fccols <- redblue(1001)
+                    # print(SubSet)
+                    circos.trackPlotRegion(ylim=c(-3,2),track.height=1/4, bg.border=NA, panel.fun = function(x, y) {
+                      name = get.cell.meta.data("sector.index")
+                      i = get.cell.meta.data("sector.numeric.index")
+                      xlim = get.cell.meta.data("xlim")
+                      ylim = get.cell.meta.data("ylim")
+                      #circos.text(x=mean(xlim), y=1.7,
+                      #            labels=name, facing = dd, cex=0.6,  adj = aa),
+                      xdiff <- (xlim[2]-xlim[1])/nfeat
+                      for (j in 1:nfeat) {
+                        # print((SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500)
+                        circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                    xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                    col = fccols[(SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500], border=0)
+                      }})
+                    text(0,0,"Log\nratios",cex=0.7)
+                    # label the different tracks
+                    mtext(paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),
+                          side=1,outer=T,adj=1,line=-1,cex=0.7)
                   }
-                  fccols <- redblue(1001)
-                  # print(SubSet)
-                  circos.trackPlotRegion(ylim=c(-3,2),track.height=1/4, bg.border=NA, panel.fun = function(x, y) {
-                    name = get.cell.meta.data("sector.index")
-                    i = get.cell.meta.data("sector.numeric.index")
-                    xlim = get.cell.meta.data("xlim")
-                    ylim = get.cell.meta.data("ylim")
-                    #circos.text(x=mean(xlim), y=1.7,
-                    #            labels=name, facing = dd, cex=0.6,  adj = aa),
-                    xdiff <- (xlim[2]-xlim[1])/nfeat
-                    for (j in 1:nfeat) {
-                      # print((SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500)
-                      circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
-                                  xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                  col = fccols[(SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500], border=0)
-                    }})
-                  text(0,0,"Log\nratios",cex=0.7)
-                  # label the different tracks
-                  mtext(paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),
-                        side=1,outer=T,adj=1,line=-1,cex=0.7)
-                }
                 }
                 plotExpression()
                 
@@ -541,113 +541,129 @@ The tests check for differentially regulated features
               fclim <- input$fcval
               input$stat_table_rows_selected
               SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,]
-              p <- NULL
-              if (!is.null(SubSetLR))
+              p <- plotly_empty()
+              # print(rownames(SubSetLR))
+              if (!is.null(SubSetLR)) {
                 if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
-                  # print(SubSetLR)
-                  p <- heatmaply(SubSetLR)
-                  # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
+                  print("running heatmap")
+                  withProgress(message="Creating heatmap ...", min=0,max=1, {
+                    setProgress(0.5)
+                    # print(SubSetLR)
+                    tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps)]
+                    # remove data rows with more than 50% missing values
+                    to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.5)
+                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1)]
+                    if (length(to_remove)>0) {
+                      tqvals <- tqvals[-to_remove,]
+                      tdat <- tdat[-to_remove,]
+                    }
+                    print(table(rowSums(is.na(tdat))))
+                    p <- heatmaply(tdat,Colv=F,scale = "none",trace="none",cexRow=0.7, RowSideColors = tqvals, row_side_colors = grey(1000))
+                    # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
+                    # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
+                  })
                 }
+              }
               p
               
             })#,height=800)
-            
-            incProgress(0.8, detail = paste("Plotting more results"))
-            output$plotregdistr <- renderPlot({
-              qlim <- input$qval
-              input$fcval
-              input$button
-              # print(head(FCRegs))
-              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests-1),drop=F]<qlim
-              # print(head(WhereRegs))
-              WhereRegs[WhereRegs] <- 1
-              deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
-              # print(deleted_cols)
-              
-              tcolnames <- paste("A",rep(1:(NumCond-1),each=NumTests-1))
-              if (length(deleted_cols) > 0) {
-                tcolnames <- tcolnames[-deleted_cols]
-                WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
-              }
-              tcols <- rep(rainbow(NumCond-1),each=1)
-              names(tcols) = rep(paste("A",1:(NumCond-1)),1)
-              # print(head(WhereRegs))
-              plotUpset <- function () {
-              upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
-                    decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
-                    set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
-                                        plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
-              }
-              plotUpset()
-              output$downloadUpSetPdf <- downloadHandler(
-                filename = function() {
-                  paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
-                },
-                content = function(file) {
-                  pdf(file,height=8,width=8)
-                  plotUpset()
-                  dev.off()  
-                })
-              
-            },height=600)
-            
-            output$plotreg <- renderPlot({
-              qlim <- input$qval
-              input$fcval
-              input$button
-              par(mfrow=c(1,NumCond-1))
-              tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
-              plotRegDistr <- function() {
-              for (i in 1:(NumCond-1)) {
-                plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="q-value threshold",
-                     ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
-                if (i==1)
-                  legend("topleft",legend = testNames2,col=TestCols,lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
-                lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
-                abline(v=qlim,col=2)
-              }
-              }
-              plotRegDistr()
-              par(mfrow=c(1,1))
-              output$downloadRegDistrPdf <- downloadHandler(
-                filename = function() {
-                  paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
-                },
-                content = function(file) {
-                  pdf(file,height=8,width=8)
-                  plotRegDistr()
-                  dev.off()  
-                })
-              
-              
-            },height=400)
-            setProgress(0.9, detail = paste("Finishing"))
-            
-            output$downloadData <- downloadHandler(
-              filename = function() {
-                paste("Results", Sys.Date(), ".csv", sep="");
-              },
-              content = function(file) {
-                write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
-              })
-            # output$downloadFigure <- downloadHandler(
-            #   filename = function() {
-            #     paste("Results", Sys.Date(), ".pdf", sep="");
-            #   },
-            #   content = function(file) {
-            #     pdf(file,height=(NumCond-1)*4)
-            #     print(dev.cur())
-            #     replayPlot(pl)
-            #     dev.off()
-            #   })                
-            
+                  
+                  incProgress(0.8, detail = paste("Plotting more results"))
+                  output$plotregdistr <- renderPlot({
+                    qlim <- input$qval
+                    input$fcval
+                    input$button
+                    # print(head(FCRegs))
+                    WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests-1),drop=F]<qlim
+                    # print(head(WhereRegs))
+                    WhereRegs[WhereRegs] <- 1
+                    deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
+                    # print(deleted_cols)
+                    
+                    tcolnames <- paste("A",rep(1:(NumCond-1),each=NumTests-1))
+                    if (length(deleted_cols) > 0) {
+                      tcolnames <- tcolnames[-deleted_cols]
+                      WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
+                    }
+                    tcols <- rep(rainbow(NumCond-1),each=1)
+                    names(tcols) = rep(paste("A",1:(NumCond-1)),1)
+                    # print(head(WhereRegs))
+                    plotUpset <- function () {
+                      upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
+                            decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
+                            set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
+                                                plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+                    }
+                    plotUpset()
+                    output$downloadUpSetPdf <- downloadHandler(
+                      filename = function() {
+                        paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
+                      },
+                      content = function(file) {
+                        pdf(file,height=8,width=8)
+                        plotUpset()
+                        dev.off()  
+                      })
+                    
+                  },height=600)
+                  
+                  output$plotreg <- renderPlot({
+                    qlim <- input$qval
+                    input$fcval
+                    input$button
+                    par(mfrow=c(1,NumCond-1))
+                    tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
+                    plotRegDistr <- function() {
+                      for (i in 1:(NumCond-1)) {
+                        plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="q-value threshold",
+                             ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
+                        if (i==1)
+                          legend("topleft",legend = testNames2,col=TestCols,lwd=2)
+                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
+                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
+                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
+                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
+                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
+                        abline(v=qlim,col=2)
+                      }
+                    }
+                    plotRegDistr()
+                    par(mfrow=c(1,1))
+                    output$downloadRegDistrPdf <- downloadHandler(
+                      filename = function() {
+                        paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
+                      },
+                      content = function(file) {
+                        pdf(file,height=8,width=8)
+                        plotRegDistr()
+                        dev.off()  
+                      })
+                    
+                    
+                  },height=400)
+                  setProgress(0.9, detail = paste("Finishing"))
+                  
+                  output$downloadData <- downloadHandler(
+                    filename = function() {
+                      paste("Results", Sys.Date(), ".csv", sep="");
+                    },
+                    content = function(file) {
+                      write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
+                    })
+                  # output$downloadFigure <- downloadHandler(
+                  #   filename = function() {
+                  #     paste("Results", Sys.Date(), ".pdf", sep="");
+                  #   },
+                  #   content = function(file) {
+                  #     pdf(file,height=(NumCond-1)*4)
+                  #     print(dev.cur())
+                  #     replayPlot(pl)
+                  #     dev.off()
+                  #   })                
+                  
           })
-          
-          
+            
+            
         }
       })
     }
@@ -655,3 +671,4 @@ The tests check for differentially regulated features
     
   },height=heightSize)
 })
+  
