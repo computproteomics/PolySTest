@@ -558,7 +558,7 @@ The tests check for differentially regulated features
                       tdat <- tdat[-to_remove,]
                     }
                     print(table(rowSums(is.na(tdat))))
-                    p <- heatmaply(tdat,Colv=F,scale = "none",trace="none",cexRow=0.7, RowSideColors = tqvals, row_side_colors = grey(1000))
+                    p <- heatmaply(tdat,Colv=F,scale = "none",trace="none",cexRow=0.7, RowSideColors = tqvals, row_side_palette = grey.colors)
                     # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
                     # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
                   })
