@@ -487,7 +487,7 @@ The tests check for differentially regulated features
                                                if(t == 1) {
                                                  circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
                                                  circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                             labels.cex = 0.7,labels.facing = "reverse.clockwise")
+                                                             labels.cex = 0.8,labels.facing = "reverse.clockwise")
                                                }
                                                for (j in 1:nfeat) {
                                                  if (tsign[j,i])
@@ -541,11 +541,11 @@ The tests check for differentially regulated features
               qlim <- input$qval
               fclim <- input$fcval
               input$stat_table_rows_selected
-              SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,]
+              print((SubSetLR))
+              # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
               p <- plotly_empty()
-              # print(rownames(SubSetLR))
               if (!is.null(SubSetLR)) {
-                if (length(SubSetLR)> 0 & nrow(SubSetLR)>1 & ncol(SubSetLR)>1) {
+                if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
                   print("running heatmap")
                   withProgress(message="Creating heatmap ...", min=0,max=1, {
                     setProgress(0.5)
