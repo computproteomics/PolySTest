@@ -133,6 +133,7 @@ The tests check for differentially regulated features
         }
       }
       print(ncol(dat))
+      updateSliderInput(session,"ColQuant",max=ncol(dat))
       updateSliderInput(session,"NumCond",max=ncol(dat))
       updateSliderInput(session,"NumReps",max=ncol(dat))
       updateSliderInput(session,"refCond",max=input$NumCond)

@@ -321,7 +321,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
 }
 
 # Function to determine "optimal" fold-change and q-value thresholds
-# the idea is to maximize the percental output of features commonly found for limma, rank products, permutation and NA tests
+# the idea is to maximize the percental output of features commonly found for limma, rank products, permutation (skipped now as limited) and NA tests
 FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
   
   BestComb <- c(0,0)
@@ -337,7 +337,8 @@ FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
   # Run over different FC thresholds 
   fcRange <- seq(0,max(abs(range(LogRatios,na.rm=T))),length=100)
   BestVals <- parallel::mclapply(fcRange, function(fc) { 
-    for (t in 1:(NumTests-2)) {
+    # range of tests to consider:
+    for (t in c(1,2,4)) {
       tvals <- Qvalue[,(NumCond-1)*t+1:(NumCond-1)]
       tvals[LogRatios < fc & LogRatios > -fc] <- 1
       Qvalue[,(NumCond-1)*t+1:(NumCond-1)] <- tvals
