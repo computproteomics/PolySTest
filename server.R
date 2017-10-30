@@ -108,7 +108,7 @@ The tests check for differentially regulated features
           validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,""))
           rownames(dat) <- dat[,1]
           dat <- dat[,2:ncol(dat)]
-          updateSliderInput(session,"QuantCol",max=ncol(dat)-2)
+          # updateSliderInput(session,"QuantCol",max=ncol(dat)-2)
           
           # delete row with empty name
           dat <- dat[!rownames(dat)=="",]
@@ -121,7 +121,7 @@ The tests check for differentially regulated features
           }
         } else {
           dat <- read.csv(input$in_file$datapath,header=input$is_header,sep=delim,dec=input$digits)
-          updateSliderInput(session,"QuantCol",max=ncol(dat))
+          # updateSliderInput(session,"QuantCol",max=ncol(dat))
           
           if (input$ColQuant > 1) {
             addInfo <- dat[,1:(ColQuant-1),drop=F]
@@ -133,7 +133,14 @@ The tests check for differentially regulated features
         }
       }
       print(ncol(dat))
-      updateSliderInput(session,"ColQuant",max=ncol(dat)+ncol(addInfo))
+      tncol <- 20
+      if (!is.null(addInfo)) {
+        tncol <- ncol(dat) + ncol(addInfo)
+      } else {
+        tncol <- ncol(dat)
+      }
+      
+      updateSliderInput(session,"ColQuant",max=tncol)
       updateSliderInput(session,"NumCond",max=ncol(dat))
       updateSliderInput(session,"NumReps",max=ncol(dat))
       updateSliderInput(session,"refCond",max=input$NumCond)
@@ -188,7 +195,7 @@ The tests check for differentially regulated features
                                                              class="compact",
                                                              container=sketch))
       
-      print(head(dat))
+      #print(head(dat))
       
       isolate({
         if (input$button == 0)
