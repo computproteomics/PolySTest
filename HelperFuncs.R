@@ -9,6 +9,7 @@ source("rankprodbounds.R")
 NumThreads <- 4
 NTests <- 100 # for permutation tests
 NumPermCols <- 7 # minimum number of columns for permutation tests (to ensure sufficient combinations)
+NumRPPairs <- 1000 # number of pairings in the unpaired rank product test to simulate an unpaired setting
 
 StatsForPermutTest <- function(Data, Paired) {
   if (Paired) {
@@ -54,7 +55,7 @@ RPStats <- function(tRPMAData,NumReps) {
   # Restrict to >0 replicated values
   iterNumEl <- unique(NumElements)
   iterNumEl <- iterNumEl[iterNumEl>0]
-  RPMADown_pvalues <- parallel::mclapply(iterNumEl,function (d) {
+  RPMADown_pvalues <- lapply(iterNumEl,function (d) {
     tRPMADown_pvalues <- NULL
     RPMAData<-tRPMAData[NumElements==d,]
     if(d>1 && length(as.matrix(RPMAData))>ncol(tRPMAData)) {
@@ -77,7 +78,7 @@ RPStats <- function(tRPMAData,NumReps) {
       tRPMADown_pvalues <- c(tRPMADown_pvalues,tRPout)
       tRPMADown_pvalues
     }
-  },mc.cores=NumThreads)
+  })
   # print(head(unlist(RPMADown_pvalues)))
   # hist(unlist(RPMADown_pvalues))
   # print(min(unlist(RPMADown_pvalues),na.rm=T))
@@ -180,6 +181,10 @@ Unpaired <- function(Data,NumCond,NumReps) {
   # significance analysis
   Reps <- rep(1:NumCond,NumReps)
   
+  # Normalize row-wise by mean
+  Data <- Data - rowMeans(Data,na.rm=T)
+  
+  
   ## limma
   design <- model.matrix(~0+factor(Reps-1))
   colnames(design)<-paste("i",c(1:NumCond),sep="")
@@ -223,10 +228,10 @@ Unpaired <- function(Data,NumCond,NumReps) {
     ptvalues <- cbind(ptvalues,tptvalues)
     
     ## rank products
-    # calculate 10 random pairing combinations and then take maximum of p-values
-    NumPairs <- 10
-    tpRPvalues<-matrix(NA,ncol=NumPairs,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:NumPairs))
-    for (p in 1:NumPairs) {
+    # calculate NumRPPairs random pairing combinations and then take mean of p-values
+    # NumRPPairs <- 10
+    tpRPvalues<-matrix(NA,ncol=NumRPPairs,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:NumRPPairs))
+    RPparOut <- parallel::mclapply(1:NumRPPairs, function(x) {
       tRPMAData <- tData[,sample(1:NumReps)] - trefData[,sample(1:NumReps)]
       #Up
       RPMAUp_pvalues <- RPStats(tRPMAData,NumReps)
@@ -234,8 +239,13 @@ Unpaired <- function(Data,NumCond,NumReps) {
       RPMADown_pvalues <- RPStats(-tRPMAData,NumReps)
       ttt <- rowMins(cbind(RPMAUp_pvalues,RPMADown_pvalues),na.rm=T)*2
       ttt[ttt>1] <- 1
-      tpRPvalues[names(RPMAUp_pvalues),p] <- ttt
-    }
+      names(ttt) <- names(RPMAUp_pvalues)
+      ttt
+    })
+    for (p in 1:NumRPPairs) {
+      # print(RPparOut[[p]])
+      tpRPvalues[names(RPparOut[[p]]),p] <- RPparOut[[p]]
+    }    
     pRPvalues[,vs-1] <- rowMeans(tpRPvalues,na.rm=T)
     
      # print(tail(tpRPvalues,1))

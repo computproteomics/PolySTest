@@ -14,7 +14,6 @@ source("HelperFuncs.R")
 
 options(shiny.maxRequestSize=2000*1024^2)
 
-
 shinyServer(function(input, output,clientData,session) {
   dat <- FullReg <- NULL
   NumTests <- 6
@@ -678,5 +677,6 @@ The tests check for differentially regulated features
     #       output$messages <- renderText("finished")
     
   },height=heightSize)
-})
   
+
+})

@@ -3,7 +3,20 @@ library(shinyBS)
 library(heatmaply)
 library(shinydashboard)
 shinyUI(dashboardPage(skin="blue",
-                      dashboardHeader(title="PolySTest"),
+                      dashboardHeader(title="PolySTest",dropdownMenu(    
+                        type = "notifications", 
+                        icon = icon("question-circle"),
+                        badgeStatus = NULL,
+                        headerText = "See also:",
+                        
+                        notificationItem("source code and installation instructions", icon = icon("file"),
+                                         href = "http://bitbucket.com/veitveit/polystest"),
+                        notificationItem("author", icon = icon("address-card"),
+                                         href = "http://computproteomics.bmb.sdu.dk"),
+                        notificationItem("institution", icon = icon("university"),
+                                         href = "sdu.dk")
+                      )
+                      ),
                       dashboardSidebar(width = "300",
                                        fluidPage(
                                          h5("A tool to determine differentially regulated features using multiple approaches"),
@@ -66,9 +79,9 @@ shinyUI(dashboardPage(skin="blue",
                               downloadButton('downloadData', 'Download results',style="background-color:#FFAAAA"),
                               bsTooltip("downloadData","Download the entire data table with log-ratios and q-values",trigger="hover"))
                           ,br(),hr()),
-                          # conditionalPanel("$('#dtable_out').hasClass('recalculating')",tags$div('Loading ... ')),
-                          box(status="info",solidHeader=T,width=12,
-                              column(div(DT::dataTableOutput("stat_table"),style="font-size:100%"),width=12)),
+                        # conditionalPanel("$('#dtable_out').hasClass('recalculating')",tags$div('Loading ... ')),
+                        box(status="info",solidHeader=T,width=12,
+                            column(div(DT::dataTableOutput("stat_table"),style="font-size:100%"),width=12)),
                         conditionalPanel(
                           condition = "input.button > 0",
                           box(title="Expression profiles (max. 30 with lowest unified q-values shown)",
@@ -83,21 +96,21 @@ shinyUI(dashboardPage(skin="blue",
                           box(title="Volcano plots",collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotvolc",height="auto"),
                               downloadButton("downloadVolcanoPdf","Download as pdf")
-                          ,width=12),
+                              ,width=12),
                           box(title="Distribution regulated features over different tests and conditions",
                               collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotregdistr",click="plotregdistr_click",height="auto"),
                               downloadButton("downloadUpSetPdf","Download as pdf")
-                          ,width=12),
+                              ,width=12),
                           
                           box(title="Percentage of regulated features",collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotreg",height="auto"),
                               downloadButton("downloadRegDistrPdf","Download as pdf")
                               ,width=12)),
-                          box(title="p-value histograms",collapsible = TRUE,status="success",solidHeader = T,
-                              plotOutput("plotpval",height="auto"),
-                              downloadButton("downloadPvalueDistrPdf","Download as pdf")
-                              ,width=12)
+                        box(title="p-value histograms",collapsible = TRUE,status="success",solidHeader = T,
+                            plotOutput("plotpval",height="auto"),
+                            downloadButton("downloadPvalueDistrPdf","Download as pdf")
+                            ,width=12)
                         
                       )
 )
