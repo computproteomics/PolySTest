@@ -440,24 +440,39 @@ The tests check for differentially regulated features
                 # CI plots of max 30 features
                 SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                 indices <- rownames(SubSet)
+                tdat <- as.matrix(dat[rownames(SubSet), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F])
+                MeanSet <- SDSet <-  matrix(NA,nrow=nrow(tdat),ncol=NumCond,dimnames = 
+                                    list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
+                for (c in 1:NumCond) {
+                  MeanSet[,c] <- rowMeans(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
+                  SDSet[,c] <- rowSds(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
+                }
                 # par(mfrow=c(1,3))
                 plotExpression <- function() {
                   layout(t(c(1,1,2,2,3,3)))
                   plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
                   # print(colnames(SubSet))
                   legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
-                  plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
-                         xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
-                         ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
-                         uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
-                         ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
-                  axis(1,at=1:(NumCond-1),labels = compNames)
-                  abline(h=fclim)
-                  if (nrow(SubSet)>1) {
-                    for (i in 2:nrow(SubSet)){
-                      plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
-                             add = T,pch=16,col=rainbow(nrow(SubSet))[i],
-                             uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
+                  # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
+                  #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
+                  #        ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
+                  #        uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
+                  #        ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
+                  plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[1,],pch=16,
+                         xlab="Conditions",xlim=c(0.7,(NumCond+1)-0.7),
+                         ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
+                         uiw=SDSet[1,],type="b",barcol="#000000FF",
+                         ylim=range(tdat,na.rm=T),xaxt="none",lwd=1.5)
+                  axis(1,at=1:(NumCond),labels = colnames(MeanSet))
+                  # abline(h=fclim)
+                  if (nrow(MeanSet)>1) {
+                    for (i in 2:nrow(MeanSet)){
+                      # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
+                      #        add = T,pch=16,col=rainbow(nrow(SubSet))[i],
+                      #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
+                      plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
+                             add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
+                             uiw=SDSet[i,],type="b",barcol="#000000FF",lwd=1.5) 
                       
                     }
                   }
