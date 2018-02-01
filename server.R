@@ -196,6 +196,7 @@ The tests check for differentially regulated features
       
       #print(head(dat))
       
+      
       isolate({
         if (input$button == 0)
           return()
@@ -343,17 +344,21 @@ The tests check for differentially regulated features
               
             })
             
+            ## Delay reaction to selecting rows in data table
+            triggerUpdate <- debounce(reactive(input$stat_table_rows_selected),1000)
+        
             observe({
               input$button
               input$stat_table
+              sel_prots <- triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
               # print(input$stat_table_rows_selected)
               # Selecting only features from selected tests and conditions
               # print(input$selComps)
               # print(input$selTests)
-              SubSetLR <<- LogRatios[input$stat_table_rows_selected,,drop=F]
-              SubSetQval <<- Qvalue[input$stat_table_rows_selected,,drop=F]
+              SubSetLR <<- LogRatios[sel_prots,,drop=F]
+              SubSetQval <<- Qvalue[sel_prots,,drop=F]
               SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
               SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
               ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
@@ -396,6 +401,7 @@ The tests check for differentially regulated features
             output$plotvolc <- renderPlot({
               input$button
               input$stat_table
+              sel_prots <- triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
               plotVolcano <- function() {
@@ -403,8 +409,8 @@ The tests check for differentially regulated features
                 for (i in 1:(NumCond-1)) {
                   for (j in 1:NumTests) {
                     plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
-                         cex=colSelected(0.5,nrow(Qvalue),input$stat_table_rows_selected,1),
-                         col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),input$stat_table_rows_selected,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
+                         cex=colSelected(0.5,nrow(Qvalue),sel_prots,1),
+                         col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),sel_prots,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
                     abline(h=-log10(qlim),col="#AA3333",lwd=2)
                     abline(v=fclim,col="#AA3333",lwd=2)
                   }
@@ -424,25 +430,22 @@ The tests check for differentially regulated features
               
               
             },height=heightSize)
-            
-            
-            
+
             output$plotexpression <- renderPlot({
               input$button
               input$stat_table
+              triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
-              input$stat_table_rows_selected
+              #input$stat_table_rows_selected
               # print(head(SubSetLR))
               if (length(SubSetLR)> 0) {
-                
-                
                 # CI plots of max 30 features
                 SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                 indices <- rownames(SubSet)
                 tdat <- as.matrix(dat[rownames(SubSet), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F])
                 MeanSet <- SDSet <-  matrix(NA,nrow=nrow(tdat),ncol=NumCond,dimnames = 
-                                    list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
+                                              list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
                 for (c in 1:NumCond) {
                   MeanSet[,c] <- rowMeans(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
                   SDSet[,c] <- rowSds(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
@@ -502,7 +505,6 @@ The tests check for differentially regulated features
                                                name = get.cell.meta.data("sector.index")
                                                i = get.cell.meta.data("sector.numeric.index")
                                                xlim = get.cell.meta.data("xlim")
-                                               # print(nfeat)
                                                ylim = get.cell.meta.data("ylim")
                                                xdiff <- (xlim[2]-xlim[1])/nfeat
                                                if(t == 1) {
@@ -510,12 +512,10 @@ The tests check for differentially regulated features
                                                  circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
                                                              labels.cex = 0.8,labels.facing = "reverse.clockwise")
                                                }
-                                               for (j in 1:nfeat) {
-                                                 if (tsign[j,i])
-                                                   circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
-                                                               xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                                               col = cols[j], border=cols[j]
-                                                   )
+                                               for (j in which(tsign[,i])) {
+                                                 circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                                             xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                                             col = cols[j], border=cols[j])
                                                }})
                     }
                     fccols <- redblue(1001)
@@ -559,9 +559,9 @@ The tests check for differentially regulated features
               # d3heatmap(SubSetLR)
               input$button
               input$stat_table
+              triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
-              input$stat_table_rows_selected
               print((SubSetLR))
               # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
               p <- plotly_empty()
@@ -589,103 +589,103 @@ The tests check for differentially regulated features
               p
               
             })#,height=800)
-                  
-                  incProgress(0.8, detail = paste("Plotting more results"))
-                  output$plotregdistr <- renderPlot({
-                    qlim <- input$qval
-                    input$fcval
-                    input$button
-                    # print(head(FCRegs))
-                    WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests-1),drop=F]<qlim
-                    # print(head(WhereRegs))
-                    WhereRegs[WhereRegs] <- 1
-                    deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
-                    # print(deleted_cols)
-                    
-                    tcolnames <- paste("A",rep(1:(NumCond-1),each=NumTests-1))
-                    if (length(deleted_cols) > 0) {
-                      tcolnames <- tcolnames[-deleted_cols]
-                      WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
-                    }
-                    tcols <- rep(rainbow(NumCond-1),each=1)
-                    names(tcols) = rep(paste("A",1:(NumCond-1)),1)
-                    # print(head(WhereRegs))
-                    plotUpset <- function () {
-                      upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
-                            decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
-                            set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
-                                                plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
-                    }
-                    plotUpset()
-                    output$downloadUpSetPdf <- downloadHandler(
-                      filename = function() {
-                        paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
-                      },
-                      content = function(file) {
-                        pdf(file,height=8,width=8)
-                        plotUpset()
-                        dev.off()  
-                      })
-                    
-                  },height=600)
-                  
-                  output$plotreg <- renderPlot({
-                    qlim <- input$qval
-                    input$fcval
-                    input$button
-                    par(mfrow=c(1,NumCond-1))
-                    tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
-                    plotRegDistr <- function() {
-                      for (i in 1:(NumCond-1)) {
-                        plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="q-value threshold",
-                             ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
-                        if (i==1)
-                          legend("topleft",legend = testNames2,col=TestCols,lwd=2)
-                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
-                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
-                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
-                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
-                        lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
-                        abline(v=qlim,col=2)
-                      }
-                    }
-                    plotRegDistr()
-                    par(mfrow=c(1,1))
-                    output$downloadRegDistrPdf <- downloadHandler(
-                      filename = function() {
-                        paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
-                      },
-                      content = function(file) {
-                        pdf(file,height=8,width=8)
-                        plotRegDistr()
-                        dev.off()  
-                      })
-                    
-                    
-                  },height=400)
-                  setProgress(0.9, detail = paste("Finishing"))
-                  
-                  output$downloadData <- downloadHandler(
-                    filename = function() {
-                      paste("Results", Sys.Date(), ".csv", sep="");
-                    },
-                    content = function(file) {
-                      write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
-                    })
-                  # output$downloadFigure <- downloadHandler(
-                  #   filename = function() {
-                  #     paste("Results", Sys.Date(), ".pdf", sep="");
-                  #   },
-                  #   content = function(file) {
-                  #     pdf(file,height=(NumCond-1)*4)
-                  #     print(dev.cur())
-                  #     replayPlot(pl)
-                  #     dev.off()
-                  #   })                
-                  
+            
+            incProgress(0.8, detail = paste("Plotting more results"))
+            output$plotregdistr <- renderPlot({
+              qlim <- input$qval
+              input$fcval
+              input$button
+              # print(head(FCRegs))
+              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests-1),drop=F]<qlim
+              # print(head(WhereRegs))
+              WhereRegs[WhereRegs] <- 1
+              deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
+              # print(deleted_cols)
+              
+              tcolnames <- paste("A",rep(1:(NumCond-1),each=NumTests-1))
+              if (length(deleted_cols) > 0) {
+                tcolnames <- tcolnames[-deleted_cols]
+                WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
+              }
+              tcols <- rep(rainbow(NumCond-1),each=1)
+              names(tcols) = rep(paste("A",1:(NumCond-1)),1)
+              # print(head(WhereRegs))
+              plotUpset <- function () {
+                upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
+                      decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
+                      set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
+                                          plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+              }
+              plotUpset()
+              output$downloadUpSetPdf <- downloadHandler(
+                filename = function() {
+                  paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
+                },
+                content = function(file) {
+                  pdf(file,height=8,width=8)
+                  plotUpset()
+                  dev.off()  
+                })
+              
+            },height=600)
+            
+            output$plotreg <- renderPlot({
+              qlim <- input$qval
+              input$fcval
+              input$button
+              par(mfrow=c(1,NumCond-1))
+              tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
+              plotRegDistr <- function() {
+                for (i in 1:(NumCond-1)) {
+                  plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="q-value threshold",
+                       ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
+                  if (i==1)
+                    legend("topleft",legend = testNames2,col=TestCols,lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
+                  abline(v=qlim,col=2)
+                }
+              }
+              plotRegDistr()
+              par(mfrow=c(1,1))
+              output$downloadRegDistrPdf <- downloadHandler(
+                filename = function() {
+                  paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
+                },
+                content = function(file) {
+                  pdf(file,height=8,width=8)
+                  plotRegDistr()
+                  dev.off()  
+                })
+              
+              
+            },height=400)
+            setProgress(0.9, detail = paste("Finishing"))
+            
+            output$downloadData <- downloadHandler(
+              filename = function() {
+                paste("Results", Sys.Date(), ".csv", sep="");
+              },
+              content = function(file) {
+                write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
+              })
+            # output$downloadFigure <- downloadHandler(
+            #   filename = function() {
+            #     paste("Results", Sys.Date(), ".pdf", sep="");
+            #   },
+            #   content = function(file) {
+            #     pdf(file,height=(NumCond-1)*4)
+            #     print(dev.cur())
+            #     replayPlot(pl)
+            #     dev.off()
+            #   })                
+            
           })
-            
-            
+          
+          
         }
       })
     }
@@ -693,5 +693,5 @@ The tests check for differentially regulated features
     
   },height=heightSize)
   
-
+  
 })
