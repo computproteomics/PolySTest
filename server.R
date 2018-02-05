@@ -572,8 +572,8 @@ The tests check for differentially regulated features
                     setProgress(0.5)
                     # print(SubSetLR)
                     tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps)]
-                    # remove data rows with more than 50% missing values
-                    to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.5)
+                    # remove data rows with more than 45% missing values
+                    to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
                     tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1)]
                     if (length(to_remove)>0) {
                       tqvals <- tqvals[-to_remove,]

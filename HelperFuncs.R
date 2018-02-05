@@ -332,6 +332,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
 
 # Function to determine "optimal" fold-change and q-value thresholds
 # the idea is to maximize the percental output of features commonly found for limma, rank products, permutation (skipped now as limited) and NA tests
+# TODO change to fdrtool and use hc.threshold, but then what is the FC threshold (maybe estimation from z-score distribution?)?
 FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
   
   BestComb <- c(0,0)
