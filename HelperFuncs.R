@@ -1,6 +1,7 @@
 # Permutations: min 7 replicates, if not available, then generate from entire data
 
 library(matrixStats)
+library(fdrtool)
 library(parallel)
 library(qvalue)
 library(limma)
@@ -148,9 +149,14 @@ Paired <- function(MAData,NumCond,NumReps) {
       PermMAData <- tMAData
     }
     RealStats <- StatsForPermutTest(tMAData,Paired=T)
-    PermutOut <- parallel::mclapply(1:NTests,function (x) {indat <- apply(PermMAData,1,function(y) sample(y,NumReps)*sample(c(1,-1),NumReps,replace=T))
+    cl <- makeCluster(NumThreads)
+    clusterExport(cl=cl,varlist=c("NumReps","PermMAData","RPStats","StatsForPermutTest"),envir=environment())
+    clusterEvalQ(cl=cl, library(matrixStats))  
+    PermutOut <- parLapply(cl,1:NTests,function (x) {indat <- apply(PermMAData,1,function(y) sample(y,NumReps)*sample(c(1,-1),NumReps,replace=T))
     StatsForPermutTest(t(indat),T)
-    },mc.cores=NumThreads)
+    })
+    stopCluster(cl)
+    
     PermutOut <- matrix(unlist(PermutOut),nrow=nrow(tMAData))
     # print(cbind(RealStats,PermutOut)[1,])
     pPermutvalues[,vs] <- apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]),NA,(1+sum(x[1] < x[-1],na.rm=T))/(sum(!is.na(x)))))
@@ -231,7 +237,11 @@ Unpaired <- function(Data,NumCond,NumReps) {
     # calculate NumRPPairs random pairing combinations and then take mean of p-values
     # NumRPPairs <- 10
     tpRPvalues<-matrix(NA,ncol=NumRPPairs,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:NumRPPairs))
-    RPparOut <- parallel::mclapply(1:NumRPPairs, function(x) {
+    cl <- makeCluster(NumThreads)
+    clusterExport(cl=cl,varlist=c("NumReps","tData","trefData","RPStats"),envir=environment())
+    clusterEvalQ(cl=cl, library(matrixStats))  
+    
+    RPparOut <- parallel::parLapply(cl,1:NumRPPairs, function(x) {
       tRPMAData <- tData[,sample(1:NumReps)] - trefData[,sample(1:NumReps)]
       #Up
       RPMAUp_pvalues <- RPStats(tRPMAData,NumReps)
@@ -242,6 +252,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
       names(ttt) <- names(RPMAUp_pvalues)
       ttt
     })
+    stopCluster(cl)
     for (p in 1:NumRPPairs) {
       # print(RPparOut[[p]])
       tpRPvalues[names(RPparOut[[p]]),p] <- RPparOut[[p]]
@@ -265,9 +276,15 @@ Unpaired <- function(Data,NumCond,NumReps) {
     }
     RealStats <- StatsForPermutTest(cbind(trefData,tData),Paired=F)
     # print(head(PermFullData))
-    PermutOut <- parallel::mclapply(1:NTests,function (x) {indat <- apply(PermFullData,1,function(y) sample(y,NumReps*2)*sample(c(1,-1),NumReps*2,replace=T))
+    
+    cl <- makeCluster(NumThreads)
+    clusterExport(cl=cl,varlist=c("NumReps","PermFullData","RPStats","StatsForPermutTest"),envir=environment())
+    clusterEvalQ(cl=cl, library(matrixStats))  
+    PermutOut <- parallel::parLapply(cl,1:NTests,function (x) {indat <- apply(PermFullData,1,function(y) sample(y,NumReps*2)*sample(c(1,-1),NumReps*2,replace=T))
     StatsForPermutTest(t(indat),F)
-    },mc.cores=NumThreads)
+    })
+    stopCluster(cl)
+    
     PermutOut <- matrix(unlist(PermutOut),nrow=nrow(tData))
     PermutOut[!is.finite(PermutOut)] <- NA
     RealStats[!is.finite(RealStats)] <- NA
@@ -331,9 +348,34 @@ MissingStats <- function(Data, NumCond, NumReps) {
 }
 
 # Function to determine "optimal" fold-change and q-value thresholds
+#  fdrtool and use hc.threshold and fc-threshold from ratios (1 standard deviation)
+FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
+  
+  BestComb <- c(0,0)
+  NumCond <- ncol(LogRatios)+1
+  Pvalue[is.na(Pvalue)] <- 1
+  
+  
+  BestHCs <- BestFCs <- vector(,ncol(LogRatios))
+  
+  for (i in 1:ncol(LogRatios)) {
+    pvals <- Pvalue[,(i-1)*5+1]
+          BestHCs[i] <- hc.thresh(pvals[pvals<1],plot=F)
+          BestFCs[i] <- sd(LogRatios[,i],na.rm=T)
+  }
+  
+  print(BestHCs)
+  print(BestFCs)
+  
+  # Calculate mean of all estimated thresholds 
+  
+  return(c(mean(BestFCs), mean(BestHCs[i])))
+  
+}
+
+# Function to determine "optimal" fold-change and q-value thresholds
 # the idea is to maximize the percental output of features commonly found for limma, rank products, permutation (skipped now as limited) and NA tests
-# TODO change to fdrtool and use hc.threshold, but then what is the FC threshold (maybe estimation from z-score distribution?)?
-FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
+FindFCandQlim <- function(Qvalue, LogRatios) {
   
   BestComb <- c(0,0)
   BestRegs <- 0
@@ -347,7 +389,10 @@ FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
   
   # Run over different FC thresholds 
   fcRange <- seq(0,max(abs(range(LogRatios,na.rm=T))),length=100)
-  BestVals <- parallel::mclapply(fcRange, function(fc) { 
+  cl <- makeCluster(NumThreads)
+  clusterExport(cl=cl,varlist=c("Qvalue","NumCond","LogRatios","qrange"),envir=environment())
+  clusterEvalQ(cl=cl, library(matrixStats))  
+  BestVals <- parallel::parLapply(cl,fcRange, function(fc) { 
     # range of tests to consider:
     for (t in c(1,2,4)) {
       tvals <- Qvalue[,(NumCond-1)*t+1:(NumCond-1)]
@@ -373,7 +418,8 @@ FindFCandQlim <- function(Qvalue, LogRatios, NumTests) {
       }
     }
     c(BestRegs,BestComb)
-  },mc.cores=NumThreads)
+  })
+  stopCluster(cl)
   
   BestRegs <- 0
   for (i in 1:length(BestVals)) {

@@ -69,9 +69,9 @@ The tests check for differentially regulated features
   
   observeEvent(input$example, {
     dat <<- "EXAMPLE"
-    updateSliderInput(session,"NumCond",value=4)
-    updateSliderInput(session,"NumReps",value=3)
-    updateSliderInput(session,"refCond",value=1)
+    updateNumericInput(session,"NumCond",value=4)
+    updateNumericInput(session,"NumReps",value=3)
+    updateNumericInput(session,"refCond",value=1)
   })
   
   output$plotpval <- renderPlot({
@@ -139,10 +139,10 @@ The tests check for differentially regulated features
         tncol <- ncol(dat)
       }
       
-      updateSliderInput(session,"ColQuant",max=tncol)
-      updateSliderInput(session,"NumCond",max=ncol(dat))
-      updateSliderInput(session,"NumReps",max=ncol(dat))
-      updateSliderInput(session,"refCond",max=input$NumCond)
+      updateNumericInput(session,"ColQuant",max=tncol)
+      updateNumericInput(session,"NumCond",max=ncol(dat))
+      updateNumericInput(session,"NumReps",max=ncol(dat))
+      updateNumericInput(session,"refCond",max=input$NumCond)
       
       output$input_stats <- renderText(paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
                                              ifelse(ncol(dat) != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
@@ -254,7 +254,7 @@ The tests check for differentially regulated features
             
             # Calculate best fc and qlim combination for all tests but the t-test
             setProgress(0.7, detail = paste("Calculating favorable q-value and fc thresholds"))
-            tcomb <- FindFCandQlim(Qvalue[,NumCond:ncol(Qvalue)], LogRatios, NumTests-2)
+            tcomb <- FindFCandQlim(Qvalue, LogRatios)
             setProgress(0.9, detail = paste("Creating figures"))
             
             print(tcomb)

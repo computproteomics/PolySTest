@@ -39,13 +39,13 @@ shinyUI(dashboardPage(skin="blue",
                                            bsTooltip("digits","Used character for digits",trigger="hover")
                                          ),
                                          h3("Data layout"),
-                                         sliderInput("ColQuant",min=1,max=20,value=2,label="First column for quantification",step=1),
+                                         numericInput("ColQuant",min=1,max=20,value=2,label="First column for quantification",step=1),
                                          bsTooltip("ColQuant","Number of first column that contains the to-be-analyzed values (e.g. 3 when the first two column contain protein IDs and protein descriptions, respectively)",trigger="hover"),
-                                         sliderInput("NumReps",min=2,max=20,value=3,label="Number of replicates",step=1),
+                                         numericInput("NumReps",min=2,max=20,value=3,label="Number of replicates",step=1),
                                          bsTooltip("NumReps","Number of replicates per condition (fill by empty columns when different for different conditions)",trigger="hover"),
-                                         sliderInput("NumCond",min=2,max=20,value=4,label="Number of conditions",step=1),
+                                         numericInput("NumCond",min=2,max=20,value=4,label="Number of conditions",step=1),
                                          bsTooltip("NumCond","Number of experimental conditions that should be compared",trigger="hover"),
-                                         sliderInput("refCond",min=1,max=20,value=1,label="Reference condition",step=1),
+                                         numericInput("refCond",min=1,max=20,value=1,label="Reference condition",step=1),
                                          bsTooltip("refCond","Experimental condition to which the other conditions will be compared to (e.g. 1 vs 2, 3 vs 2, 4 vs 2 - when set to 2)",trigger="hover")
                                        )),
                       dashboardBody(
