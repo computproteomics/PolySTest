@@ -434,6 +434,7 @@ The tests check for differentially regulated features
             output$plotexpression <- renderPlot({
               input$button
               input$stat_table
+                                          
               triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval

@@ -8,21 +8,23 @@ library(limma)
 source("rankprodbounds.R")
 
 NumThreads <- 4
-NTests <- 100 # for permutation tests
+NTests <- 1000 # for permutation tests
 NumPermCols <- 7 # minimum number of columns for permutation tests (to ensure sufficient combinations)
-NumRPPairs <- 1000 # number of pairings in the unpaired rank product test to simulate an unpaired setting
+NumRPPairs <- 100 # number of pairings in the unpaired rank product test to simulate an unpaired setting
 
 StatsForPermutTest <- function(Data, Paired) {
   if (Paired) {
     # NumReps <- ncol(Data)
-    Stats <- apply(Data, 1, function(x) mean(x,na.rm=T)/sd(x,na.rm=T))
+    Stats <- rowMeans(Data,na.rm=T)/rowSds(Data,na.rm=T)
     Stats <- abs(Stats) *sqrt(rowSums(!is.na(Data)))
   } else {
     NumReps <- ncol(Data)*.5
     NumRealReps <- rowSums(!is.na(Data))*0.5
     # pooled standard deviation
-    Stats <- apply(Data, 1, function(x) (mean(x[1:NumReps],na.rm=T)-mean(x[(NumReps+1):(NumReps*2)],na.rm=T))/
-                     (sqrt((var(x[1:NumReps],na.rm=T)+var(x[(NumReps+1):(NumReps*2)],na.rm=T)))))
+    # Stats <- apply(Data, 1, function(x) (mean(x[1:NumReps],na.rm=T)-mean(x[(NumReps+1):(NumReps*2)],na.rm=T))/
+    #                  (sqrt((var(x[1:NumReps],na.rm=T)+var(x[(NumReps+1):(NumReps*2)],na.rm=T)))))
+    Stats <- rowMeans(Data[,1:NumReps],na.rm=T)-rowMeans(Data[,(NumReps+1):(NumReps*2)],na.rm=T)/
+      (sqrt(rowVars(Data[,1:NumReps],na.rm=T)+rowVars(Data[,(NumReps+1):(NumReps*2)],na.rm=T)))
     Stats <- abs(Stats)/((NumRealReps-1)*2)*((2*NumRealReps-2)*NumRealReps)
   }
   return(Stats)
@@ -120,13 +122,11 @@ Paired <- function(MAData,NumCond,NumReps) {
     tMAData<-MAData[,MAReps==vs]
     ptMAvalues<-NULL
     ## MA t-test_pvalues
-    for (pep in 1:(dim(tMAData)[1])) {
-      if(sum(!is.na(tMAData[pep,]))>1) {
-        ptMAvalues<-append(ptMAvalues,t.test(as.vector(tMAData[pep,]))$p.value)
-      } else {
-        ptMAvalues <- append(ptMAvalues,NA)
-      }
-    }
+    ptMAvalues <- sapply(1:nrow(tMAData), function(pep) {
+      ifelse(sum(!is.na(tMAData[pep,]))>1, 
+             t.test(as.vector(tMAData[pep,]))$p.value,
+             NA)
+    })
     names(ptMAvalues)<-rownames(tMAData)
     ptvalues <- cbind(ptvalues,ptMAvalues)
     
@@ -149,11 +149,13 @@ Paired <- function(MAData,NumCond,NumReps) {
       PermMAData <- tMAData
     }
     RealStats <- StatsForPermutTest(tMAData,Paired=T)
-    cl <- makeCluster(NumThreads)
-    clusterExport(cl=cl,varlist=c("NumReps","PermMAData","RPStats","StatsForPermutTest"),envir=environment())
-    clusterEvalQ(cl=cl, library(matrixStats))  
-    PermutOut <- parLapply(cl,1:NTests,function (x) {indat <- apply(PermMAData,1,function(y) sample(y,NumReps)*sample(c(1,-1),NumReps,replace=T))
-    StatsForPermutTest(t(indat),T)
+     cl <- makeCluster(NumThreads)
+     clusterExport(cl=cl,varlist=c("NumReps","PermMAData","RPStats","StatsForPermutTest"),envir=environment())
+     clusterEvalQ(cl=cl, library(matrixStats))  
+    PermutOut <- parLapply(cl,1:NTests,function (x) {
+      indat <- apply(PermMAData,1,
+                    function(y) sample(y,NumReps)*sample(c(1,-1),NumReps,replace=T))
+      StatsForPermutTest(t(indat),T)
     })
     stopCluster(cl)
     
@@ -222,14 +224,12 @@ Unpaired <- function(Data,NumCond,NumReps) {
     tData<-Data[,Reps==vs]
     trefData <- Data[,Reps==1]
     tptvalues<-NULL
-    ## MA t-test_pvalues
-    for (pep in 1:(nrow(tData))) {
-      if(sum(!is.na(tData[pep,]))>1 & sum(!is.na(trefData[pep,]))>1) {
-        tptvalues<-append(tptvalues,t.test(as.vector(tData[pep,]),as.vector(trefData[pep,]))$p.value)
-      } else {
-        tptvalues <- append(tptvalues,NA)
-      }
-    }
+    ## t-test_pvalues
+    tptvalues <- sapply(1:nrow(tData), function(pep) {
+      ifelse(sum(!is.na(tData[pep,]))>1 & sum(!is.na(trefData[pep,]))>1, 
+             t.test(as.vector(tData[pep,]),as.vector(trefData[pep,]))$p.value,
+             NA)
+    })
     names(tptvalues)<-rownames(tData)
     ptvalues <- cbind(ptvalues,tptvalues)
     
@@ -259,7 +259,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     }    
     pRPvalues[,vs-1] <- rowMeans(tpRPvalues,na.rm=T)
     
-     # print(tail(tpRPvalues,1))
+    # print(tail(tpRPvalues,1))
     
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
@@ -274,7 +274,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     } else {
       PermFullData <- cbind(tData,trefData)
     }
-    RealStats <- StatsForPermutTest(cbind(trefData,tData),Paired=F)
+    RealStats <- StatsForPermutTest(as.matrix(cbind(trefData,tData)),Paired=F)
     # print(head(PermFullData))
     
     cl <- makeCluster(NumThreads)
@@ -289,7 +289,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     PermutOut[!is.finite(PermutOut)] <- NA
     RealStats[!is.finite(RealStats)] <- NA
     pPermutvalues[,vs-1] <- apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]) | sum(!is.na(x)) == 0,NA,(1+sum(x[1] < x[-1],na.rm=T))/(sum(!is.na(x)))))
-  # print(table(apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]) | sum(!is.na(x)) == 0,NA,(1+sum(x[1] < x[-1],na.rm=T))))))
+    # print(table(apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]) | sum(!is.na(x)) == 0,NA,(1+sum(x[1] < x[-1],na.rm=T))))))
     # print(hist(PermutOut[1,],plot = F, 50)$counts)
     # print(hist(PermutOut[1,],plot = F, 50)$breaks)
     # head(print(PermutOut))
@@ -360,8 +360,8 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
   
   for (i in 1:ncol(LogRatios)) {
     pvals <- Pvalue[,(i-1)*5+1]
-          BestHCs[i] <- hc.thresh(pvals[pvals<1],plot=F)
-          BestFCs[i] <- sd(LogRatios[,i],na.rm=T)
+    BestHCs[i] <- hc.thresh(pvals[pvals<1],plot=F)
+    BestFCs[i] <- sd(LogRatios[,i],na.rm=T)
   }
   
   print(BestHCs)
