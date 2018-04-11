@@ -84,7 +84,7 @@ shinyUI(dashboardPage(skin="blue",
                             column(div(DT::dataTableOutput("stat_table"),style="font-size:100%"),width=12)),
                         conditionalPanel(
                           condition = "input.button > 0",
-                          box(title="Expression profiles (max. 30 with lowest unified q-values shown)",
+                          box(title="Details on tests and expression changes (max. 30 with lowest unified q-values shown)",
                               collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
                               plotOutput("plotexpression",height="auto"),
                               downloadButton("downloadExprPdf","Download as pdf"),width=12),
