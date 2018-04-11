@@ -326,15 +326,18 @@ The tests check for differentially regulated features
               selCols <- paste("q-values",apply(expand.grid(input$selTests, input$selComps), 1, paste, collapse=" "))
               print(colnames(FCRegs))
               selFeat <- which(rowSums(FCRegs[,selCols,drop=F]<input$qval)>0)
+              proxy %>% DT::selectRows(NULL)
               if (length(selFeat) > 0)
                 proxy %>% DT::selectRows(as.numeric(selFeat))
             })
             
             observeEvent(input$allPageSelection, {
+              proxy %>% DT::selectRows(NULL)
               proxy %>% DT::selectRows(input$stat_table_rows_current)
             })
             
             observeEvent(input$allSelection, {
+              proxy %>% DT::selectRows(NULL)
               proxy %>% DT::selectRows(input$stat_table_rows_all)
             })
             
@@ -583,16 +586,26 @@ The tests check for differentially regulated features
                       tdat <- tdat[-to_remove,]
                     }
                     # setting colors of p-values
+<<<<<<< HEAD
                     pcols <- rep(c(1,0.5),9)*rep(10^c(0:-8),each=2)
+=======
+                    pcols <- rev(c(0.001, 0.01, 0.05, 1))
+>>>>>>> b5a3d5fcfee5a7633f775ab020f826f637f7682e
                     ttt <- tqvals
                     for (c in pcols) {
                       ttt[tqvals <= c] <- c 
                     }
                     tqvals <- data.frame(ttt)
                     for (c in 1:ncol(tqvals))
+<<<<<<< HEAD
                       tqvals[,c] <- as.character(ttt[,c],pcols)
 
                     p <- heatmaply(tdat[,order(rownames(tdat))],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
+=======
+                     tqvals[,c] <- paste("<",as.character(ttt[,c],pcols),sep="")
+
+                    p <- heatmaply(tdat[order(rownames(tdat)),],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
+>>>>>>> b5a3d5fcfee5a7633f775ab020f826f637f7682e
                                    RowSideColors = tqvals, row_side_palette = grey.colors)
                     # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
                     # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
