@@ -521,12 +521,12 @@ The tests check for differentially regulated features
                                                  circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", 
                                                              niceFacing = TRUE,cex = 1,font=2)
                                                  circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                             labels.cex = 0.8, labels.col=rainbow(nrow(SubSet)),labels.facing = "reverse.clockwise")
+                                                             labels.cex = 0.8,labels.facing = "reverse.clockwise")
                                                }
                                                for (j in which(tsign[,i])) {
                                                  circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
                                                              xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                                             col = cols[j], border=cols[j])
+                                                             col = cols[j], border=NA)
                                                }
                                                })
                     }
