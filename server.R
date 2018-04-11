@@ -444,6 +444,9 @@ The tests check for differentially regulated features
               #input$stat_table_rows_selected
               # print(head(SubSetLR))
               if (length(SubSetLR)> 0) {
+                withProgress(message="Creating expression profiles ...", min=0,max=1, {
+                  setProgress(0.5)
+                  
                 # CI plots of max 30 features
                 SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                 indices <- rownames(SubSet)
@@ -459,7 +462,8 @@ The tests check for differentially regulated features
                   layout(t(c(1,1,2,2,3,3)))
                   plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
                   # print(colnames(SubSet))
-                  legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
+                  legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3,
+                         title="Features")
                   # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
                   #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
                   #        ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
@@ -470,6 +474,7 @@ The tests check for differentially regulated features
                          ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
                          uiw=SDSet[1,],type="b",barcol="#000000FF",
                          ylim=range(tdat,na.rm=T),xaxt="none",lwd=1.5)
+                  title(main="Feature expression over conditions")
                   axis(1,at=1:(NumCond),labels = colnames(MeanSet))
                   # abline(h=fclim)
                   if (nrow(MeanSet)>1) {
@@ -479,8 +484,8 @@ The tests check for differentially regulated features
                       #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
                       plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
                              add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
-                             uiw=SDSet[i,],type="b",barcol="#000000FF",lwd=1.5,
-                             main="Protein expression over conditions") 
+                             uiw=SDSet[i,],type="b",barcol="#000000FF",lwd=1.5)
+                      
                       
                     }
                   }
@@ -513,9 +518,10 @@ The tests check for differentially regulated features
                                                ylim = get.cell.meta.data("ylim")
                                                xdiff <- (xlim[2]-xlim[1])/nfeat
                                                if(t == 1) {
-                                                 circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
+                                                 circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", 
+                                                             niceFacing = TRUE,cex = 1,font=2)
                                                  circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                             labels.cex = 0.8,labels.facing = "reverse.clockwise")
+                                                             labels.cex = 0.8, labels.col=rainbow(nrow(SubSet)),labels.facing = "reverse.clockwise")
                                                }
                                                for (j in which(tsign[,i])) {
                                                  circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
@@ -542,8 +548,9 @@ The tests check for differentially regulated features
                       }})
                     text(0,0,"Log\nratios",cex=0.7)
                     # label the different tracks
-                    mtext(paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),
-                          side=1,outer=T,adj=1,line=-1,cex=0.7)
+                    mtext(paste("Successful statistical tests\nfor threshold given above.\nFrom outer to inner circles", 
+                                paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),sep="\n"),
+                          side=1,outer=T,adj=1,line=-1,cex=0.6)
                   }
                 }
                 plotExpression()
@@ -556,8 +563,9 @@ The tests check for differentially regulated features
                     pdf(file,height=8,width=12)
                     plotExpression()
                     dev.off()  
+                  
                   })
-                
+                })
               }
             },height=400)
             
@@ -586,26 +594,16 @@ The tests check for differentially regulated features
                       tdat <- tdat[-to_remove,]
                     }
                     # setting colors of p-values
-<<<<<<< HEAD
-                    pcols <- rep(c(1,0.5),9)*rep(10^c(0:-8),each=2)
-=======
                     pcols <- rev(c(0.001, 0.01, 0.05, 1))
->>>>>>> b5a3d5fcfee5a7633f775ab020f826f637f7682e
                     ttt <- tqvals
                     for (c in pcols) {
                       ttt[tqvals <= c] <- c 
                     }
                     tqvals <- data.frame(ttt)
                     for (c in 1:ncol(tqvals))
-<<<<<<< HEAD
-                      tqvals[,c] <- as.character(ttt[,c],pcols)
-
-                    p <- heatmaply(tdat[,order(rownames(tdat))],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
-=======
                      tqvals[,c] <- paste("<",as.character(ttt[,c],pcols),sep="")
 
                     p <- heatmaply(tdat[order(rownames(tdat)),],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
->>>>>>> b5a3d5fcfee5a7633f775ab020f826f637f7682e
                                    RowSideColors = tqvals, row_side_palette = grey.colors)
                     # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
                     # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
