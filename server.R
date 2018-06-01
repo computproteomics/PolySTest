@@ -584,11 +584,12 @@ The tests check for differentially regulated features
                   print("running heatmap")
                   withProgress(message="Creating heatmap ...", min=0,max=1, {
                     setProgress(0.5)
-                    # print(SubSetLR)
-                    tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps)]
+                    tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
+                    print(tdat)
+                    
                     # remove data rows with more than 45% missing values
                     to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
-                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1)]
+                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1),drop=F]
                     if (length(to_remove)>0) {
                       tqvals <- tqvals[-to_remove,]
                       tdat <- tdat[-to_remove,]
@@ -603,7 +604,7 @@ The tests check for differentially regulated features
                     for (c in 1:ncol(tqvals))
                      tqvals[,c] <- paste("<",as.character(ttt[,c],pcols),sep="")
 
-                    p <- heatmaply(tdat[order(rownames(tdat)),],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
+                    p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
                                    RowSideColors = tqvals, row_side_palette = grey.colors)
                     # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
                     # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
