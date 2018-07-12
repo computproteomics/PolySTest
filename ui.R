@@ -41,6 +41,8 @@ shinyUI(dashboardPage(skin="blue",
                                          h3("Data layout"),
                                          numericInput("ColQuant",min=1,max=20,value=2,label="First column for quantification",step=1),
                                          bsTooltip("ColQuant","Number of first column that contains the to-be-analyzed values (e.g. 3 when the first two column contain protein IDs and protein descriptions, respectively)",trigger="hover"),
+                                         checkboxInput(inputId="qcol_order", label="Replicates are grouped",value = T),
+                                         bsTooltip("qcol_order","Given that replicates are numbered and conditions as given by letters A,B,... , grouped replicates denotes A1,B1,C1,...,A2,B2,C2 ..., while ungrouped means A1,A2,A3,...,B1,B2,B3,...",trigger="hover"),
                                          numericInput("NumReps",min=2,max=20,value=3,label="Number of replicates",step=1),
                                          bsTooltip("NumReps","Number of replicates per condition (fill by empty columns when different for different conditions)",trigger="hover"),
                                          numericInput("NumCond",min=2,max=20,value=4,label="Number of conditions",step=1),
@@ -84,30 +86,30 @@ shinyUI(dashboardPage(skin="blue",
                             column(div(DT::dataTableOutput("stat_table"),style="font-size:100%"),width=12)),
                         conditionalPanel(
                           condition = "input.button > 0",
-                          box(title="Expression profiles (max. 30 with lowest unified q-values shown)",
+                          box(title="Details on tests and feature (e.g. proteins) expression changes (max. 30 with lowest unified q-values shown)",
                               collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
                               plotOutput("plotexpression",height="auto"),
                               downloadButton("downloadExprPdf","Download as pdf"),width=12),
-                          box(title="Clustered data",collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
+                          box(title="Co-expression patterns and significance",collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
                               # d3heatmapOutput("plotheatmap",height="auto"),width=3),
                               # plotOutput("plotheatmap",height="auto")
                               plotlyOutput("plotheatmap", height = "700px")
                               ,width=12),
-                          box(title="Volcano plots",collapsible = TRUE,status="success",solidHeader = T,
+                          box(title="Comparison of tests and conditions (volcano plots)",collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotvolc",height="auto"),
                               downloadButton("downloadVolcanoPdf","Download as pdf")
                               ,width=12),
-                          box(title="Distribution regulated features over different tests and conditions",
+                          box(title="Feature numbers per test and condition",
                               collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotregdistr",click="plotregdistr_click",height="auto"),
                               downloadButton("downloadUpSetPdf","Download as pdf")
                               ,width=12),
                           
-                          box(title="Percentage of regulated features",collapsible = TRUE,status="success",solidHeader = T,
+                          box(title="Number of significant features versus thresholds",collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotreg",height="auto"),
                               downloadButton("downloadRegDistrPdf","Download as pdf")
                               ,width=12)),
-                        box(title="p-value histograms",collapsible = TRUE,status="success",solidHeader = T,
+                        box(title="Distribution of uncorrected p-values",collapsible = TRUE,status="success",solidHeader = T,
                             plotOutput("plotpval",height="auto"),
                             downloadButton("downloadPvalueDistrPdf","Download as pdf")
                             ,width=12)

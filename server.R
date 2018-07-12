@@ -13,6 +13,8 @@ source("HelperFuncs.R")
 
 
 options(shiny.maxRequestSize=2000*1024^2)
+options(java.parameters="-Xss2560k")
+
 
 shinyServer(function(input, output,clientData,session) {
   dat <- FullReg <- NULL
@@ -72,6 +74,7 @@ The tests check for differentially regulated features
     updateNumericInput(session,"NumCond",value=4)
     updateNumericInput(session,"NumReps",value=3)
     updateNumericInput(session,"refCond",value=1)
+    updateCheckboxInput(session,"qcol_order",value=T)
   })
   
   output$plotpval <- renderPlot({
@@ -132,6 +135,11 @@ The tests check for differentially regulated features
         }
       }
       print(ncol(dat))
+      
+      if (!input$qcol_order) {
+        dat <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
+      }
+      
       tncol <- 20
       if (!is.null(addInfo)) {
         tncol <- ncol(dat) + ncol(addInfo)
