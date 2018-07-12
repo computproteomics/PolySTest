@@ -452,6 +452,9 @@ The tests check for differentially regulated features
               #input$stat_table_rows_selected
               # print(head(SubSetLR))
               if (length(SubSetLR)> 0) {
+                withProgress(message="Creating expression profiles ...", min=0,max=1, {
+                  setProgress(0.5)
+                  
                 # CI plots of max 30 features
                 SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                 indices <- rownames(SubSet)
@@ -467,7 +470,8 @@ The tests check for differentially regulated features
                   layout(t(c(1,1,2,2,3,3)))
                   plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
                   # print(colnames(SubSet))
-                  legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3)
+                  legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3,
+                         title="Features")
                   # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
                   #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
                   #        ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
@@ -478,6 +482,7 @@ The tests check for differentially regulated features
                          ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
                          uiw=SDSet[1,],type="b",barcol="#000000FF",
                          ylim=range(tdat,na.rm=T),xaxt="none",lwd=1.5)
+                  title(main="Feature expression over conditions")
                   axis(1,at=1:(NumCond),labels = colnames(MeanSet))
                   # abline(h=fclim)
                   if (nrow(MeanSet)>1) {
@@ -487,7 +492,8 @@ The tests check for differentially regulated features
                       #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
                       plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
                              add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
-                             uiw=SDSet[i,],type="b",barcol="#000000FF",lwd=1.5) 
+                             uiw=SDSet[i,],type="b",barcol="#000000FF",lwd=1.5)
+                      
                       
                     }
                   }
@@ -520,14 +526,15 @@ The tests check for differentially regulated features
                                                ylim = get.cell.meta.data("ylim")
                                                xdiff <- (xlim[2]-xlim[1])/nfeat
                                                if(t == 1) {
-                                                 circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", niceFacing = TRUE,cex = 1,font=2)
+                                                 circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", 
+                                                             niceFacing = TRUE,cex = 1,font=2)
                                                  circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
                                                              labels.cex = 0.8,labels.facing = "reverse.clockwise")
                                                }
                                                for (j in which(tsign[,i])) {
                                                  circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
                                                              xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                                             col = cols[j], border=cols[j])
+                                                             col = cols[j], border=NA)
                                                }
                                                })
                     }
@@ -549,8 +556,9 @@ The tests check for differentially regulated features
                       }})
                     text(0,0,"Log\nratios",cex=0.7)
                     # label the different tracks
-                    mtext(paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),
-                          side=1,outer=T,adj=1,line=-1,cex=0.7)
+                    mtext(paste("Successful statistical tests\nfor threshold given above.\nFrom outer to inner circles", 
+                                paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),sep="\n"),
+                          side=1,outer=T,adj=1,line=-1,cex=0.6)
                   }
                 }
                 plotExpression()
@@ -563,8 +571,9 @@ The tests check for differentially regulated features
                     pdf(file,height=8,width=12)
                     plotExpression()
                     dev.off()  
+                  
                   })
-                
+                })
               }
             },height=400)
             
@@ -583,11 +592,12 @@ The tests check for differentially regulated features
                   print("running heatmap")
                   withProgress(message="Creating heatmap ...", min=0,max=1, {
                     setProgress(0.5)
-                    # print(SubSetLR)
-                    tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps)]
+                    tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
+                    print(tdat)
+                    
                     # remove data rows with more than 45% missing values
                     to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
-                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1)]
+                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1),drop=F]
                     if (length(to_remove)>0) {
                       tqvals <- tqvals[-to_remove,]
                       tdat <- tdat[-to_remove,]
@@ -602,7 +612,7 @@ The tests check for differentially regulated features
                     for (c in 1:ncol(tqvals))
                      tqvals[,c] <- paste("<",as.character(ttt[,c],pcols),sep="")
 
-                    p <- heatmaply(tdat[order(rownames(tdat)),],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
+                    p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
                                    RowSideColors = tqvals, row_side_palette = grey.colors)
                     # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
                     # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
