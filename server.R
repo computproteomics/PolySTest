@@ -619,7 +619,6 @@ The tests check for differentially regulated features
                   })
                 }
               }
-              p
               output$downloadHeatmapPdf <- downloadHandler(
                 filename = function() {
                   paste("Heatmap", Sys.Date(), ".pdf", sep="");
@@ -628,8 +627,7 @@ The tests check for differentially regulated features
                   ttt <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
                                    RowSideColors = tqvals, row_side_palette = grey.colors, file=file)
                 })
-              
-              
+              p
             })#,height=800)
             
             incProgress(0.8, detail = paste("Plotting more results"))
