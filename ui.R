@@ -93,8 +93,9 @@ shinyUI(dashboardPage(skin="blue",
                           box(title="Co-expression patterns and significance",collapsible = TRUE,status="success",solidHeader = T,collapsed=T,
                               # d3heatmapOutput("plotheatmap",height="auto"),width=3),
                               # plotOutput("plotheatmap",height="auto")
-                              plotlyOutput("plotheatmap", height = "700px")
-                              ,width=12),
+                              plotlyOutput("plotheatmap", height = "700px"),
+                              downloadButton("downloadHeatmapPdf","Download as pdf")
+                          ,width=12),
                           box(title="Comparison of tests and conditions (volcano plots)",collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotvolc",height="auto"),
                               downloadButton("downloadVolcanoPdf","Download as pdf")
