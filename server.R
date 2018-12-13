@@ -244,7 +244,7 @@ The tests check for differentially regulated features
             Qvalue <- cbind(UnifyQvals(Qvalue,NumCond,NumTests),Qvalue)
             # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
             
-            testNames <- c("limma","rank products","Permutation test","NA test","t-test")
+            testNames <- c("limma","rank products","permutation test","Miss test","t-test")
             colnames(LogRatios) <- paste("log-ratios",compNames)
             colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
             testNames2 <- c("unified tests",testNames)
@@ -297,7 +297,7 @@ The tests check for differentially regulated features
                   th(colspan = (NumCond-1), 'limma',style="text-align: center;border-left:thin solid;"),
                   th(colspan = (NumCond-1), 'rank products',style="text-align: center;border-left:thin solid;"),
                   th(colspan = (NumCond-1), 'permutation test',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 'NA test',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = (NumCond-1), 'Miss test',style="text-align: center;border-left:thin solid;"),
                   th(colspan = (NumCond-1), 't-test',style="text-align: center;border-left:thin solid;")
                 ),
                 tr(
