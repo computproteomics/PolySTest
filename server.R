@@ -356,7 +356,7 @@ The tests check for differentially regulated features
             })
             
             ## Delay reaction to selecting rows in data table
-            triggerUpdate <- debounce(reactive(input$stat_table_rows_selected),1000)
+            triggerUpdate <- debounce(reactive(input$stat_table_rows_selected),2000)
         
             observe({
               input$button
@@ -619,8 +619,15 @@ The tests check for differentially regulated features
                   })
                 }
               }
+              output$downloadHeatmapPdf <- downloadHandler(
+                filename = function() {
+                  paste("Heatmap", Sys.Date(), ".pdf", sep="");
+                },
+                content = function(file) {
+                  ttt <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
+                                   RowSideColors = tqvals, row_side_palette = grey.colors, file=file)
+                })
               p
-              
             })#,height=800)
             
             incProgress(0.8, detail = paste("Plotting more results"))
