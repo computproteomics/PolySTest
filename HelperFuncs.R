@@ -25,7 +25,7 @@ StatsForPermutTest <- function(Data, Paired) {
     #                  (sqrt((var(x[1:NumReps],na.rm=T)+var(x[(NumReps+1):(NumReps*2)],na.rm=T)))))
     Stats <- rowMeans(Data[,1:NumReps],na.rm=T)-rowMeans(Data[,(NumReps+1):(NumReps*2)],na.rm=T)/
       (sqrt(rowVars(Data[,1:NumReps],na.rm=T)+rowVars(Data[,(NumReps+1):(NumReps*2)],na.rm=T)))
-    Stats <- abs(Stats)/((NumRealReps-1)*2)*((2*NumRealReps-2)*NumRealReps)
+    Stats <- abs(Stats)*NumRealReps
   }
   return(Stats)
 }

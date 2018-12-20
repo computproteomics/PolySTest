@@ -69,7 +69,6 @@ The tests check for differentially regulated features
     }
   )
   
-  # upon selecting example data
   observeEvent(input$example, {
     dat <<- "EXAMPLE"
     updateNumericInput(session,"NumCond",value=4)
@@ -77,11 +76,6 @@ The tests check for differentially regulated features
     updateNumericInput(session,"refCond",value=1)
     updateCheckboxInput(session,"qcol_order",value=T)
   })
-  
-  # # when changing reference condition, reset necessary stuff
-  # observeEvent(input$refCond, {
-  #   reset(input$button)
-  # })
   
   output$plotpval <- renderPlot({
     input$button
@@ -143,7 +137,7 @@ The tests check for differentially regulated features
       print(ncol(dat))
       
       if (!input$qcol_order) {
-        dat[,1:(NumCond*NumReps)] <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
+        dat <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
       }
       
       tncol <- 20
@@ -451,7 +445,6 @@ The tests check for differentially regulated features
             output$plotexpression <- renderPlot({
               input$button
               input$stat_table
-              input$profiles_scale
                                           
               triggerUpdate()
               qlim <- input$qval
@@ -470,13 +463,8 @@ The tests check for differentially regulated features
                                               list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
                 for (c in 1:NumCond) {
                   MeanSet[,c] <- rowMeans(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
-
                   SDSet[,c] <- rowSds(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
                 }
-                if (input$profiles_scale) {
-                  MeanSet <- MeanSet - rowMeans(MeanSet,na.rm=T)
-                }
-                
                 # par(mfrow=c(1,3))
                 plotExpression <- function() {
                   layout(t(c(1,1,2,2,3,3)))
@@ -593,7 +581,6 @@ The tests check for differentially regulated features
               # d3heatmap(SubSetLR)
               input$button
               input$stat_table
-              input$heatmap_scale
               triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
@@ -624,9 +611,8 @@ The tests check for differentially regulated features
                     tqvals <- data.frame(ttt)
                     for (c in 1:ncol(tqvals))
                      tqvals[,c] <- paste("<",as.character(ttt[,c],pcols),sep="")
-                    scaling <- "none"
-                    if(input$heatmap_scale) scaling <- "row"
-                    p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
+
+                    p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
                                    RowSideColors = tqvals, row_side_palette = grey.colors)
                     # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
                     # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
