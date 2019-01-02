@@ -14,19 +14,29 @@ source("HelperFuncs.R")
 
 options(shiny.maxRequestSize=2000*1024^2)
 options(java.parameters="-Xss2560k")
+# for debugging:
+# options(shiny.reactlog=TRUE)
 
 
 shinyServer(function(input, output,clientData,session) {
-  dat <- FullReg <- NULL
-  currButton <- -1
+  currdata <- reactiveVal(NULL)
+  FullReg <- NULL
+  obsadd <- NULL
+  Comps <- reactiveValues(ind=vector(), num=NULL, RR=NULL, compNames=NULL) 
+  currButton <- 0
+  addCompButton <- 0
   NumTests <- 6
   TestCols <- c("#33AAAA","#33AA33","#AA3333","#AA33AA","#AAAA33","#3333AA")
   addInfo <- NULL # additional info to be re-added after analysis
   heightSize = function() {
-    (input$NumCond-1)*200
+    if(!is.null(Comps$num)) {
+      max(200,(Comps$num)*200)
+    } else {
+      200
+    }
   }
   heightSize2 = function() {
-    (input$NumCond-1)*400
+    (Comps$num)*400
   }
   colSelected = function(col, num, sel, col2) {
     ttt <- rep(col,num)
@@ -72,57 +82,79 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
   
   # upon selecting example data
   observeEvent(input$example, {
-    dat <<- "EXAMPLE"
-    updateNumericInput(session,"NumCond",value=4)
-    updateNumericInput(session,"NumReps",value=3)
-    # updateNumericInput(session,"refCond",value=1)
-    updateCheckboxInput(session,"qcol_order",value=T)
+    currdata("EXAMPLE")
   })
+  
+  
   
   # # when changing reference condition, reset necessary stuff
   # observeEvent(input$refCond, {
   #   reset(input$button)
   # })
   
-  output$plotpval <- renderPlot({
-    input$button
+  
+  # adding default UI elements for comparisons
+  addCompUIs <- function(el, conditions) {
+    print("addCompUIs")
+    isolate({
+    div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
+        fluidRow(
+          column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep=""))),
+                 id=paste("selt_",el,sep=""),style="padding:0px;")
+        ),
+        fluidRow(
+          column(5,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
+                                                                   label=NULL,
+                                                                   choices = conditions,selected = conditions[1])),
+          column(5,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
+                                                                   choices = conditions,selected = conditions[el+1])),
+          column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
+        ))
+    })
+  }
+  
+  observe({  
     # input$example
-    dev.control(displaylist="enable")
-    updateNumericInput(session,"refCond",max=input$NumCond,value=input$refCond)
+    print("observe")
     output$messages <- renderText("")
-    if (!is.null(dat)) {
-      if (na.omit(dat) != "EXAMPLE") {
+    dat <- currdata()
+    if (!is.null(input$in_file))
+    # if (!is.null(dat)) {
+    #   if (na.omit(dat) != "EXAMPLE") {
         dat <- input$in_file
-      } 
-    } else {
-      dat <- input$in_file
-    }
+    #   } 
+    # } else {
+    #   dat  <- input$in_file
+    # }
     
     NumReps <- input$NumReps
     NumCond <- input$NumCond
-    refCond <- input$refCond
     ColQuant <- input$ColQuant
     isPaired <- input$is_paired
     
-    
+    print(head(dat,1))
     if (!is.null(dat)) {
       if (dat == "EXAMPLE")  {
         dat <- read.csv("LiverAllProteins.csv",row.names=1)
+        updateNumericInput(session,"NumCond",value=4)
+        NumCond <- 4
+        updateNumericInput(session,"NumReps",value=3)
+        NumReps <- 3
+        updateCheckboxInput(session,"qcol_order",value=T)
+        updateCollapse(session,"Input",open = "Statistical testing",close="Data input")
       } else if (length(dat) == 4) {
-        
-        
         FullReg <<- NULL
         delim <- input$delimiter
         if (delim == "tab")
           delim <- "\t"
         if (input$row.names){
+          print("reading file")
           dat <- read.csv(input$in_file$datapath,header=input$is_header,sep=delim,dec=input$digits)
           output$input_stats <- renderText("Duplicated feature names in first column! You can avoid them by not using 'Row names'")
           validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,""))
           rownames(dat) <- dat[,1]
           dat <- dat[,2:ncol(dat)]
           # updateSliderInput(session,"QuantCol",max=ncol(dat)-2)
-          
           # delete row with empty name
           dat <- dat[!rownames(dat)=="",]
           if (ColQuant > 2) {
@@ -130,10 +162,10 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             # print(head(addInfo))
-            dat <- dat[,-(1:(ColQuant-2))]
+            dat(dat[,-(1:(ColQuant-2))])
           }
         } else {
-          dat <- read.csv(input$in_file$datapath,header=input$is_header,sep=delim,dec=input$digits)
+          dat <<- read.csv(input$in_file$datapath,header=input$is_header,sep=delim,dec=input$digits)
           # updateSliderInput(session,"QuantCol",max=ncol(dat))
           
           if (input$ColQuant > 1) {
@@ -141,7 +173,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             
-            dat <- dat[,-(1:(ColQuant-1))]
+            dat(dat[,-(1:(ColQuant-1))])
           }
         }
         
@@ -159,29 +191,142 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         updateNumericInput(session,"ColQuant",max=tncol)
         updateNumericInput(session,"NumCond",max=ncol(dat))
         updateNumericInput(session,"NumReps",max=ncol(dat))
-        updateNumericInput(session,"refCond",max=input$NumCond)
+        updateCollapse(session,"Input",open = "Data layout",close="Data input")
+        
+        
       }
       
-      output$input_stats <- renderText(paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
-                                             ifelse(ncol(dat) != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
-                                             "Number of features: ",nrow(dat),
-                                             "<br/>Number of data columns in file:", ncol(dat),
-                                             "<br/>Percentage of missing values:",
-                                             round(sum(is.na(dat))/nrow(dat)/ncol(dat)*100,digits = 2),"<br/>",
-                                             paste("<br/>Comparison ",1:(NumCond-1),": Condition C",
-                                                   (1:NumCond)[-(input$refCond)]," versus C",input$refCond,collapse=""),"<br/>"))
       
+      conditions <- paste("C",1:NumCond,sep="")
+      print(conditions)
       
+      isolate({
+        for (i in 1:100) {
+          removeUI(selector=paste("#selall_",i,sep=""))
+          # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
+          # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
+        }
+        # for (i in 1:100)
+        # removeUI(selector="#stat_comparisons div")
+        Comps$num <- length(conditions)-1
+        Comps$ind <- 1:(length(conditions)-1)
+        
+        for (el in (length(conditions)-1):1) {
+          
+          insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)))
+        }
+        
+        # add new UI elements for comparison
+        if (!is.null(obsadd)) {
+          print("obsadd")
+        obsadd$destroy()
+        }
+          
+        
+        obsadd <<- observeEvent(input$addComp, {
+          print("addComp")
+          print(conditions)
+          isolate({
+            if (input$addComp == addCompButton) 
+              return()
+            addCompButton <<- input$addComp
+            
+              
+            ind <- 1
+            if (length(Comps$ind)>0)
+              ind <- min((1:100)[-Comps$ind])
+            insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)))
+            Comps$num <- Comps$num + 1
+            Comps$ind <- c(Comps$ind, ind)
+            print(Comps$ind)
+            
+          })
+        })
+        # remove UI elements 
+        lapply(1:100, function(i) {
+            obs <- observeEvent(input[[paste("selb_",i,sep="")]],{
+              isolate({
+                # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
+                # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
+                # removeUI(selector=paste("div:has(> #","selr_",i,")",sep=""))
+              # removeUI(selector=paste("div:has(> #","selb_",i,")",sep=""))
+              # removeUI(selector=paste("div:has(> #","selt_",i,")",sep=""))
+              print(paste("Remove sellall_",i))
+              removeUI(selector=paste("#","selall_",i,sep=""))
+              Comps$num <- Comps$num - 1
+              Comps$ind <- Comps$ind[-which(Comps$ind == i)]
+              obs$destroy()
+            })
+          })
+          
+        })
+        
+        
+      })
+      
+      if(ncol(dat) == NumReps*NumCond) {
+        updateCollapse(session,"Input",open="Statistical tests")
+      } else {
+        updateCollapse(session,"Input",close="Statistical tests")
+      }
       
       ## Preview of input table
+      allComps <- NULL
       
+      isolate({
+        output$input_stats <- renderText({
+          print("table calc")
+          for(cmp in Comps$ind) {
+            if (!is.null(input[[paste("selr_",cmp,sep="")]]) & !is.null(input[[paste("sels_",cmp,sep="")]]))
+              allComps <- rbind(allComps, c(input[[paste("selr_",cmp,sep="")]], input[[paste("sels_",cmp,sep="")]]))
+          }
+          allComps <- unique(allComps)
+          allComps <- allComps[allComps[,1,drop=F] != allComps[,2,drop=F], , drop=F]
+          compNames <- NULL
+          ncomps <- nrow(allComps)
+
+          if(!is.null(allComps)) {
+            valComps <- matrix(NA,nrow=ncomps, ncol=ncol(allComps))
+            for (i in 1:length(allComps)) valComps[i] <- as.numeric(sub("C","",allComps[i]))
+            RR <- matrix(NA,ncol = ncomps*NumReps, nrow=2)
+            for (j in 1:ncomps) {
+              compCond <- valComps[j,2]
+              refCond <- valComps[j,1]
+              RR[1,seq(j,ncomps*NumReps,ncomps)] <- seq(compCond,NumCond*NumReps,NumCond)
+              RR[2,seq(j,ncomps*NumReps,ncomps)] <- seq(refCond,NumCond*NumReps,NumCond)
+            }
+            Comps$RR <- RR
+            
+            compNames <- paste(allComps[,2]," vs ",allComps[,1],sep="")
+            Comps$compNames <- compNames
+            Comps$num <- nrow(allComps)
+            # print(Comps$RR)
+          }
+          
+          if(ncol(dat) == input$NumReps*input$NumCond) {
+            updateCollapse(session,"Input",open = "Statistical testing")
+          } else {
+            updateCollapse(session,"Input",close = "Statistical testing")
+          }
+          
+          paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
+                ifelse(ncol(dat) != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
+                "Number of features: ",nrow(dat),
+                "<br/>Number of data columns in file:", ncol(dat),
+                "<br/>Percentage of missing values:",
+                round(sum(is.na(dat))/nrow(dat)/ncol(dat)*100,digits = 2),"<br/>",
+                paste("<i>Condition ",1:NumCond,":</i>", sapply(1:NumCond, function(x) 
+                  paste(colnames(dat)[(0:(NumReps-1))*NumCond+x],collapse=", ")),"<br/>",collapse="")
+                # print(Comps$num)
+                # paste("<br/>Comparison ",1:(NumCond-1),": Condition C",
+                #       (1:NumCond)[-(input$refCond)]," versus C",input$refCond,collapse=""),"<br/>"
+          )
+        })
+        
+      })
+      print(head(dat))
       
-      Against<-seq(refCond,NumCond*NumReps,NumCond)
-      RR<-1:(NumReps*NumCond)
-      RR<-RR[-Against]
-      RR<-rbind(RR,rep(Against,each=NumCond-1))
-      compNames <- paste("C",RR[1,1:(NumCond-1)]," vs C",RR[2,1:(NumCond-1)],sep="")
-      
+      currdata(dat)
       
       # Arrange table header
       sketch = htmltools::withTags(table(
@@ -218,14 +363,31 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                                                              container=sketch))
       
       #print(head(dat))
-      
-      
+    }
+  })
+  
+  output$plotpval <- renderPlot({
+    print("renderPlot")
+    dev.control(displaylist="enable")
+    input$button
+    dat <- currdata()
+    
+    if (!is.null(dat)) {
       print(input$button)
       isolate({
         if (input$button == currButton)
           return()
         currButton <<- input$button
+        
+        NumReps <- input$NumReps
+        NumCond <- input$NumCond
+        isPaired <- input$is_paired
+        RR <- Comps$RR
+        print(head(dat))
+        compNames <- Comps$compNames
+        
         if (ncol(dat) == NumReps*NumCond) {
+          
           withProgress(message="Calculating ...", min=0,max=1, {
             
             #           output$messages <- renderText("running")
@@ -234,41 +396,44 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             dat <<- dat
             MAData<-NULL
             # Rearranged dat (reference condition comes first)
-            UData <- NULL
-            for (i in 1:NumReps) {
-              UData<-cbind(UData,dat[,(NumCond)*(i-1)+refCond])
-              UData <- cbind(UData,dat[,(NumCond)*(i-1)+(1:NumCond)[-refCond]])
-            }
-            rownames(UData) <- rownames(dat)
+            # UData <- NULL
+            NumComps <- Comps$num
+            # for (i in 1:NumReps) {
+            #   UData<-cbind(UData,dat[,(NumCond)*(i-1)+refCond])
+            #   UData <- cbind(UData,dat[,(NumCond)*(i-1)+(1:NumCond)[-refCond]])
+            # }
+            # rownames(UData) <- rownames(dat)
             if (isPaired) {
               for (i in 1:ncol(RR)) {
                 MAData<-cbind(MAData,dat[,RR[1,i]]-dat[,RR[2,i]])
               }
               rownames(MAData)<-rownames(dat)
-              qvalues <- Paired(MAData, NumCond-1, NumReps)
+              # qvalues <- Paired(MAData, NumCond-1, NumReps)
+              qvalues <- Paired(MAData, NumComps, NumReps)
             } else {
-              qvalues <- Unpaired(UData, NumCond, NumReps)
+              # qvalues <- Unpaired(UData, NumCond, NumReps)
+              qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
             }
             # get q-values for missing values
-            MissingStats <- MissingStats(UData, NumCond, NumReps)
+            MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
+            # MissingStats <- MissingStats(UData, NumCond, NumReps)
             
             
             setProgress(0.5, detail = paste("Preparing data"))
-            
             LogRatios <- qvalues$lratios
             Pvalue <- cbind(qvalues$plvalues, MissingStats$pNAvalues, qvalues$pRPvalues, qvalues$pPermutvalues, qvalues$ptvalues)
             Qvalue <- cbind(qvalues$qlvalues, MissingStats$qNAvalues,qvalues$qRPvalues, qvalues$qPermutvalues, qvalues$qtvalues)
-            Qvalue <- cbind(UnifyQvals(Qvalue,NumCond,NumTests),Qvalue)
+            Qvalue <- cbind(UnifyQvals(Qvalue,NumComps,NumTests),Qvalue)
             # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
             
             testNames <- c("limma","Miss test","rank products","permutation test","t-test")
             colnames(LogRatios) <- paste("log-ratios",compNames)
-            colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
+            colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumComps),rep(compNames,length(testNames)))
             testNames2 <- c("unified tests",testNames)
             names(TestCols) <- testNames2
             updateCheckboxGroupInput(session,"selTests",choices = testNames2, selected = "unified tests")
             updateCheckboxGroupInput(session,"selComps",choices = compNames, selected=compNames[1])
-            colnames(Qvalue) <- paste("FDR",rep(testNames2,each=NumCond-1),rep(compNames,length(testNames2)))
+            colnames(Qvalue) <- paste("FDR",rep(testNames2,each=NumComps),rep(compNames,length(testNames2)))
             # colnames(WhereReg) <- paste("Differentially regulated",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
             
             # print(cor(log10(Pvalue),use="na.or.complete"))
@@ -302,20 +467,20 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   th('',style="text-align: center;"),
                   if(!is.null(addInfo))
                     th(colspan = ncol(addInfo), 'Metadata',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumCond-1, 'Log-ratios',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1)*NumTests, 'FDRs',style="text-align: center;border-left:thin solid;")
+                  th(colspan = NumComps, 'Log-ratios',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = NumComps*NumTests, 'FDRs',style="text-align: center;border-left:thin solid;")
                 ),
                 tr(
                   th('',style="text-align: center;"),
                   if(!is.null(addInfo))
                     th(colspan = ncol(addInfo), ''),
-                  th(colspan = NumCond-1, '',style="text-align: center;border-left:thin solid;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 'unified',style="text-align: center;border-left:thin solid;color: #AA3333;"),
-                  th(colspan = (NumCond-1), 'limma',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 'rank products',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 'permutation test',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 'Miss test',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = (NumCond-1), 't-test',style="text-align: center;border-left:thin solid;")
+                  th(colspan = NumComps, '',style="text-align: center;border-left:thin solid;border-left:thin solid;"),
+                  th(colspan = NumComps, 'unified',style="text-align: center;border-left:thin solid;color: #AA3333;"),
+                  th(colspan = NumComps, 'limma',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = NumComps, 'Miss test',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = NumComps, 'rank products',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = NumComps, 'permutation test',style="text-align: center;border-left:thin solid;"),
+                  th(colspan = NumComps, 't-test',style="text-align: center;border-left:thin solid;")
                 ),
                 tr(
                   th('Feature',style="text-align: center;"),
@@ -351,7 +516,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               print("allLimsSelection started")
               selCols <- paste("FDR",apply(expand.grid(input$selTests, input$selComps), 1, paste, collapse=" "))
               if (!is.null(colnames(FCRegs))) {
-                print(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F])
+                # print(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F])
                 selFeat <- which(rowSums(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F]<input$qval)>0)
                 proxy %>% DT::selectRows(NULL)
                 if (length(selFeat) > 0)
@@ -392,16 +557,18 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               # print(input$selTests)
               SubSetLR <<- LogRatios[sel_prots,,drop=F]
               SubSetQval <<- Qvalue[sel_prots,,drop=F]
-              SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
-              SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumCond-1),drop=F],na.rm=T)),,drop=F]
-              ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
-              FCRegs <<- Qvalue
-              for (t in 1:NumTests) {
-                tsign <- Qvalue[,(t-1)*(NumCond-1)+(1:(NumCond-1)),drop=F] 
-                tsign[is.na(tsign)] <- 1
-                tsign[LogRatios>fclim[1] & LogRatios<fclim[2]] <- 1
-                FCRegs[,(t-1)*(NumCond-1)+(1:(NumCond-1))] <<- tsign
-              }
+              isolate({
+                SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumComps),drop=F],na.rm=T)),,drop=F]
+                SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumComps),drop=F],na.rm=T)),,drop=F]
+                ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
+                FCRegs <<- Qvalue
+                for (t in 1:NumTests) {
+                  tsign <- Qvalue[,(t-1)*(NumComps)+(1:(NumComps)),drop=F] 
+                  tsign[is.na(tsign)] <- 1
+                  tsign[LogRatios>fclim[1] & LogRatios<fclim[2]] <- 1
+                  FCRegs[,(t-1)*(NumComps)+(1:(NumComps))] <<- tsign
+                }
+              })
               print("FCRegs finished")
             })
             
@@ -412,12 +579,14 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             
             ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
             plotPvalueDistr <- function() {
-              par(mfrow=c(NumCond-1,length(testNames)))
-              for (i in 1:(NumCond-1)) {
-                for (j in 2:NumTests) {
-                  hist(Pvalue[,(NumCond-1)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+              isolate({
+                par(mfrow=c(NumComps,length(testNames)))
+                for (i in 1:(NumComps)) {
+                  for (j in 2:NumTests) {
+                    hist(Pvalue[,(NumComps)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+                  }
                 }
-              }
+              })
             }
             plotPvalueDistr()
             output$downloadPvalueDistrPdf <- downloadHandler(
@@ -439,10 +608,10 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               qlim <- input$qval
               fclim <- input$fcval
               plotVolcano <- function() {
-                par(mfrow=c(NumCond-1,NumTests))
-                for (i in 1:(NumCond-1)) {
+                par(mfrow=c(NumComps,NumTests))
+                for (i in 1:(NumComps)) {
                   for (j in 1:NumTests) {
-                    plot(LogRatios[,i],-log10(Qvalue[,(NumCond-1)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
+                    plot(LogRatios[,i],-log10(Qvalue[,(NumComps)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
                          cex=colSelected(0.5,nrow(Qvalue),sel_prots,1),
                          col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),sel_prots,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
                     abline(h=-log10(qlim),col="#AA3333",lwd=2)
@@ -541,12 +710,12 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                       circos.clear()
                       circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
                                  track.margin=c(0,0.02),start.degree=90,gap.degree=4)
-                      circos.initialize(1:(NumCond-1),xlim=c(0,1))
+                      circos.initialize(1:(NumComps),xlim=c(0,1))
                       for (t in 1:NumTests) {
                         # print(tsign)
                         nfeat <- min(nrow(SubSet),30)
                         cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
-                        tsign <- FCRegs[indices,(t-1)*(NumCond-1)+(1:(NumCond-1)),drop=F]<qlim
+                        tsign <- FCRegs[indices,(t-1)*(NumComps)+(1:(NumComps)),drop=F]<qlim
                         circos.trackPlotRegion(ylim=c(-3,2),track.height=1/12, bg.border="#777777",
                                                panel.fun = function(x, y) {
                                                  name = get.cell.meta.data("sector.index")
@@ -627,7 +796,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                     
                     # remove data rows with more than 45% missing values
                     to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
-                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumCond-1),drop=F]
+                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumComps),drop=F]
                     if (length(to_remove)>0) {
                       tqvals <- tqvals[-to_remove,]
                       tdat <- tdat[-to_remove,]
@@ -667,19 +836,19 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               input$fcval
               input$button
               # print(head(FCRegs))
-              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumCond-1)*(NumCond-1)+rep(1:(NumCond-1),each=NumTests-1),drop=F]<qlim
+              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumComps)*(NumComps)+rep(1:(NumComps),each=NumTests-1),drop=F]<qlim
               # print(head(WhereRegs))
               WhereRegs[WhereRegs] <- 1
               deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
               # print(deleted_cols)
               
-              tcolnames <- paste("A",rep(1:(NumCond-1),each=NumTests-1))
+              tcolnames <- paste("A",rep(1:(NumComps),each=NumTests-1))
               if (length(deleted_cols) > 0) {
                 tcolnames <- tcolnames[-deleted_cols]
                 WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
               }
-              tcols <- rep(rainbow(NumCond-1),each=1)
-              names(tcols) = rep(paste("A",1:(NumCond-1)),1)
+              tcols <- rep(rainbow(NumComps),each=1)
+              names(tcols) = rep(paste("A",1:(NumComps)),1)
               # print(head(WhereRegs))
               plotUpset <- function () {
                 upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
@@ -704,19 +873,19 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               qlim <- input$qval
               input$fcval
               input$button
-              par(mfrow=c(1,NumCond-1))
+              par(mfrow=c(1,NumComps))
               tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
               plotRegDistr <- function() {
-                for (i in 1:(NumCond-1)) {
+                for (i in 1:(NumComps)) {
                   plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="FDR threshold",
                        ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
                   if (i==1)
                     legend("topleft",legend = testNames2,col=TestCols,lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumCond-1)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
+                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
                   abline(v=qlim,col=2)
                 }
               }
