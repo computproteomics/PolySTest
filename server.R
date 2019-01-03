@@ -22,6 +22,7 @@ shinyServer(function(input, output,clientData,session) {
   currdata <- reactiveVal(NULL)
   FullReg <- NULL
   obsadd <- NULL
+  actFileName <- NULL
   Comps <- reactiveValues(ind=vector(), num=NULL, RR=NULL, compNames=NULL) 
   currButton <- 0
   addCompButton <- 0
@@ -132,24 +133,28 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     ColQuant <- input$ColQuant
     isPaired <- input$is_paired
     
-    print(head(dat,1))
+    print(head(dat,n=1))
     if (!is.null(dat)) {
       if (dat == "EXAMPLE")  {
-        dat <- read.csv("LiverAllProteins.csv",row.names=1)
+        actFileName <<- "LiverAllProteins.csv"
+        dat <- read.csv(actFileName,row.names=1)
         updateNumericInput(session,"NumCond",value=4)
         NumCond <- 4
         updateNumericInput(session,"NumReps",value=3)
         NumReps <- 3
         updateCheckboxInput(session,"qcol_order",value=T)
         updateCollapse(session,"Input",open = "Statistical testing",close="Data input")
-      } else if (length(dat) == 4) {
+      } else  {
         FullReg <<- NULL
         delim <- input$delimiter
         if (delim == "tab")
           delim <- "\t"
+        if (length(dat) == 4) {
+          actFileName <<- input$in_file$datapath
+        }
         if (input$row.names){
           print("reading file")
-          dat <- read.csv(input$in_file$datapath,header=input$is_header,sep=delim,dec=input$digits)
+          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits)
           output$input_stats <- renderText("Duplicated feature names in first column! You can avoid them by not using 'Row names'")
           validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,""))
           rownames(dat) <- dat[,1]
@@ -158,27 +163,29 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           # delete row with empty name
           dat <- dat[!rownames(dat)=="",]
           if (ColQuant > 2) {
-            addInfo <- dat[,1:(input$ColQuant-2),drop=F]
+            addInfo <<- dat[,1:(input$ColQuant-2),drop=F]
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             # print(head(addInfo))
-            dat(dat[,-(1:(ColQuant-2))])
+            dat <- dat[,-(1:(ColQuant-2))]
           }
         } else {
-          dat <<- read.csv(input$in_file$datapath,header=input$is_header,sep=delim,dec=input$digits)
+          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits)
           # updateSliderInput(session,"QuantCol",max=ncol(dat))
           
           if (input$ColQuant > 1) {
-            addInfo <- dat[,1:(ColQuant-1),drop=F]
+            addInfo <<- dat[,1:(ColQuant-1),drop=F]
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             
-            dat(dat[,-(1:(ColQuant-1))])
+            dat <- dat[,-(1:(ColQuant-1))]
           }
         }
         
         if (!input$qcol_order) {
-          dat[,1:(NumCond*NumReps)] <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
+          print("reorder columns")
+          dat <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
+          print(head(dat[,1:(NumCond*NumReps)],1))
         }
         
         tncol <- 20
@@ -324,7 +331,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         })
         
       })
-      print(head(dat))
+      print(head(dat,n=1))
       
       currdata(dat)
       
