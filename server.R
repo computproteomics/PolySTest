@@ -686,7 +686,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                            xlab="Conditions",xlim=c(0.7,(NumCond+1)-0.7),
                            ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
                            uiw=SDSet[1,],type="b",barcol="#000000FF",
-                           ylim=range(tdat,na.rm=T),xaxt="none",lwd=1.5)
+                           ylim=range(MeanSet,na.rm=T),xaxt="none",lwd=1.5)
                     title(main="Feature expression over conditions")
                     axis(1,at=1:(NumCond),labels = colnames(MeanSet))
                     # abline(h=fclim)
