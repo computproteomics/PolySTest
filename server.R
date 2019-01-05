@@ -162,23 +162,23 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           # updateSliderInput(session,"QuantCol",max=ncol(dat)-2)
           # delete row with empty name
           dat <- dat[!rownames(dat)=="",]
-          if (ColQuant > 2) {
+          if (input$ColQuant > 2) {
             addInfo <<- dat[,1:(input$ColQuant-2),drop=F]
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             # print(head(addInfo))
-            dat <- dat[,-(1:(ColQuant-2))]
+            dat <- dat[,-(1:(input$ColQuant-2))]
           }
         } else {
           dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits)
           # updateSliderInput(session,"QuantCol",max=ncol(dat))
           
           if (input$ColQuant > 1) {
-            addInfo <<- dat[,1:(ColQuant-1),drop=F]
+            addInfo <<- dat[,1:(input$ColQuant-1),drop=F]
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             
-            dat <- dat[,-(1:(ColQuant-1))]
+            dat <- dat[,-(1:(input$ColQuant-1))]
           }
         }
         
