@@ -328,11 +328,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
                 ifelse(ncol(dat) != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
                 "Number of features: ",nrow(dat),
-<<<<<<< HEAD
                 "<br/>Number of data columns in file:", ndatcol,
-=======
-                "<br/>Number of data columns in file:", ncol(dat),
->>>>>>> 227ae07badcf5705128d65720050f950d75b3334
                 "<br/>Percentage of missing values:",
                 round(sum(is.na(dat))/nrow(dat)/ncol(dat)*100,digits = 2),"<br/>",
                 paste("<i>Condition ",1:NumCond,":</i>", sapply(1:NumCond, function(x) 
