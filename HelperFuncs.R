@@ -449,7 +449,6 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     # tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
     qRPvalues[names(tqs),i] <- tqs
     lratios <- cbind(lratios, rowMeans(Data[,Reps==RRCateg[2,i]],na.rm=T)-rowMeans(Data[,Reps==RRCateg[1,i]],na.rm=T))
-    
   }
   
   return(list(lratios=lratios,ptvalues=ptvalues, plvalues=plvalues, pRPvalues=pRPvalues, pPermutvalues=pPermutvalues,

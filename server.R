@@ -135,6 +135,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     
     print(head(dat,n=1))
     if (!is.null(dat)) {
+      ndatcol <- 0
       if (dat == "EXAMPLE")  {
         actFileName <<- "LiverAllProteins.csv"
         dat <- read.csv(actFileName,row.names=1)
@@ -144,6 +145,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         NumReps <- 3
         updateCheckboxInput(session,"qcol_order",value=T)
         updateCollapse(session,"Input",open = "Statistical testing",close="Data input")
+        ndatcol <- 12
       } else  {
         FullReg <<- NULL
         delim <- input$delimiter
@@ -181,7 +183,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             dat <- dat[,-(1:(input$ColQuant-1))]
           }
         }
-        
+        ndatcol <- ncol(dat)
         if (!input$qcol_order) {
           print("reorder columns")
           dat <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
@@ -319,7 +321,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
                 ifelse(ncol(dat) != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
                 "Number of features: ",nrow(dat),
-                "<br/>Number of data columns in file:", ncol(dat),
+                "<br/>Number of data columns in file:", ndatcol,
                 "<br/>Percentage of missing values:",
                 round(sum(is.na(dat))/nrow(dat)/ncol(dat)*100,digits = 2),"<br/>",
                 paste("<i>Condition ",1:NumCond,":</i>", sapply(1:NumCond, function(x) 
