@@ -360,8 +360,8 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
   for (vs in 1:NumComps) {
     if (!is.null(getDefaultReactiveDomain()))
       setProgress(0.1+0.3/(NumComps)*vs, detail = paste("tests for comparison",vs,"of",NumComps))
-    tData<-Data[,Reps==RRCateg[2,vs]]
-    trefData <- Data[,Reps==RRCateg[1,vs]]
+    tData<-Data[,Reps==RRCateg[1,vs]]
+    trefData <- Data[,Reps==RRCateg[2,vs]]
     tptvalues<-NULL
     ## t-test_pvalues
     tptvalues <- sapply(1:nrow(tData), function(pep) {
