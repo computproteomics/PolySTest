@@ -171,7 +171,8 @@ Paired <- function(MAData,NumCond,NumReps) {
     tqs <- qvalue(na.omit(ptvalues[,i]))$qvalues
     qtvalues[names(tqs),i] <- tqs
     print(range(pPermutvalues[,i]))
-    tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
+    # tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
+    tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
     qPermutvalues[names(tqs),i] <- tqs
     # print(range(na.omit(pRPvalues[,i])))
     tqs <- p.adjust(na.omit(pRPvalues[,i]),method="BH")
@@ -440,8 +441,8 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     tqs <- qvalue(na.omit(ptvalues[,i]))$qvalues
     qtvalues[names(tqs),i] <- tqs
     print(range(pPermutvalues[,i]))
-    tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
-    # tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
+    # tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
+    tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
     qPermutvalues[names(tqs),i] <- tqs
     print(range(na.omit(pRPvalues[,i])))
     # print(sort(pRPvalues[,i]))
@@ -617,7 +618,8 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
 UnifyQvals <- function(Qvalue, NumComps, NumTests) {
   UnifiedQvalue <- matrix(NA,ncol=NumComps,nrow=nrow(Qvalue))
   for (i in 1:(NumComps)) {
-    # print(seq(i,ncol(Qvalue)-NumCond+1,NumCond-1))
+    print(seq(i,ncol(Qvalue)-NumComps,NumComps))
+    print(colnames(Qvalue)[seq(i,ncol(Qvalue)-NumComps,NumComps)])
     UnifiedQvalue[,i] <- colMins(apply(Qvalue[,seq(i,ncol(Qvalue)-NumComps,NumComps)], 1, p.adjust, "hommel"),na.rm=T)
   }
   UnifiedQvalue

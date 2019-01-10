@@ -262,9 +262,12 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               # removeUI(selector=paste("div:has(> #","selt_",i,")",sep=""))
               print(paste("Remove sellall_",i))
               removeUI(selector=paste("#","selall_",i,sep=""))
-              Comps$num <- Comps$num - 1
-              Comps$ind <- Comps$ind[-which(Comps$ind == i)]
-              obs$destroy()
+              if (sum(Comps$ind == i) > 0) {
+                Comps$num <- Comps$num - 1
+                Comps$ind <- Comps$ind[-which(Comps$ind == i)]
+              }
+              print(Comps$num)
+              print(Comps$ind)
             })
           })
           
