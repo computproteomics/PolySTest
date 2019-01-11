@@ -805,7 +805,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
-              print((SubSetLR))
+              isolate({
+              # print((SubSetLR))
               # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
               p <- plotly_empty()
               if (!is.null(SubSetLR)) {
@@ -814,7 +815,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   withProgress(message="Creating heatmap ...", min=0,max=1, {
                     setProgress(0.5)
                     tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
-                    print(tdat)
+                    # print(tdat) 
                     
                     # remove data rows with more than 45% missing values
                     to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
@@ -841,6 +842,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   })
                 }
               }
+              })
               output$downloadHeatmapPdf <- downloadHandler(
                 filename = function() {
                   paste("Heatmap", Sys.Date(), ".pdf", sep="");
@@ -858,6 +860,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               qlim <- input$qval
               input$fcval
               input$button
+              isolate({
               # print(head(FCRegs))
               WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumComps)*(NumComps)+rep(1:(NumComps),each=NumTests-1),drop=F]<qlim
               # print(head(WhereRegs))
@@ -889,6 +892,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   plotUpset()
                   dev.off()  
                 })
+              })
               
             },height=600)
             
