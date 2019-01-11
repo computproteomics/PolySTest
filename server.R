@@ -134,6 +134,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     isPaired <- input$is_paired
     
     print(head(dat,n=1))
+    validate(need(!is.na(input$ColQuant),"Change 'First column for quantification'"))
     if (!is.null(dat)) {
       ndatcol <- 0
       if (dat == "EXAMPLE")  {
@@ -165,6 +166,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           # delete row with empty name
           dat <- dat[!rownames(dat)=="",]
           if (input$ColQuant > 2) {
+            validate(need(input$ColQuant-2 <= ncol(dat), "To large 'First column for quantification'!"))
             addInfo <<- dat[,1:(input$ColQuant-2),drop=F]
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
@@ -174,8 +176,10 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         } else {
           dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits)
           # updateSliderInput(session,"QuantCol",max=ncol(dat))
+          rownames(dat) <- paste("feature",1:nrow(dat))
           
           if (input$ColQuant > 1) {
+            validate(need(input$ColQuant-1 <= ncol(dat), "To large 'First column for quantification'!"))
             addInfo <<- dat[,1:(input$ColQuant-1),drop=F]
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
@@ -197,7 +201,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           tncol <- ncol(dat)
         }
         
-        updateNumericInput(session,"ColQuant",max=tncol,min=2)
+        updateNumericInput(session,"ColQuant",max=tncol)
         updateNumericInput(session,"NumCond",max=ncol(dat))
         updateNumericInput(session,"NumReps",max=ncol(dat))
         updateCollapse(session,"Input",open = "Data layout",close="Data input")
@@ -432,12 +436,14 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             
             
             setProgress(0.5, detail = paste("Preparing data"))
+            print("Preparing data")
             LogRatios <- qvalues$lratios
             Pvalue <- cbind(qvalues$plvalues, MissingStats$pNAvalues, qvalues$pRPvalues, qvalues$pPermutvalues, qvalues$ptvalues)
             Qvalue <- cbind(qvalues$qlvalues, MissingStats$qNAvalues,qvalues$qRPvalues, qvalues$qPermutvalues, qvalues$qtvalues)
             Qvalue <- cbind(UnifyQvals(Qvalue,NumComps,NumTests),Qvalue)
+            print(head(Qvalue))
             # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
-            
+
             testNames <- c("limma","Miss test","rank products","permutation test","t-test")
             colnames(LogRatios) <- paste("log-ratios",compNames)
             colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumComps),rep(compNames,length(testNames)))

@@ -353,7 +353,6 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     tqs <- qvalue(na.omit(plvalues[,i]))$qvalues
     qlvalues[names(tqs),i] <- tqs
   }
-  
   ## rank products + t-test
   ptvalues<-NULL
   pRPvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumComps))))
