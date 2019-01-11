@@ -197,7 +197,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           tncol <- ncol(dat)
         }
         
-        updateNumericInput(session,"ColQuant",max=tncol)
+        updateNumericInput(session,"ColQuant",max=tncol,min=2)
         updateNumericInput(session,"NumCond",max=ncol(dat))
         updateNumericInput(session,"NumReps",max=ncol(dat))
         updateCollapse(session,"Input",open = "Data layout",close="Data input")
