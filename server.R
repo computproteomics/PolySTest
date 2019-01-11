@@ -591,6 +591,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             
             ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
             plotPvalueDistr <- function() {
+              print("Plot p-values")
               isolate({
                 par(mfrow=c(NumComps,length(testNames)))
                 for (i in 1:(NumComps)) {
@@ -616,6 +617,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             output$plotvolc <- renderPlot({
               input$button
               input$stat_table
+              print("plot volcano plots")
               sel_prots <- triggerUpdate()
               qlim <- input$qval
               fclim <- input$fcval
@@ -647,6 +649,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             },height=heightSize)
             
             output$plotexpression <- renderPlot({
+              print("plot expressions")
               input$button
               input$stat_table
               input$profiles_scale
@@ -788,6 +791,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             },height=400)
             
             output$plotheatmap <- renderPlotly({
+              print("Plot heatmap")
               # d3heatmap(SubSetLR)
               input$button
               input$stat_table
@@ -844,6 +848,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             
             incProgress(0.8, detail = paste("Plotting more results"))
             output$plotregdistr <- renderPlot({
+              print("Plot q-value numbers")
               qlim <- input$qval
               input$fcval
               input$button
@@ -882,6 +887,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             },height=600)
             
             output$plotreg <- renderPlot({
+              print("Plot q-value number")
               qlim <- input$qval
               input$fcval
               input$button
