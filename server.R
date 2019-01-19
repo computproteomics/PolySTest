@@ -157,7 +157,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         }
         if (input$row.names){
           print("reading file")
-          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits)
+          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
           output$input_stats <- renderText("Duplicated feature names in first column! You can avoid them by not using 'Row names'")
           validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,""))
           rownames(dat) <- dat[,1]
@@ -174,7 +174,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             dat <- dat[,-(1:(input$ColQuant-2))]
           }
         } else {
-          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits)
+          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
           # updateSliderInput(session,"QuantCol",max=ncol(dat))
           rownames(dat) <- paste("feature",1:nrow(dat))
           
