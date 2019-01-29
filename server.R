@@ -368,7 +368,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           )
         )
       ))
-      if (!is.null(addInfo)) outTable <- cbind(addInfo,dat[,1:min(ncol(dat),NumReps*NumCond)])
+      if (!is.null(addInfo)) outTable <- data.frame(addInfo,dat[,1:min(ncol(dat),NumReps*NumCond)],stringsAsFactors = F)
       else outTable <- dat[,1:min(ncol(dat),NumReps*NumCond)]
       output$stat_table <- DT::renderDataTable(DT::datatable(outTable,
                                                              filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
