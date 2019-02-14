@@ -787,7 +787,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                       paste("SelExpressionProfiles", Sys.Date(), ".pdf", sep="");
                     },
                     content = function(file) {
-                      pdf(file,height=8,width=12)
+                      pdf(file,height=8,width=18)
                       plotExpression()
                       dev.off()  
                       
