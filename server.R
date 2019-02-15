@@ -190,8 +190,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         ndatcol <- ncol(dat)
         if (!input$qcol_order) {
           print("reorder columns")
-          dat <- dat[,rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)]
-          print(head(dat[,1:(NumCond*NumReps)],1))
+          validate(need(ncol(dat)>=NumCond*NumReps, "Not enough quantitative columns"))
+          act_cols <- rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)
+          dat <- dat[,act_cols]
         }
         
         tncol <- 20
@@ -326,7 +327,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           }
           
           paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
-                ifelse(ncol(dat) != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
+                ifelse(ndatcol != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
                 "Number of features: ",nrow(dat),
                 "<br/>Number of data columns in file:", ndatcol,
                 "<br/>Percentage of missing values:",
@@ -673,6 +674,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
                   indices <- rownames(SubSet)
                   tdat <- as.matrix(dat[rownames(SubSet), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F])
+                  rownames(tdat) <- strtrim(rownames(tdat), 20)
                   MeanSet <- SDSet <-  matrix(NA,nrow=nrow(tdat),ncol=NumCond,dimnames = 
                                                 list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
                   for (c in 1:NumCond) {
@@ -689,7 +691,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                     layout(t(c(1,1,2,2,3,3)))
                     plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
                     # print(colnames(SubSet))
-                    legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=rownames(SubSet),lwd=3,
+                    legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=strtrim(rownames(SubSet),20),lwd=3,
                            title="Features")
                     # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
                     #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
@@ -699,7 +701,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                     plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[1,],pch=16,
                            xlab="Conditions",xlim=c(0.7,(NumCond+1)-0.7),
                            ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
-                           uiw=SDSet[1,],type="b",barcol="#000000FF",
+                           uiw=SDSet[1,],type="b",barcol="#000000AA",
                            ylim=range(MeanSet,na.rm=T),xaxt="none",lwd=1.5)
                     title(main="Feature expression over conditions")
                     axis(1,at=1:(NumCond),labels = colnames(MeanSet))
@@ -711,7 +713,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                         #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
                         plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
                                add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
-                               uiw=SDSet[i,],type="b",barcol="#000000FF",lwd=1.5)
+                               uiw=SDSet[i,],type="b",barcol="#000000AA",lwd=1.5)
                         
                         
                       }
@@ -747,8 +749,10 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                                                  if(t == 1) {
                                                    circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", 
                                                                niceFacing = TRUE,cex = 1,font=2)
-                                                   circos.axis("top", labels = rownames(SubSetLR),major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                               labels.cex = 0.8,labels.facing = "reverse.clockwise")
+                                                   circos.axis("top", labels = strtrim(rownames(SubSetLR),20),
+                                                               major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
+                                                               labels.cex = 0.8,labels.facing = "reverse.clockwise",
+                                                               )
                                                  }
                                                  for (j in which(tsign[,i])) {
                                                    circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
@@ -787,7 +791,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                       paste("SelExpressionProfiles", Sys.Date(), ".pdf", sep="");
                     },
                     content = function(file) {
-                      pdf(file,height=8,width=22)
+                      pdf(file,height=8,width=25)
                       plotExpression()
                       dev.off()  
                       
@@ -815,6 +819,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   withProgress(message="Creating heatmap ...", min=0,max=1, {
                     setProgress(0.5)
                     tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
+                    rownames(tdat) <- strtrim(rownames(tdat), 30)
                     # print(tdat) 
                     
                     # remove data rows with more than 45% missing values
@@ -832,7 +837,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                     }
                     tqvals <- data.frame(ttt)
                     for (c in 1:ncol(tqvals))
-                      tqvals[,c] <- paste("<",as.character(ttt[,c],pcols),sep="")
+                      tqvals[,c] <- paste("<",as.character(tqvals[,c],pcols),sep="")
                     scaling <- "none"
                     if(input$heatmap_scale) scaling <- "row"
                     p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
