@@ -839,6 +839,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                     for (c in 1:ncol(tqvals))
                       tqvals[,c] <- paste("<",as.character(tqvals[,c],pcols),sep="")
                     scaling <- "none"
+                    tqvals <- tqvals[order(rownames(tdat)),]
                     if(input$heatmap_scale) scaling <- "row"
                     p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
                                    RowSideColors = tqvals, row_side_palette = grey.colors)
