@@ -104,11 +104,12 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                  id=paste("selt_",el,sep=""),style="padding:0px;")
         ),
         fluidRow(
-          column(5,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
+          column(4,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
+                                                                   choices = conditions,selected = conditions[el+1])),
+          column(2,h5("vs")),
+          column(4,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
                                                                    label=NULL,
                                                                    choices = conditions,selected = conditions[1])),
-          column(5,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
-                                                                   choices = conditions,selected = conditions[el+1])),
           column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
         ))
     })
