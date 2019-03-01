@@ -58,6 +58,14 @@ RPStats <- function(tRPMAData,NumReps) {
   # Restrict to >0 replicated values
   iterNumEl <- unique(NumElements)
   iterNumEl <- iterNumEl[iterNumEl>0]
+  ## avoiding sets that are practically empty
+  # print(iterNumEl)
+  if (length(iterNumEl) == 0) {
+    na_out <- as.numeric(rep(NA,nrow(tRPMAData)))
+    names(na_out) <-rownames(tRPMAData)
+    return(na_out)
+  }
+  
   RPMADown_pvalues <- lapply(iterNumEl,function (d) {
     tRPMADown_pvalues <- NULL
     RPMAData<-tRPMAData[NumElements==d,]
@@ -80,6 +88,10 @@ RPStats <- function(tRPMAData,NumReps) {
       names(tRPout) <- names(RP.own)
       tRPMADown_pvalues <- c(tRPMADown_pvalues,tRPout)
       tRPMADown_pvalues
+    } else {
+      na_out <- as.numeric(rep(NA,nrow(RPMAData)))
+      names(na_out) <-rownames(RPMAData)
+      return(na_out)
     }
   })
   # print(head(unlist(RPMADown_pvalues)))
@@ -194,7 +206,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
   # Normalize row-wise by mean
   Data <- Data - rowMeans(Data,na.rm=T)
   
-  
+
   ## limma
   design <- model.matrix(~0+factor(Reps-1))
   colnames(design)<-paste("i",c(1:NumCond),sep="")
@@ -243,6 +255,8 @@ Unpaired <- function(Data,NumCond,NumReps) {
     clusterExport(cl=cl,varlist=c("NumReps","tData","trefData","RPStats"),envir=environment())
     clusterEvalQ(cl=cl, library(matrixStats))  
     
+    
+    print("rank products")
     RPparOut <- parallel::parLapply(cl,1:NumRPPairs, function(x) {
       tRPMAData <- tData[,sample(1:NumReps)] - trefData[,sample(1:NumReps)]
       #Up
@@ -266,6 +280,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
     # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects
+    print("permutation tests")
     tData <- tData - mean(as.numeric(unlist(tData)),na.rm=T)
     trefData <- trefData - mean(as.numeric(unlist(trefData)),na.rm=T)
     if (ncol(tData)*2<NumPermCols) {
@@ -354,6 +369,7 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     qlvalues[names(tqs),i] <- tqs
   }
   ## rank products + t-test
+  print("rank products")
   ptvalues<-NULL
   pRPvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumComps))))
   pPermutvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumComps))))
@@ -381,11 +397,12 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     clusterEvalQ(cl=cl, library(matrixStats))  
     
     RPparOut <- parallel::parLapply(cl,1:NumRPPairs, function(x) {
-      tRPMAData <- tData[,sample(1:NumReps)] - trefData[,sample(1:NumReps)]
+        tRPMAData <- tData[,sample(1:NumReps)] - trefData[,sample(1:NumReps)]
       #Up
       RPMAUp_pvalues <- RPStats(tRPMAData,NumReps)
       #Down
       RPMADown_pvalues <- RPStats(-tRPMAData,NumReps)
+      ## ERROR here:
       ttt <- rowMins(cbind(RPMAUp_pvalues,RPMADown_pvalues),na.rm=T)*2
       ttt[ttt>1] <- 1
       names(ttt) <- names(RPMAUp_pvalues)
@@ -400,6 +417,7 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     
     # print(tail(tpRPvalues,1))
     
+    print("permutation tests")
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
     # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects
@@ -423,6 +441,7 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     StatsForPermutTest(t(indat),F)
     })
     stopCluster(cl)
+    print("permutation test finished")
     
     PermutOut <- matrix(unlist(PermutOut),nrow=nrow(tData))
     PermutOut[!is.finite(PermutOut)] <- NA
@@ -570,6 +589,7 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
   cl <- makeCluster(NumThreads)
   clusterExport(cl=cl,varlist=c("Qvalue","NumCond","LogRatios","qrange"),envir=environment())
   clusterEvalQ(cl=cl, library(matrixStats))  
+  print(head(Qvalue))
   BestVals <- parallel::parLapply(cl,fcRange, function(fc) { 
     # range of tests to consider:
     for (t in c(1,2,4)) {
