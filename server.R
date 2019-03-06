@@ -472,9 +472,11 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             
             print(tcomb)
             
-            # Set fold-change slider range
-            updateSliderInput(session,"fcval",min=round(min(LogRatios,na.rm=T),1),
-                              max=round(max(LogRatios,na.rm=T),1), value=c(-tcomb[1],tcomb[1]))
+            # Set fold-change thresholds
+            updateSliderInput(session,"fcval1",min=round(min(LogRatios,na.rm=T),1),
+                              max=0, value=c(-tcomb[1]))
+            updateSliderInput(session,"fcval2",min=0,
+                              max=round(max(LogRatios,na.rm=T),1), value=c(tcomb[1]))
             
             # Set q-value threshold
             updateNumericInput(session,"qval",value=tcomb[2])
@@ -573,7 +575,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               input$stat_table
               sel_prots <- triggerUpdate()
               qlim <- input$qval
-              fclim <- input$fcval
+              fclim <- c(input$fcval1, input$fcval2)
               # print(input$stat_table_rows_selected)
               # Selecting only features from selected tests and conditions
               # print(input$selComps)
@@ -631,7 +633,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               print("plot volcano plots")
               sel_prots <- triggerUpdate()
               qlim <- input$qval
-              fclim <- input$fcval
+              fclim <- c(input$fcval1, input$fcval2)
               plotVolcano <- function() {
                 par(mfrow=c(NumComps,NumTests))
                 for (i in 1:(NumComps)) {
@@ -667,7 +669,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               
               triggerUpdate()
               qlim <- input$qval
-              fclim <- input$fcval
+              fclim <- c(input$fcval1, input$fcval2)
               #input$stat_table_rows_selected
               # print(head(SubSetLR))
               if (length(SubSetLR)> 0) {
@@ -812,7 +814,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               input$heatmap_scale
               triggerUpdate()
               qlim <- input$qval
-              fclim <- input$fcval
+              fclim <- c(input$fcval, input$fcval2)
               isolate({
               # print((SubSetLR))
               # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
@@ -868,7 +870,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             output$plotregdistr <- renderPlot({
               print("Plot q-value numbers")
               qlim <- input$qval
-              input$fcval
+              input$fcval1
+              input$fcval2
               input$button
               isolate({
               # print(head(FCRegs))
@@ -909,7 +912,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             output$plotreg <- renderPlot({
               print("Plot q-value number")
               qlim <- input$qval
-              input$fcval
+              input$fcval1
+              input$fcval2
               input$button
               par(mfrow=c(1,NumComps))
               tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
