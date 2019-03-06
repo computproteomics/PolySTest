@@ -887,10 +887,14 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               names(tcols) = rep(paste("A",1:(NumComps)),1)
               # print(head(WhereRegs))
               plotUpset <- function () {
+                if(length(WhereRegs)>0) {
                 upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
                       decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
                       set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
                                           plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+                } else {
+                  NULL
+                  }
               }
               plotUpset()
               output$downloadUpSetPdf <- downloadHandler(

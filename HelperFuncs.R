@@ -59,7 +59,7 @@ RPStats <- function(tRPMAData,NumReps) {
   iterNumEl <- unique(NumElements)
   iterNumEl <- iterNumEl[iterNumEl>0]
   ## avoiding sets that are practically empty
-  # print(iterNumEl)
+  print(iterNumEl)
   if (length(iterNumEl) == 0) {
     na_out <- as.numeric(rep(NA,nrow(tRPMAData)))
     names(na_out) <-rownames(tRPMAData)
@@ -68,7 +68,7 @@ RPStats <- function(tRPMAData,NumReps) {
   
   RPMADown_pvalues <- lapply(iterNumEl,function (d) {
     tRPMADown_pvalues <- NULL
-    RPMAData<-tRPMAData[NumElements==d,]
+    RPMAData<-tRPMAData[NumElements==d,,drop=F]
     if(d>1 && length(as.matrix(RPMAData))>ncol(tRPMAData)) {
       RP.own<-0
       for (r in 1:NumReps) {
