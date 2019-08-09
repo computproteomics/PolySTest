@@ -98,20 +98,20 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
   addCompUIs <- function(el, conditions) {
     print("addCompUIs")
     isolate({
-    div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
-        fluidRow(
-          column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep=""))),
-                 id=paste("selt_",el,sep=""),style="padding:0px;")
-        ),
-        fluidRow(
-          column(4,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
-                                                                   choices = conditions,selected = conditions[el+1])),
-          column(2,h5("vs")),
-          column(4,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
-                                                                   label=NULL,
-                                                                   choices = conditions,selected = conditions[1])),
-          column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
-        ))
+      div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
+          fluidRow(
+            column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep=""))),
+                   id=paste("selt_",el,sep=""),style="padding:0px;")
+          ),
+          fluidRow(
+            column(4,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
+                                                                     choices = conditions,selected = conditions[el+1])),
+            column(2,h5("vs")),
+            column(4,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
+                                                                     label=NULL,
+                                                                     choices = conditions,selected = conditions[1])),
+            column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
+          ))
     })
   }
   
@@ -121,9 +121,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     output$messages <- renderText("")
     dat <- currdata()
     if (!is.null(input$in_file))
-    # if (!is.null(dat)) {
-    #   if (na.omit(dat) != "EXAMPLE") {
-        dat <- input$in_file
+      # if (!is.null(dat)) {
+      #   if (na.omit(dat) != "EXAMPLE") {
+      dat <- input$in_file
     #   } 
     # } else {
     #   dat  <- input$in_file
@@ -237,9 +237,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         # add new UI elements for comparison
         if (!is.null(obsadd)) {
           print("obsadd")
-        obsadd$destroy()
+          obsadd$destroy()
         }
-          
+        
         
         obsadd <<- observeEvent(input$addComp, {
           print("addComp")
@@ -249,7 +249,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               return()
             addCompButton <<- input$addComp
             
-              
+            
             ind <- 1
             if (length(Comps$ind)>0)
               ind <- min((1:100)[-Comps$ind])
@@ -262,11 +262,11 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         })
         # remove UI elements 
         lapply(1:100, function(i) {
-            obs <- observeEvent(input[[paste("selb_",i,sep="")]],{
-              isolate({
-                # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
-                # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
-                # removeUI(selector=paste("div:has(> #","selr_",i,")",sep=""))
+          obs <- observeEvent(input[[paste("selb_",i,sep="")]],{
+            isolate({
+              # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
+              # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
+              # removeUI(selector=paste("div:has(> #","selr_",i,")",sep=""))
               # removeUI(selector=paste("div:has(> #","selb_",i,")",sep=""))
               # removeUI(selector=paste("div:has(> #","selt_",i,")",sep=""))
               print(paste("Remove sellall_",i))
@@ -305,7 +305,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           allComps <- allComps[allComps[,1,drop=F] != allComps[,2,drop=F], , drop=F]
           compNames <- NULL
           ncomps <- nrow(allComps)
-
+          
           if(!is.null(allComps)) {
             valComps <- matrix(NA,nrow=ncomps, ncol=ncol(allComps))
             for (i in 1:length(allComps)) valComps[i] <- as.numeric(sub("C","",allComps[i]))
@@ -448,7 +448,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             Qvalue <- cbind(UnifyQvals(Qvalue,NumComps,NumTests),Qvalue)
             print(head(Qvalue))
             # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
-
+            
             testNames <- c("limma","Miss test","rank products","permutation test","t-test")
             colnames(LogRatios) <- paste("log-ratios",compNames)
             colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumComps),rep(compNames,length(testNames)))
@@ -758,7 +758,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                                                    circos.axis("top", labels = strtrim(rownames(SubSetLR),20),
                                                                major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
                                                                labels.cex = 0.8,labels.facing = "reverse.clockwise",
-                                                               )
+                                                   )
                                                  }
                                                  for (j in which(tsign[,i])) {
                                                    circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
@@ -816,44 +816,44 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               qlim <- input$qval
               fclim <- c(input$fcval, input$fcval2)
               isolate({
-              # print((SubSetLR))
-              # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
-              p <- plotly_empty()
-              if (!is.null(SubSetLR)) {
-                if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
-                  print("running heatmap")
-                  withProgress(message="Creating heatmap ...", min=0,max=1, {
-                    setProgress(0.5)
-                    tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
-                    rownames(tdat) <- strtrim(rownames(tdat), 30)
-                    # print(tdat) 
-                    
-                    # remove data rows with more than 45% missing values
-                    to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
-                    tqvals <- Qvalue[rownames(SubSetLR),1:(NumComps),drop=F]
-                    if (length(to_remove)>0) {
-                      tqvals <- tqvals[-to_remove,]
-                      tdat <- tdat[-to_remove,]
-                    }
-                    # setting colors of p-values
-                    pcols <- rev(c(0.001, 0.01, 0.05, 1))
-                    ttt <- tqvals
-                    for (c in pcols) {
-                      ttt[tqvals <= c] <- c 
-                    }
-                    tqvals <- data.frame(ttt)
-                    for (c in 1:ncol(tqvals))
-                      tqvals[,c] <- paste("<",as.character(tqvals[,c],pcols),sep="")
-                    scaling <- "none"
-                    tqvals <- tqvals[order(rownames(tdat)),]
-                    if(input$heatmap_scale) scaling <- "row"
-                    p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
-                                   RowSideColors = tqvals, row_side_palette = grey.colors)
-                    # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
-                    # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
-                  })
+                # print((SubSetLR))
+                # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
+                p <- plotly_empty()
+                if (!is.null(SubSetLR)) {
+                  if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
+                    print("running heatmap")
+                    withProgress(message="Creating heatmap ...", min=0,max=1, {
+                      setProgress(0.5)
+                      tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
+                      rownames(tdat) <- strtrim(rownames(tdat), 30)
+                      # print(tdat) 
+                      
+                      # remove data rows with more than 45% missing values
+                      to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
+                      tqvals <- Qvalue[rownames(SubSetLR),1:(NumComps),drop=F]
+                      if (length(to_remove)>0) {
+                        tqvals <- tqvals[-to_remove,]
+                        tdat <- tdat[-to_remove,]
+                      }
+                      # setting colors of p-values
+                      pcols <- rev(c(0.001, 0.01, 0.05, 1))
+                      ttt <- tqvals
+                      for (c in pcols) {
+                        ttt[tqvals <= c] <- c 
+                      }
+                      tqvals <- data.frame(ttt)
+                      for (c in 1:ncol(tqvals))
+                        tqvals[,c] <- paste("<",as.character(tqvals[,c],pcols),sep="")
+                      scaling <- "none"
+                      tqvals <- tqvals[order(rownames(tdat)),]
+                      if(input$heatmap_scale) scaling <- "row"
+                      p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
+                                     RowSideColors = tqvals, row_side_palette = grey.colors)
+                      # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
+                      # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
+                    })
+                  }
                 }
-              }
               })
               output$downloadHeatmapPdf <- downloadHandler(
                 filename = function() {
@@ -874,41 +874,44 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               input$fcval2
               input$button
               isolate({
-              # print(head(FCRegs))
-              WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumComps)*(NumComps)+rep(1:(NumComps),each=NumTests-1),drop=F]<qlim
-              # print(head(WhereRegs))
-              WhereRegs[WhereRegs] <- 1
-              deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
-              # print(deleted_cols)
-              
-              tcolnames <- paste("A",rep(1:(NumComps),each=NumTests-1))
-              if (length(deleted_cols) > 0) {
-                tcolnames <- tcolnames[-deleted_cols]
-                WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
-              }
-              tcols <- rep(rainbow(NumComps),each=1)
-              names(tcols) = rep(paste("A",1:(NumComps)),1)
-              # print(head(WhereRegs))
-              plotUpset <- function () {
-                if(length(WhereRegs)>0) {
-                upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
-                      decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
-                      set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
-                                          plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
-                } else {
-                  NULL
+                # print(head(FCRegs))
+                WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumComps)*(NumComps)+rep(1:(NumComps),each=NumTests-1),drop=F]<qlim
+                # print(head(WhereRegs))
+                WhereRegs[WhereRegs] <- 1
+                deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
+                # print(deleted_cols)
+                
+                tcolnames <- paste("A",rep(1:(NumComps),each=NumTests-1))
+                if (length(deleted_cols) > 0) {
+                  tcolnames <- tcolnames[-deleted_cols]
+                  WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
+                }
+                tcols <- rep(rainbow(NumComps),each=1)
+                names(tcols) = rep(paste("A",1:(NumComps)),1)
+                # print(head(WhereRegs))
+                plotUpset <- function () {
+                  if(length(WhereRegs)>0) {
+                    #print("Plot UpSet plot")
+                    #print(UpSetR:::FindStartEnd(as.data.frame(WhereRegs)))
+                    #upset(as.data.frame(matrix(as.numeric(rnorm(1000)>0), 100)))
+                    upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
+                          decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
+                          set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
+                                              plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+                  } else {
+                    NULL
                   }
-              }
-              plotUpset()
-              output$downloadUpSetPdf <- downloadHandler(
-                filename = function() {
-                  paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
-                },
-                content = function(file) {
-                  pdf(file,height=8,width=8)
-                  plotUpset()
-                  dev.off()  
-                })
+                }
+                print(plotUpset())
+                output$downloadUpSetPdf <- downloadHandler(
+                  filename = function() {
+                    paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
+                  },
+                  content = function(file) {
+                    pdf(file,height=8,width=8)
+                    print(plotUpset())
+                    dev.off()  
+                  })
               })
               
             },height=600)
