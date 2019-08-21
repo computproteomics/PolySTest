@@ -219,7 +219,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
       print(conditions)
       
       isolate({
-        for (i in 1:100) {
+        for (i in 0:100) {
           removeUI(selector=paste("#selall_",i,sep=""))
           # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
           # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
