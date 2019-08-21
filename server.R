@@ -131,6 +131,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     
     NumReps <- input$NumReps
     NumCond <- input$NumCond
+    if(is.na(NumReps)) NumReps <- 1
+    if(is.na(NumCond)) NumCond <- 1
+    
     ColQuant <- input$ColQuant
     isPaired <- input$is_paired
     
@@ -284,7 +287,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         
         
       })
-      
       if(ncol(dat) == NumReps*NumCond) {
         updateCollapse(session,"Input",open="Statistical tests")
       } else {
