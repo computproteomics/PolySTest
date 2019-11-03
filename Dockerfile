@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y libssl-dev liblzma-dev libbz2-dev libic
 RUN R -e "install.packages('BiocManager', repos='http://cran.us.r-project.org'); \
   update.packages(ask=F); \
   BiocManager::install(c('dplyr','plotly'),ask=F)"
-RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','parallel','qvalue','criclize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard'\
+RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','parallel','qvalue','circlize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard','limma'\
 ),ask=F)"
 
 
@@ -21,4 +21,4 @@ RUN rm -rf /srv/shiny-server
 RUN mkdir /srv/shiny-server
 COPY *R  /srv/shiny-server/
 COPY *csv  /srv/shiny-server/
-COPY *pdf  /srv/shiny-server/
+#COPY *pdf  /srv/shiny-server/
