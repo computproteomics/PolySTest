@@ -14,7 +14,7 @@ pipelines:
           # Set $DOCKER_HUB_USERNAME and $DOCKER_HUB_PASSWORD as environment variables in repository settings
           - export DOCKER_HUB_USERNAME=veitveit
           - export DOCKER_HUB_PASSWORD=$dockerpasswd
-          - export IMAGE_NAME=veitveit/polystest:$BITBUCKET_COMMIT
+          - export IMAGE_NAME=veitveit/polystest:$BITBUCKET_TAG
 
           # build the Docker image (this will use the Dockerfile in the root of the repo)
           - docker build -t $IMAGE_NAME .
@@ -22,3 +22,7 @@ pipelines:
           - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD
           # push the new Docker image to the Docker registry
           - docker push $IMAGE_NAME
+definitions:
+  services:
+    docker:
+      memory: 2048
