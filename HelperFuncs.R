@@ -8,6 +8,12 @@ library(limma)
 source("rankprodbounds.R")
 
 NumThreads <- 4
+shiny_threads <- as.numeric(Sys.getenv("SHINY_THREADS"))
+if (!is.na(shiny_threads)) {
+  NumThreads <- shiny_threads
+  print(paste("Set number of threads to",NumThreads))
+}
+
 NTests <- 1000 # for permutation tests
 NumPermCols <- 7 # minimum number of columns for permutation tests (to ensure sufficient combinations)
 NumRPPairs <- 100 # number of pairings in the unpaired rank product test to simulate an unpaired setting
