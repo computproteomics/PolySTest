@@ -862,7 +862,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                   paste("Heatmap", Sys.Date(), ".pdf", sep="");
                 },
                 content = function(file) {
-                  ttt <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = "none",trace="none",cexRow=0.7,plot_method="plotly", 
+                  if(input$heatmap_scale) scaling <- "row"
+                  ttt <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = scaling,trace="none",cexRow=0.7,plot_method="plotly", 
                                    RowSideColors = tqvals, row_side_palette = grey.colors, file=file)
                 })
               p
