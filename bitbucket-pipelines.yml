@@ -8,7 +8,7 @@ pipelines:
         script:
           - export DOCKER_HUB_USERNAME=veitveit
           - export DOCKER_HUB_PASSWORD=$dockerpasswd
-          - export IMAGE_NAME=veitveit/polystest:$BITBUCKET_COMMIT
+          - export IMAGE_NAME=veitveit/polystest
           - docker login --username $DOCKER_HUB_USERNAME --password $dockerpasswd
 
           # build the Docker image (this will use the Dockerfile in the root of the repo)
