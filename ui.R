@@ -2,8 +2,10 @@ library(shinyBS)
 # library(d3heatmap)
 library(heatmaply)
 library(shinydashboard)
+title <- tags$img(src="Logo.svg",style="width:200px")
+
 shinyUI(dashboardPage(skin="blue",
-                      dashboardHeader(title="PolySTest",dropdownMenu(    
+                      dashboardHeader(title=title,dropdownMenu(    
                         type = "notifications", 
                         icon = icon("question-circle"),
                         badgeStatus = NULL,
