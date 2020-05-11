@@ -408,7 +408,6 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
       RPMAUp_pvalues <- RPStats(tRPMAData,NumReps)
       #Down
       RPMADown_pvalues <- RPStats(-tRPMAData,NumReps)
-      ## ERROR here:
       ttt <- rowMins(cbind(RPMAUp_pvalues,RPMADown_pvalues),na.rm=T)*2
       ttt[ttt>1] <- 1
       names(ttt) <- names(RPMAUp_pvalues)
