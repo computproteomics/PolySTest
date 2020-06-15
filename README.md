@@ -5,7 +5,7 @@ Department of Biochemistry and Molecular Biology
 
 ## Citation
 When using PolySTest, please cite our paper:  
-Veit Schwämmle, Christina E Hagensen, Adelina Rogowska-Wrzesinska, and Ole N. Jensen, doi: https://doi.org/10.1101/765818
+Veit Schwämmle, Christina E Hagensen, Adelina Rogowska-Wrzesinska, and Ole N. Jensen, doi: https://doi.org/10.1074/mcp.RA119.001777
 
 PolySTest can be run as shiny app on our server or using the docker version of the tool to avoid installation issues and computational bottlenecks..
 
@@ -31,7 +31,9 @@ and access the shiny app through http://localhost:3838
 
 You can run the shiny app from the server.R or ui.R files using [Rstudio](http://rstudio.com) or run the app on a [shiny-server](https://www.rstudio.com/products/shiny/shiny-server/)
 
-Be aware that you need to have all files and all necessary R libraries described in the Installation-
+Alternatively, just (in Linux) call the script `run_app.sh` and access the app through  http://localhost:3838
+
+*Be aware that you need to have all files and all necessary R libraries described in the Installation*
 
 
 ### Installation
