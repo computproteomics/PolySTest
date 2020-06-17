@@ -1,5 +1,7 @@
 #!/bin/bash 
-pathname=$(readlink -f ./)
-pathname="\"$pathname\""
-R -e "shiny::runApp($pathname, port=3838)"
+pathname=$(dirname $0)
+pathname=$(readlink -f $pathname)
+echo $pathname
+ls $pathname
+R -e "shiny::runApp(\"$pathname\", port=3838)"
 
