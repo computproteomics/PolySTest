@@ -1,3 +1,4 @@
 #!/bin/bash 
- R -e "shiny::runApp('./', port=3838)"
+pathname="\"$(readlink -f ./)\""
+R -e "shiny::runApp($pathname, port=3838)"
 
