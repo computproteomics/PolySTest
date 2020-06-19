@@ -65,7 +65,7 @@ RPStats <- function(tRPMAData,NumReps) {
   iterNumEl <- unique(NumElements)
   iterNumEl <- iterNumEl[iterNumEl>0]
   ## avoiding sets that are practically empty
-  print(iterNumEl)
+  #print(iterNumEl)
   if (length(iterNumEl) == 0) {
     na_out <- as.numeric(rep(NA,nrow(tRPMAData)))
     names(na_out) <-rownames(tRPMAData)
@@ -113,6 +113,8 @@ Paired <- function(MAData,NumCond,NumReps) {
   
   Rank <- NULL
   
+  cat("Running paired tests\n")
+  
   ##limma with ratios
   design<-plvalues<-NULL
   for (c in (1:(NumCond))) {
@@ -128,11 +130,14 @@ Paired <- function(MAData,NumCond,NumReps) {
     tqs <- qvalue(na.omit(plvalues[,i]))$qvalues
     qlvalues[names(tqs),i] <- tqs
   }
+  cat("limma completed\n")
   
   ## rank products + t-test + permutation test
   ptvalues<-NULL
   pRPvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("RP p-values",1:NumCond)))
   pPermutvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("Permutation p-values",1:NumCond)))
+  cat("Running rank products and permutations tests ...\n")
+  pb <- txtProgressBar(1,NumCond)
   for (vs in 1:NumCond) {
     if (!is.null(getDefaultReactiveDomain()))
       setProgress(0.1+0.3/NumCond*vs, detail = paste("tests for comparison",vs,"of",NumCond))
@@ -182,13 +187,16 @@ Paired <- function(MAData,NumCond,NumReps) {
     pPermutvalues[,vs] <- apply(cbind(RealStats,PermutOut), 1 , function(x) ifelse(is.na(x[1]),NA,(1+sum(x[1] < x[-1],na.rm=T))/(sum(!is.na(x)))))
     # print(PermMAData[1,])
     # print(head(pPermutvalues[,vs]))
+    setTxtProgressBar(pb, vs)
   }
+  cat("rank products and permutation test completed\n")
+  close(pb)
   lratios <- NULL
   qRPvalues <- qtvalues <- qPermutvalues <- matrix(NA,nrow=nrow(MAData),ncol=NumCond,dimnames=list(rows=rownames(MAData), cols=1:NumCond))
   for (i in 1:NumCond) {
     tqs <- qvalue(na.omit(ptvalues[,i]))$qvalues
     qtvalues[names(tqs),i] <- tqs
-    print(range(pPermutvalues[,i]))
+    #print(range(pPermutvalues[,i]))
     # tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
     tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
     qPermutvalues[names(tqs),i] <- tqs
@@ -214,6 +222,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
   
 
   ## limma
+  cat ("Running limma\n")
   design <- model.matrix(~0+factor(Reps-1))
   colnames(design)<-paste("i",c(1:NumCond),sep="")
   contrasts<-NULL
@@ -234,10 +243,13 @@ Unpaired <- function(Data,NumCond,NumReps) {
     qlvalues[names(tqs),i] <- tqs
   }
   
+  
   ## rank products + t-test
   ptvalues<-NULL
   pRPvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumCond-1))))
   pPermutvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumCond-1))))
+  cat("Running rank products and permutations tests ...\n")
+  pb <- txtProgressBar(2,NumCond)
   for (vs in 2:NumCond) {
     if (!is.null(getDefaultReactiveDomain()))
       setProgress(0.1+0.3/(NumCond-1)*vs, detail = paste("tests for comparison",vs-1,"of",NumCond-1))
@@ -262,7 +274,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     clusterEvalQ(cl=cl, library(matrixStats))  
     
     
-    print("rank products")
+    #print("rank products")
     RPparOut <- parallel::parLapply(cl,1:NumRPPairs, function(x) {
       tRPMAData <- tData[,sample(1:NumReps)] - trefData[,sample(1:NumReps)]
       #Up
@@ -286,7 +298,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
     # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects
-    print("permutation tests")
+    #print("permutation tests")
     tData <- tData - mean(as.numeric(unlist(tData)),na.rm=T)
     trefData <- trefData - mean(as.numeric(unlist(trefData)),na.rm=T)
     if (ncol(tData)*2<NumPermCols) {
@@ -316,18 +328,20 @@ Unpaired <- function(Data,NumCond,NumReps) {
     # print(hist(PermutOut[1,],plot = F, 50)$counts)
     # print(hist(PermutOut[1,],plot = F, 50)$breaks)
     # head(print(PermutOut))
+    setTxtProgressBar(pb, vs)
   }
+  close(pb)
   lratios <- NULL
   pRPvalues[!is.finite(pRPvalues)] <- NA
   qRPvalues <- qtvalues <- qPermutvalues <- matrix(NA,nrow=nrow(Data),ncol=NumCond-1,dimnames=list(rows=rownames(Data), cols=1:(NumCond-1)))
   for (i in 1:(NumCond-1)) {
     tqs <- qvalue(na.omit(ptvalues[,i]))$qvalues
     qtvalues[names(tqs),i] <- tqs
-    print(range(pPermutvalues[,i]))
+    #print(range(pPermutvalues[,i]))
     tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
     # tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
     qPermutvalues[names(tqs),i] <- tqs
-    print(range(na.omit(pRPvalues[,i])))
+    #print(range(na.omit(pRPvalues[,i])))
     # print(sort(pRPvalues[,i]))
     tqs <- p.adjust(na.omit(pRPvalues[,i]),method="BH")
     # tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
@@ -355,6 +369,7 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
   
   
   ## limma
+  cat ("Running limma tests\n")
   design <- model.matrix(~0+factor(Reps-1))
   colnames(design)<-paste("i",c(1:NumCond),sep="")
   contrasts<-NULL
@@ -375,10 +390,13 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     qlvalues[names(tqs),i] <- tqs
   }
   ## rank products + t-test
-  print("rank products")
+  #print("rank products")
   ptvalues<-NULL
   pRPvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumComps))))
   pPermutvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumComps))))
+  cat("Running rank products and permutations tests ...\n")
+  pb <- txtProgressBar(1,NumComps)
+  
   for (vs in 1:NumComps) {
     if (!is.null(getDefaultReactiveDomain()))
       setProgress(0.1+0.3/(NumComps)*vs, detail = paste("tests for comparison",vs,"of",NumComps))
@@ -422,7 +440,7 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     
     # print(tail(tpRPvalues,1))
     
-    print("permutation tests")
+    #print("permutation tests")
     ## Permutation tests: add columns from randomized full set to reach min. NumPermCols replicates
     # randomizing also sign to avoid tendencies to one or the other side
     # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects
@@ -446,7 +464,7 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     StatsForPermutTest(t(indat),F)
     })
     stopCluster(cl)
-    print("permutation test finished")
+    #print("permutation test finished")
     
     PermutOut <- matrix(unlist(PermutOut),nrow=nrow(tData))
     PermutOut[!is.finite(PermutOut)] <- NA
@@ -456,18 +474,20 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     # print(hist(PermutOut[1,],plot = F, 50)$counts)
     # print(hist(PermutOut[1,],plot = F, 50)$breaks)
     # head(print(PermutOut))
+    setTxtProgressBar(pb, vs)
   }
+  close(pb)
   lratios <- NULL
   pRPvalues[!is.finite(pRPvalues)] <- NA
   qRPvalues <- qtvalues <- qPermutvalues <- matrix(NA,nrow=nrow(Data),ncol=NumComps,dimnames=list(rows=rownames(Data), cols=1:(NumComps)))
   for (i in 1:(NumComps)) {
     tqs <- qvalue(na.omit(ptvalues[,i]))$qvalues
     qtvalues[names(tqs),i] <- tqs
-    print(range(pPermutvalues[,i]))
+    #print(range(pPermutvalues[,i]))
     # tqs <- qvalue(na.omit(pPermutvalues[,i]))$qvalues
     tqs <- p.adjust(na.omit(pPermutvalues[,i]),method="BH")
     qPermutvalues[names(tqs),i] <- tqs
-    print(range(na.omit(pRPvalues[,i])))
+    #print(range(na.omit(pRPvalues[,i])))
     # print(sort(pRPvalues[,i]))
     tqs <- p.adjust(na.omit(pRPvalues[,i]),method="BH")
     # tqs <- qvalue(na.omit(pRPvalues[,i]),lambda=seq(0.05,max(na.omit(pRPvalues[,i]))-0.05,0.05))$qvalues
@@ -491,6 +511,9 @@ MissingStatsDesign <- function(Data, RR, NumCond, NumReps) {
   
   pNAvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:(NumComps)))
   qNAvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:(NumComps)))
+  cat("Running Miss test ...\n")
+  pb <- txtProgressBar(1,NumComps)
+  
   for (vs in 1:NumComps) {
     tData<-Data[,Reps==RRCateg[2,vs]]
     trefData <- Data[,Reps==RRCateg[1,vs]]
@@ -508,9 +531,10 @@ MissingStatsDesign <- function(Data, RR, NumCond, NumReps) {
     pNAvalues[,vs] <- rowMins(pvals)*(NumReps+1)
     # qNAvalues[,vs-1] <- qvalue(pNAvalues[,vs-1],lambda=seq(0.1,max(pNAvalues[,vs-1]),length=100))$qvalue
     qNAvalues[,vs] <- p.adjust(pNAvalues[,vs], method="BH")
-    
+    setTxtProgressBar(pb, vs)
   }
-  print(head(pNAvalues))
+  close(pb)
+  #print(head(pNAvalues))
   pNAvalues[pNAvalues>1] <- 1
   
   return(list(pNAvalues=pNAvalues, qNAvalues=qNAvalues))
@@ -594,7 +618,7 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
   cl <- makeCluster(NumThreads)
   clusterExport(cl=cl,varlist=c("Qvalue","NumCond","LogRatios","qrange"),envir=environment())
   clusterEvalQ(cl=cl, library(matrixStats))  
-  print(head(Qvalue))
+  #print(head(Qvalue))
   BestVals <- parallel::parLapply(cl,fcRange, function(fc) { 
     # range of tests to consider:
     for (t in c(1,2,4)) {
@@ -640,10 +664,11 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
 # calculated common q-value over different tests. Hommel methods gives 
 # upper bound for p-values coming from independent or positively dependent tests
 UnifyQvals <- function(Qvalue, NumComps, NumTests) {
+  cat("Calculating PolySTest FDRs ...\n")
   UnifiedQvalue <- matrix(NA,ncol=NumComps,nrow=nrow(Qvalue))
   for (i in 1:(NumComps)) {
-    print(seq(i,ncol(Qvalue)-NumComps,NumComps))
-    print(colnames(Qvalue)[seq(i,ncol(Qvalue)-NumComps,NumComps)])
+    #print(seq(i,ncol(Qvalue)-NumComps,NumComps))
+    #print(colnames(Qvalue)[seq(i,ncol(Qvalue)-NumComps,NumComps)])
     UnifiedQvalue[,i] <- colMins(apply(Qvalue[,seq(i,ncol(Qvalue)-NumComps,NumComps)], 1, p.adjust, "hommel"),na.rm=T)
   }
   UnifiedQvalue

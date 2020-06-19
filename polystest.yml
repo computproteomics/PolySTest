@@ -1,0 +1,36 @@
+## Number of replicates in csv file
+# needs to be the same for all conditions. For conditions with less replicates, you can add empty columns to the csv file
+numreps: 3
+## Number of experimental conditions (time points, cell types, treatments, ...)
+numcond: 4
+## Paired or unpaired design (true or false)
+# e.g. a time line where the samples where taken from the same patients: paired design
+paired: false
+## Comparison to reference condition or all vs. all
+# for full comparison: 0, otherwise number of condition according to the order in the file
+refcond: 0
+## first column with quantitative values
+# usually 2 as the first column contains feature id (such as protein accession names)
+# note: non-quantitative columns not used in the statistical tests should be placed in the front
+firstquantcol: 2
+## What is the order of the columns (true or false)
+# replicates are either grouped (A1, B1, C1, ...) or ungrouped (A1, A2, A3 ,...),
+# given that letters denote conditions and number denote replicates
+rep_grouped: true
+## name and path of csv file
+# only one file allowed
+# the to be tested features need to be given in rows, and the experimental condition (+ addtional info) in columns
+csvfile: "LiverAllProteins.csv"
+## delimiter of csv file
+# can be "," or ";" or "|" or "tab"
+delim: ","
+## Decimal character
+# usually either "." or ","
+decimal: "."
+## does the csv file have a (max. 1 row) header (true or false)?
+header: true
+## output file with results will be common csv-format
+outfile: "polystest_res.csv"
+## Number of threads
+# default is 4
+threads: 8
