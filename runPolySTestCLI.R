@@ -63,7 +63,16 @@ if (threads < 1 )
 Sys.setenv(SHINY_THREADS=threads)
 Sys.getenv("SHINY_THREADS")
 ## reading helper functions
+# need to change to the source path and back
+currPath <- getwd()
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+script.basename <- dirname(script.name)
+cat(paste0("Getting R functions from files located in ", script.basename),"\n")
+setwd(script.basename)
 source("HelperFuncs.R")
+setwd(currPath)
 
 if (delim == "tab")
   delim <- "\t"
