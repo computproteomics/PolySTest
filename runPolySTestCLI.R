@@ -53,7 +53,9 @@ rep_grouped <- pars$rep_grouped
 if (!is.logical(rep_grouped)) 
   stop("rep_grouped parameter should be 'true' or 'false'", call.=FALSE)
 outfile <- pars$outfile
+if (file.exists(outfile))  {
   warning(paste0("******** WARNING: The file ",outfile," will be overwritten!!"))
+}
 threads <- pars$threads
 if (!is.integer(threads)) 
   stop("Parameter threads is not a positive integer number", call.=FALSE)
@@ -108,13 +110,43 @@ if (!is.null(addInfo)) {
   tncol <- ncol(dat)
 }
 
+
 conditions <- paste("C",1:NumCond,sep="")
+## setting conditions names to common name of column names if there is any
+# function to calculated "longest common substring" of 2 strings (from   https://stackoverflow.com/questions/35381180/identify-a-common-pattern)
+lcs <- function(a,b) {
+  A <- strsplit(a, "")[[1]]
+  B <- strsplit(b, "")[[1]]
+  L <- matrix(0, length(A), length(B))
+  ones <- which(outer(A, B, "=="), arr.ind = TRUE)
+  ones <- ones[order(ones[, 1]), , drop=F]
+  if(nrow(ones) > 0) {
+  for(i in 1:nrow(ones)) {
+    v <- ones[i, , drop = FALSE]
+    L[v] <- ifelse(any(v == 1), 1, L[v - 1] + 1)
+  }
+  paste0(A[(-max(L) + 1):0 + which(L == max(L), arr.ind = TRUE)[1]], collapse = "")
+  } else {
+    return(NA)
+  }
+}
+for (i in 1:NumCond) {
+  condnames <- colnames(dat)[0:(NumReps-1)*NumCond+i]
+  lcsname <- condnames[1]
+  if (length(condnames)>1) {  
+    for(j in 2:length(condnames)) 
+      if (!is.na(lcsname))
+      lcsname <- lcs(lcsname, condnames[j])
+  }
+  if (!is.na(lcsname))
+    conditions[i] <- lcsname
+}
 
 ####### Defining comparison for statistical tests
 # all vs. all or all vs. refCond?
 allComps <- NULL
 if (refCond>0) {
-  allComps <- cbind(conditions[refCond], conditions[conditions != paste0("C",refCond)])
+  allComps <- cbind(conditions[refCond], conditions[conditions != conditions[refCond]])
 } else {
   for (i in 1:(NumCond-1)) {
     for (j in (i+1):NumCond) {
@@ -134,7 +166,7 @@ compNames <- paste(allComps[,2]," vs ",allComps[,1],sep="")
 ncomps <- nrow(allComps)
 
 valComps <- matrix(NA,nrow=ncomps, ncol=ncol(allComps))
-for (i in 1:length(allComps)) valComps[i] <- as.numeric(sub("C","",allComps[i]))
+for (i in 1:length(allComps)) valComps[i] <- as.numeric(which(conditions == allComps[i]))
 RR <- matrix(NA,ncol = ncomps*NumReps, nrow=2)
 for (j in 1:ncomps) {
   compCond <- valComps[j,2]
@@ -153,12 +185,12 @@ if (isPaired) {
     MAData<-cbind(MAData,dat[,RR[1,i]]-dat[,RR[2,i]])
   }
   rownames(MAData)<-rownames(dat)
-    qvalues <- Paired(MAData, ncomps, NumReps)
+  qvalues <- Paired(MAData, ncomps, NumReps)
 } else {
-    qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
+  qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
 }
 MissingStats <- list(pNAvalues=matrix(1,ncol=ncomps,nrow=nrow(dat)), qNAvalues=matrix(1,ncol=ncomps, nrow=nrow(dat)))
-  MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
+MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
 
 ### Preparing data for output
 LogRatios <- qvalues$lratios
@@ -172,9 +204,9 @@ colnames(Pvalue) <- paste("p-values",rep(testNames,each=ncomps),rep(compNames,le
 testNames2 <- c("PolySTest",testNames)
 colnames(Qvalue) <- paste("FDR",rep(testNames2,each=ncomps),rep(compNames,length(testNames2)))
 fullData <- cbind(addInfo, dat)
-FullReg <- cbind(LogRatios, Qvalue, as.data.frame(fullData))
+FullReg <- cbind( as.data.frame(fullData), LogRatios, Qvalue)
 
-#### report some statistics
+#### report some statistics 
 
 cat("------- summary of results --------\n")
 cat("Number of differentially regulated features with FDR < 0.01\n")
