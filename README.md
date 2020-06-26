@@ -11,6 +11,8 @@ PolySTest can be run as shiny app on our server or using the docker version of t
 
 A command-line version is available to run PolySTest as workflow component (see below).
 
+https://anaconda.org/bioconda/polystest/badges/installer/conda.svg
+
 ## Shiny app
 
 ### Web service
