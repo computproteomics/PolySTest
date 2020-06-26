@@ -1,3 +1,5 @@
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/polystest/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
+
 **Welcome to the repository of PolySTest**
 developed at the [Protein Research Group](http://www.sdu.dk/en/Om_SDU/Institutter_centre/Bmb_biokemi_og_molekylaer_biologi/Forskning/Forskningsgrupper/Protein.aspx)  
 Department of Biochemistry and Molecular Biology  
@@ -10,8 +12,6 @@ Veit Schwämmle, Christina E Hagensen, Adelina Rogowska-Wrzesinska, and Ole N. Je
 PolySTest can be run as shiny app on our server or using the docker version of the tool to avoid installation issues and computational bottlenecks.
 
 A command-line version is available to run PolySTest as workflow component (see below).
-
-https://anaconda.org/bioconda/polystest/badges/installer/conda.svg
 
 ## Shiny app
 
