@@ -13,6 +13,8 @@ shinyUI(dashboardPage(skin="blue",
                         
                         notificationItem("source code and installation instructions", icon = icon("file"),
                                          href = "http://bitbucket.com/veitveit/polystest"),
+                        notificationItem("paper", icon = icon("scroll"),
+                                         href = "https://doi.org/10.1074/mcp.RA119.001777"),
                         notificationItem("author", icon = icon("address-card"),
                                          href = "http://computproteomics.bmb.sdu.dk"),
                         notificationItem("institution", icon = icon("university"),
@@ -31,7 +33,7 @@ shinyUI(dashboardPage(skin="blue",
     ")
                                        ),
                                        fluidPage(
-                                       h5("A tool to determine and visualize differentially regulated features using multiple approaches"),
+                                       h5("A tool to determine and visualize differentially regulated features using multiple approaches. For more information, press the question mark button on the upper right."),
                                        bsCollapse(id="Input",multiple=T,open="Data input",
                                                   bsCollapsePanel("Data input",style="primary",
                                                                   fileInput("in_file", "Input file:",accept=c("txt/csv", "text/comma-separated-values,text/plain", ".csv")),
