@@ -375,6 +375,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           )
         )
       ))
+      outTable <- NULL
       if (!is.null(addInfo)) outTable <- data.frame(addInfo,dat[,1:min(ncol(dat),NumReps*NumCond)],stringsAsFactors = F)
       else outTable <- dat[,1:min(ncol(dat),NumReps*NumCond)]
       output$stat_table <- DT::renderDataTable(DT::datatable(outTable,
@@ -485,7 +486,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             
             output$table_stats <- renderText(paste("Number selected features:",length(input$stat_table_rows_selected)))
             
-            
             # Arrange table header
             sketch = htmltools::withTags(table(
               class = 'display',
@@ -517,17 +517,20 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 )
               )
             ))
-            output$stat_table <- DT::renderDataTable(DT::datatable(FullReg,
+            output$stat_table <- DT::renderDataTable({
+              DT::datatable(FullReg,
                                                                    filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
                                                                    options = list(scrollX = TRUE,dom = 'Blfrtip',
                                                                                   columnDefs = list(list(width = '20%', targets = colnames(FullReg))),
                                                                                   autoWidth=T,lengthMenu = c(5, 10, 50,100),
                                                                                   buttons = list('colvis', 'copy', 'print')),
                                                                    extensions=c("Buttons","FixedColumns"),class="compact",
-                                                                   container=sketch) %>% 
+                                                                   container=sketch) %>%
                                                        formatSignif(grep("log-ratios",colnames(FullReg),value=T),digits=2) %>%
-                                                       formatSignif(grep("FDRs",colnames(FullReg),value=T),digits=2))
-            
+                                                       formatSignif(grep("FDR",colnames(FullReg),value=T),digits=2)
+
+              })
+
             
             SubSetLR <- SubSetQval <- FCRegs <- NULL
             qlim <- 0.01
