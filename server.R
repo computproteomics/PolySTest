@@ -9,6 +9,7 @@ library(qvalue)
 library(heatmaply)
 # library(d3heatmap)
 library(gplots)
+library(jsonlite)
 source("HelperFuncs.R")
 
 
@@ -23,6 +24,7 @@ shinyServer(function(input, output,clientData,session) {
   FullReg <- NULL
   obsadd <- NULL
   actFileName <- NULL
+  extdatatable <- reactiveVal(NULL)
   Comps <- reactiveValues(ind=vector(), num=NULL, RR=NULL, compNames=NULL) 
   currButton <- 0
   addCompButton <- 0
@@ -86,6 +88,50 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     currdata("EXAMPLE")
   })
   
+  # load external data if available
+  observe({
+    if (!is.null(input$extdata)) {
+      isolate({
+        #withProgress(message="Gathering external data ...", value="please wait",  {
+        jsonmessage <- fromJSON(input$extdata)
+        # Loading parameters
+        NumCond <- jsonmessage[["numcond"]]
+        NumReps <- jsonmessage[["numrep"]]
+        isPaired <- jsonmessage[["paired"]]
+        isGrouped <- jsonmessage[["grouped"]]
+        ColQuant <- jsonmessage[["firstquantcol"]]
+        # reading data matrix
+        expr_matr <- jsonmessage[["expr_matrix"]]
+        print(names(expr_matr))
+        output$fileInText <- renderText({
+          validate(need(!is.null(expr_matr), "Uploaded data empty"))
+          validate(need(length(expr_matr)>1, "Uploaded data does not contain multiple columns"))
+          validate(need(sum(duplicated(expr_matr[[1]]),na.rm=T)==0,"Duplicated feature names in first column!"))
+          tdat <- expr_matr[[1]]
+          for (i in 2:length(expr_matr)) {
+            validate(need(length(expr_matr[[i]]) == length(expr_matr[[1]]),
+                          paste("Wrong array length of sample", names(expr_matr)[i])))
+            if (i < ColQuant){
+              tdat <- data.frame(tdat, expr_matr[[i]])
+            } else {
+              tdat <- data.frame(tdat, as.numeric(expr_matr[[i]]))
+            }
+          }
+          colnames(tdat) <- names(expr_matr)
+          updateNumericInput(session,"NumCond",value=NumCond)
+          updateNumericInput(session,"NumReps",value=NumReps)
+          updateCheckboxInput(session, "is_paired", value=isPaired)
+          updateCheckboxInput(session, "qcol_order", value=isGrouped)
+          updateCheckboxInput(session, "ColQuant", value=ColQuant)
+          extdatatable(tdat)
+          print("Loaded external data")
+          return(paste("Loaded external data"))
+        })
+        
+      })
+      #})
+    }
+  })
   
   
   # # when changing reference condition, reset necessary stuff
@@ -117,18 +163,23 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
   
   observe({  
     # input$example
-    print("observe")
+    print("observe, read")
     output$messages <- renderText("")
     dat <- currdata()
-    if (!is.null(input$in_file))
-      # if (!is.null(dat)) {
-      #   if (na.omit(dat) != "EXAMPLE") {
+    if (!is.null(input$in_file)) {
       dat <- input$in_file
-    #   } 
-    # } else {
-    #   dat  <- input$in_file
-    # }
-    
+      print("reading file")
+      delim <- input$delimiter
+      if (delim == "tab")
+        delim <- "\t"
+      if (length(dat) == 4) {
+        actFileName <<- input$in_file$datapath
+      }
+      dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
+    } else if (!is.null(extdatatable)) {
+      dat <- extdatatable()
+      print(head(data))
+    }
     NumReps <- input$NumReps
     NumCond <- input$NumCond
     if(is.na(NumReps)) NumReps <- 1
@@ -153,16 +204,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         ndatcol <- 12
       } else  {
         FullReg <<- NULL
-        delim <- input$delimiter
-        if (delim == "tab")
-          delim <- "\t"
-        if (length(dat) == 4) {
-          actFileName <<- input$in_file$datapath
-        }
         if (input$row.names){
-          print("reading file")
-          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
-          output$input_stats <- renderText("Duplicated feature names in first column! You can avoid them by not using 'Row names'")
+          output$input_stats <- renderText("Duplicated feature names in first column! You can avoid them by not using the option 'Row names'")
           validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,""))
           rownames(dat) <- dat[,1]
           dat <- dat[,2:ncol(dat)]
@@ -176,9 +219,11 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               addInfo[,c] <- as.character(addInfo[,c])
             # print(head(addInfo))
             dat <- dat[,-(1:(input$ColQuant-2))]
+          } else {
+            addInfo <- NULL
           }
+          
         } else {
-          dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
           # updateSliderInput(session,"QuantCol",max=ncol(dat))
           rownames(dat) <- paste("feature",1:nrow(dat))
           
@@ -205,7 +250,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         } else {
           tncol <- ncol(dat)
         }
-        
         updateNumericInput(session,"ColQuant",max=tncol)
         updateNumericInput(session,"NumCond",max=ncol(dat))
         updateNumericInput(session,"NumReps",max=ncol(dat))
@@ -213,11 +257,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         
         
       }
-      
-      
       conditions <- paste("C",1:NumCond,sep="")
-      print(conditions)
-      
+
       isolate({
         for (i in 0:100) {
           removeUI(selector=paste("#selall_",i,sep=""))
@@ -246,7 +287,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         
         obsadd <<- observeEvent(input$addComp, {
           print("addComp")
-          print(conditions)
           isolate({
             if (input$addComp == addCompButton) 
               return()
@@ -519,18 +559,18 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             ))
             output$stat_table <- DT::renderDataTable({
               DT::datatable(FullReg,
-                                                                   filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
-                                                                   options = list(scrollX = TRUE,dom = 'Blfrtip',
-                                                                                  columnDefs = list(list(width = '20%', targets = colnames(FullReg))),
-                                                                                  autoWidth=T,lengthMenu = c(5, 10, 50,100),
-                                                                                  buttons = list('colvis', 'copy', 'print')),
-                                                                   extensions=c("Buttons","FixedColumns"),class="compact",
-                                                                   container=sketch) %>%
-                                                       formatSignif(grep("log-ratios",colnames(FullReg),value=T),digits=2) %>%
-                                                       formatSignif(grep("FDR",colnames(FullReg),value=T),digits=2)
-
-              })
-
+                            filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
+                            options = list(scrollX = TRUE,dom = 'Blfrtip',
+                                           columnDefs = list(list(width = '20%', targets = colnames(FullReg))),
+                                           autoWidth=T,lengthMenu = c(5, 10, 50,100),
+                                           buttons = list('colvis', 'copy', 'print')),
+                            extensions=c("Buttons","FixedColumns"),class="compact",
+                            container=sketch) %>%
+                formatSignif(grep("log-ratios",colnames(FullReg),value=T),digits=2) %>%
+                formatSignif(grep("FDR",colnames(FullReg),value=T),digits=2)
+              
+            })
+            
             
             SubSetLR <- SubSetQval <- FCRegs <- NULL
             qlim <- 0.01

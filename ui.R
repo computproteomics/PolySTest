@@ -22,6 +22,25 @@ shinyUI(dashboardPage(skin="blue",
                       )
                       ),
                       dashboardSidebar(width = "300",
+                                       tags$head(tags$script('
+    Shiny.addCustomMessageHandler("resetFileInputHandler", function(x) {      
+        var id = "#" + x + "_progress";
+        var idFile = "#" + x;
+        var idBar = id + " .bar";
+        $(id).css("visibility", "hidden");
+        $(idBar).css("width", "0%");
+        $(id).addClass("active");
+        $(idFile).replaceWith(idFile = $(idFile).clone(true));
+    });
+ window.addEventListener("message", displayMessage, false);
+ function displayMessage(evt) { 
+ console.log(evt.data)
+ var inmessage = JSON.parse(evt.data);
+ console.log(inmessage); 
+ console.log("read message");
+ Shiny.setInputValue("extdata", evt.data);
+}
+  ')),
                                        tags$style(HTML("
       .panel-primary {
       background-color: #333;
@@ -33,44 +52,45 @@ shinyUI(dashboardPage(skin="blue",
     ")
                                        ),
                                        fluidPage(
-                                       h5("A tool to determine and visualize differentially regulated features using multiple approaches. For more information, press the question mark button on the upper right."),
-                                       bsCollapse(id="Input",multiple=T,open="Data input",
-                                                  bsCollapsePanel("Data input",style="primary",
-                                                                  fileInput("in_file", "Input file:",accept=c("txt/csv", "text/comma-separated-values,text/plain", ".csv")),
-                                                                  actionLink("example","Load example"),
-                                                                  bsTooltip("example","Example data set from proteomics data (4 conditions, 3 replicates)",trigger="hover"),
-                                                                  fluidRow(
-                                                                    checkboxInput(inputId="is_header", label="Column names?", value=TRUE),
-                                                                    bsTooltip("is_header","Input file has column headers (only first row)",trigger="hover"),
-                                                                    checkboxInput(inputId="row.names", label="Row names?", value=TRUE),
-                                                                    bsTooltip("row.names","First column contains unique feature names",trigger="hover"),
-                                                                    radioButtons(inputId="delimiter", "Delimiter character", choices=c(",",";","tab"), selected=",",inline=T),
-                                                                    bsTooltip("delimiter","Cells are separated by ...",trigger="hover"),
-                                                                    radioButtons(inputId="digits", "Decimal character", choices=c(".",","), selected=".",inline=T),
-                                                                    bsTooltip("digits","Used character for digits",trigger="hover")
-                                                                  )
-                                                  ),
-                                                  bsCollapsePanel("Data layout",style="primary",
-                                                                  numericInput("ColQuant",min=2,max=20,value=2,label="First column for quantification",step=1),
-                                                                  bsTooltip("ColQuant","Number of first column that contains the to-be-analyzed values (e.g. 3 when the first two column contain protein IDs and protein descriptions, respectively)",trigger="hover"),
-                                                                  checkboxInput(inputId="qcol_order", label="Replicates are grouped",value = T),
-                                                                  bsTooltip("qcol_order","Given that replicates are numbered and conditions as given by letters A,B,... , grouped replicates denotes A1,B1,C1,...,A2,B2,C2 ..., while ungrouped means A1,A2,A3,...,B1,B2,B3,...",trigger="hover"),
-                                                                  numericInput("NumReps",min=2,max=20,value=3,label="Number of replicates",step=1),
-                                                                  bsTooltip("NumReps","Number of replicates per condition (fill by empty columns when different for different conditions)",trigger="hover"),
-                                                                  numericInput("NumCond",min=2,max=20,value=2,label="Number of conditions",step=1),
-                                                                  bsTooltip("NumCond","Number of experimental conditions that should be compared",trigger="hover")
-                                                  ),
-                                                  # numericInput("refCond",min=1,max=20,value=1,label="Reference condition",step=1),
-                                                  # bsTooltip("refCond","Experimental condition to which the other conditions will be compared to (e.g. 1 vs 2, 3 vs 2, 4 vs 2 - when set to 2)",trigger="hover"),
-                                                  bsCollapsePanel("Statistical testing",style="primary",
-                                                                  actionButton("button","Run analysis",icon = icon("play"),style="background-color:#FFED66"),
-                                                                  bsTooltip("button","Run statistical tests and their evaluation",trigger="hover"),
-                                                                  checkboxInput(inputId="is_paired", label="Paired tests?", value=F),
-                                                                  bsTooltip("is_paired","Paired: tests are paired within the replicates; Unpaired: comparison each versus each",trigger="hover"),
-                                                                  uiOutput("stat_comparisons"),
-                                                                  actionButton("addComp", "Add new comparison"),
-                                                                  bsTooltip("addComp","Add new pair of conditions to be tested for differentially regulated features")
-                                                  )))),
+                                         h5("A tool to determine and visualize differentially regulated features using multiple approaches. For more information, press the question mark button on the upper right."),
+                                         bsCollapse(id="Input",multiple=T,open="Data input",
+                                                    bsCollapsePanel("Data input",style="primary",
+                                                                    fileInput("in_file", "Input file:",accept=c("txt/csv", "text/comma-separated-values,text/plain", ".csv")),
+                                                                    actionLink("example","Load example"),
+                                                                    bsTooltip("example","Example data set from proteomics data (4 conditions, 3 replicates)",trigger="hover"),
+                                                                    fluidRow(
+                                                                      checkboxInput(inputId="is_header", label="Column names?", value=TRUE),
+                                                                      bsTooltip("is_header","Input file has column headers (only first row)",trigger="hover"),
+                                                                      checkboxInput(inputId="row.names", label="Row names?", value=TRUE),
+                                                                      bsTooltip("row.names","First column contains unique feature names",trigger="hover"),
+                                                                      radioButtons(inputId="delimiter", "Delimiter character", choices=c(",",";","tab"), selected=",",inline=T),
+                                                                      bsTooltip("delimiter","Cells are separated by ...",trigger="hover"),
+                                                                      radioButtons(inputId="digits", "Decimal character", choices=c(".",","), selected=".",inline=T),
+                                                                      bsTooltip("digits","Used character for digits",trigger="hover")
+                                                                    ),
+                                                                    textOutput("fileInText")
+                                                    ),
+                                                    bsCollapsePanel("Data layout",style="primary",
+                                                                    numericInput("ColQuant",min=2,max=20,value=2,label="First column for quantification",step=1),
+                                                                    bsTooltip("ColQuant","Number of first column that contains the to-be-analyzed values (e.g. 3 when the first two column contain protein IDs and protein descriptions, respectively)",trigger="hover"),
+                                                                    checkboxInput(inputId="qcol_order", label="Replicates are grouped",value = T),
+                                                                    bsTooltip("qcol_order","Given that replicates are numbered and conditions as given by letters A,B,... , grouped replicates denotes A1,B1,C1,...,A2,B2,C2 ..., while ungrouped means A1,A2,A3,...,B1,B2,B3,...",trigger="hover"),
+                                                                    numericInput("NumReps",min=2,max=20,value=3,label="Number of replicates",step=1),
+                                                                    bsTooltip("NumReps","Number of replicates per condition (fill by empty columns when different for different conditions)",trigger="hover"),
+                                                                    numericInput("NumCond",min=2,max=20,value=2,label="Number of conditions",step=1),
+                                                                    bsTooltip("NumCond","Number of experimental conditions that should be compared",trigger="hover")
+                                                    ),
+                                                    # numericInput("refCond",min=1,max=20,value=1,label="Reference condition",step=1),
+                                                    # bsTooltip("refCond","Experimental condition to which the other conditions will be compared to (e.g. 1 vs 2, 3 vs 2, 4 vs 2 - when set to 2)",trigger="hover"),
+                                                    bsCollapsePanel("Statistical testing",style="primary",
+                                                                    actionButton("button","Run analysis",icon = icon("play"),style="background-color:#FFED66"),
+                                                                    bsTooltip("button","Run statistical tests and their evaluation",trigger="hover"),
+                                                                    checkboxInput(inputId="is_paired", label="Paired tests?", value=F),
+                                                                    bsTooltip("is_paired","Paired: tests are paired within the replicates; Unpaired: comparison each versus each",trigger="hover"),
+                                                                    uiOutput("stat_comparisons"),
+                                                                    actionButton("addComp", "Add new comparison"),
+                                                                    bsTooltip("addComp","Add new pair of conditions to be tested for differentially regulated features")
+                                                    )))),
                       dashboardBody(
                         h3(""),
                         box(title="Help (click on the right to see the help page)",width=12, solidHeader = T, status="warning",collapsible = T,collapsed=T,
@@ -89,9 +109,9 @@ shinyUI(dashboardPage(skin="blue",
                               bsTooltip("qval","FDR threshold to assign significant features",trigger="hover"),
                               fluidRow(
                                 column(6,
-                              numericInput("fcval1","lower log-ratio threshold", value=0, min=-1, max=0, step=0.1 )),
-                              column(6,
-                              numericInput("fcval2","upper log-ratio threshold", value=0, min=0, max=1, step=0.1 ))),
+                                       numericInput("fcval1","lower log-ratio threshold", value=0, min=-1, max=0, step=0.1 )),
+                                column(6,
+                                       numericInput("fcval2","upper log-ratio threshold", value=0, min=0, max=1, step=0.1 ))),
                               bsTooltip("fcval1","Filter table for log-ratio (log of fold change) threshold",trigger="hover"),
                               bsTooltip("fcval2","Filter table for log-ratio (log of fold change) threshold",trigger="hover"),
                               actionButton("allLimsSelection",HTML("Select all features filtered by<br/> FDR and fold-change"))),
