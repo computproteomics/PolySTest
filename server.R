@@ -12,6 +12,7 @@ library(gplots)
 library(jsonlite)
 source("HelperFuncs.R")
 
+validate <- shiny::validate
 
 options(shiny.maxRequestSize=2000*1024^2)
 options(java.parameters="-Xss2560k")
@@ -176,7 +177,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         actFileName <<- input$in_file$datapath
       }
       dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
-    } else if (!is.null(extdatatable)) {
+    } else if (!is.null(extdatatable())) {
       dat <- extdatatable()
       print(head(data))
     }
@@ -187,7 +188,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     
     ColQuant <- input$ColQuant
     isPaired <- input$is_paired
-    
     print(head(dat,n=1))
     validate(need(!is.na(input$ColQuant),"Change 'First column for quantification'"))
     if (!is.null(dat)) {
