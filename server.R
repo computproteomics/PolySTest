@@ -180,6 +180,12 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     } else if (!is.null(extdatatable())) {
       dat <- extdatatable()
       print(head(data))
+    } else if (!is.null(actFileName)) {
+      print("reading file")
+      delim <- input$delimiter
+      if (delim == "tab")
+        delim <- "\t"
+      dat <- read.csv(actFileName,header=input$is_header,sep=delim,dec=input$digits,stringsAsFactors = F)
     }
     NumReps <- input$NumReps
     NumCond <- input$NumCond
@@ -387,10 +393,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         })
         
       })
-      print(head(dat,n=1))
-      
+
       currdata(dat)
-      
+
       # Arrange table header
       sketch = htmltools::withTags(table(
         class = 'display',
