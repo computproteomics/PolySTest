@@ -144,7 +144,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
   # adding default UI elements for comparisons
   addCompUIs <- function(el, conditions) {
     print("addCompUIs")
-    isolate({
       div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
           fluidRow(
             column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep=""))),
@@ -159,7 +158,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                                                                      choices = conditions,selected = conditions[1])),
             column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
           ))
-    })
   }
   
   observe({  
@@ -242,6 +240,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             dat <- dat[,-(1:(input$ColQuant-1))]
           }
         }
+
         ndatcol <- ncol(dat)
         if (!input$qcol_order) {
           print("reorder columns")
@@ -249,7 +248,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           act_cols <- rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)
           dat <- dat[,act_cols]
         }
-        
+  
         tncol <- 20
         if (!is.null(addInfo)) {
           tncol <- ncol(dat) + ncol(addInfo)
@@ -265,23 +264,18 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
       }
       conditions <- paste("C",1:NumCond,sep="")
 
-      isolate({
         for (i in 0:100) {
-          removeUI(selector=paste("#selall_",i,sep=""))
-          # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
-          # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
+          removeUI(selector=paste("#selall_",i,sep=""),immediate=T)
         }
-        # for (i in 1:100)
-        # removeUI(selector="#stat_comparisons div")
+        #removeUI(selector="#stat_comparisons div")
         Comps$num <- length(conditions)-1
         Comps$ind <- 1:(length(conditions)-1)
-        
+        print(conditions)
         for (el in (length(conditions)-1):1) {
-          
-          insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)))
+          insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)), immediate=T)
           addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
           addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
-          addTooltip(session, paste("selall_",el,sep=""), "ETWT")
+          addTooltip(session, paste("selall_",el,sep=""), "")
         }
         
         # add new UI elements for comparison
@@ -293,7 +287,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         
         obsadd <<- observeEvent(input$addComp, {
           print("addComp")
-          isolate({
             if (input$addComp == addCompButton) 
               return()
             addCompButton <<- input$addComp
@@ -302,15 +295,16 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             ind <- 1
             if (length(Comps$ind)>0)
               ind <- min((1:100)[-Comps$ind])
-            insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)))
+            insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)), immediate=T)
+            addTooltip(session,id=paste("sels_",ind,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
+            addTooltip(session, paste("selr_",ind,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
             Comps$num <- Comps$num + 1
             Comps$ind <- c(Comps$ind, ind)
-            print(Comps$ind)
-            
+
           })
-        })
+
         # remove UI elements 
-        lapply(1:100, function(i) {
+        lapply(0:100, function(i) {
           obs <- observeEvent(input[[paste("selb_",i,sep="")]],{
             isolate({
               # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
@@ -319,7 +313,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               # removeUI(selector=paste("div:has(> #","selb_",i,")",sep=""))
               # removeUI(selector=paste("div:has(> #","selt_",i,")",sep=""))
               print(paste("Remove sellall_",i))
-              removeUI(selector=paste("#","selall_",i,sep=""))
+              removeUI(selector=paste("#","selall_",i,sep=""),immediate=T)
               if (sum(Comps$ind == i) > 0) {
                 Comps$num <- Comps$num - 1
                 Comps$ind <- Comps$ind[-which(Comps$ind == i)]
@@ -332,7 +326,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         })
         
         
-      })
       if(ncol(dat) == NumReps*NumCond) {
         updateCollapse(session,"Input",open="Statistical tests")
       } else {
@@ -349,6 +342,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             if (!is.null(input[[paste("selr_",cmp,sep="")]]) & !is.null(input[[paste("sels_",cmp,sep="")]]))
               allComps <- rbind(allComps, c(input[[paste("selr_",cmp,sep="")]], input[[paste("sels_",cmp,sep="")]]))
           }
+          print(allComps)
           allComps <- unique(allComps)
           allComps <- allComps[allComps[,1,drop=F] != allComps[,2,drop=F], , drop=F]
           compNames <- NULL
@@ -467,6 +461,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             # Rearranged dat (reference condition comes first)
             # UData <- NULL
             NumComps <- Comps$num
+            if (NumComps > 0) {
             # for (i in 1:NumReps) {
             #   UData<-cbind(UData,dat[,(NumCond)*(i-1)+refCond])
             #   UData <- cbind(UData,dat[,(NumCond)*(i-1)+(1:NumCond)[-refCond]])
@@ -1022,7 +1017,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             #     replayPlot(pl)
             #     dev.off()
             #   })                
-            
+            }  
           })
           
           

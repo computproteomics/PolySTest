@@ -137,7 +137,7 @@ Paired <- function(MAData,NumCond,NumReps) {
   pRPvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("RP p-values",1:NumCond)))
   pPermutvalues<-matrix(NA,ncol=NumCond,nrow=nrow(MAData),dimnames=list(rows = rownames(MAData), cols=paste("Permutation p-values",1:NumCond)))
   cat("Running rank products and permutations tests ...\n")
-  pb <- txtProgressBar(1,NumCond)
+  pb <- txtProgressBar(0.9,NumCond)
   for (vs in 1:NumCond) {
     if (!is.null(getDefaultReactiveDomain()))
       setProgress(0.1+0.3/NumCond*vs, detail = paste("tests for comparison",vs,"of",NumCond))
@@ -249,7 +249,7 @@ Unpaired <- function(Data,NumCond,NumReps) {
   pRPvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumCond-1))))
   pPermutvalues<-matrix(NA,ncol=NumCond-1,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumCond-1))))
   cat("Running rank products and permutations tests ...\n")
-  pb <- txtProgressBar(2,NumCond)
+  pb <- txtProgressBar(1.9,NumCond)
   for (vs in 2:NumCond) {
     if (!is.null(getDefaultReactiveDomain()))
       setProgress(0.1+0.3/(NumCond-1)*vs, detail = paste("tests for comparison",vs-1,"of",NumCond-1))
@@ -367,7 +367,6 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
   NumComps <- ncol(RR)/NumReps
   RRCateg <- RR[,1:NumComps,drop=F]
   
-  
   ## limma
   cat ("Running limma tests\n")
   design <- model.matrix(~0+factor(Reps-1))
@@ -395,7 +394,8 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
   pRPvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("RP p-values",1:(NumComps))))
   pPermutvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=paste("Permutation p-values",1:(NumComps))))
   cat("Running rank products and permutations tests ...\n")
-  pb <- txtProgressBar(1,NumComps)
+  print(NumComps)
+  pb <- txtProgressBar(0.9,NumComps)
   
   for (vs in 1:NumComps) {
     if (!is.null(getDefaultReactiveDomain()))
@@ -512,7 +512,7 @@ MissingStatsDesign <- function(Data, RR, NumCond, NumReps) {
   pNAvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:(NumComps)))
   qNAvalues<-matrix(NA,ncol=NumComps,nrow=nrow(Data),dimnames=list(rows = rownames(Data), cols=1:(NumComps)))
   cat("Running Miss test ...\n")
-  pb <- txtProgressBar(1,NumComps)
+  pb <- txtProgressBar(0.9,NumComps)
   
   for (vs in 1:NumComps) {
     tData<-Data[,Reps==RRCateg[2,vs]]
