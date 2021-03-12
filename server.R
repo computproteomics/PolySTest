@@ -273,8 +273,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         print(conditions)
         for (el in (length(conditions)-1):1) {
           insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)), immediate=T)
-          addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
-          addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
+          #addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
+          #addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
           addTooltip(session, paste("selall_",el,sep=""), "")
         }
         
