@@ -146,7 +146,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     print("addCompUIs")
       div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
           fluidRow(
-            column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep=""))),
+            column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep="")),h6(style = "display:inline;", icon("question-circle"))),
                    id=paste("selt_",el,sep=""),style="padding:0px;")
           ),
           fluidRow(
@@ -273,6 +273,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         print(conditions)
         for (el in (length(conditions)-1):1) {
           insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)), immediate=T)
+          addTooltip(session,id=paste("selt_",el,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
           #addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
           #addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
           addTooltip(session, paste("selall_",el,sep=""), "")
@@ -296,8 +297,8 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             if (length(Comps$ind)>0)
               ind <- min((1:100)[-Comps$ind])
             insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)), immediate=T)
-            addTooltip(session,id=paste("sels_",ind,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
-            addTooltip(session, paste("selr_",ind,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
+            addTooltip(session,id=paste("selt_",ind,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
+            #addTooltip(session, paste("selr_",ind,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
             Comps$num <- Comps$num + 1
             Comps$ind <- c(Comps$ind, ind)
 
