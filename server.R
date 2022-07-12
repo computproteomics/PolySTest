@@ -196,7 +196,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
     validate(need(!is.na(input$ColQuant),"Change 'First column for quantification'"))
     if (!is.null(dat)) {
       ndatcol <- 0
-      if (dat == "EXAMPLE")  {
+      if (unlist(dat)[1] == "EXAMPLE")  {
         actFileName <<- "LiverAllProteins.csv"
         dat <- read.csv(actFileName,row.names=1)
         updateNumericInput(session,"NumCond",value=4)

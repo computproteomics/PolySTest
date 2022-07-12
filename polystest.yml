@@ -33,4 +33,4 @@ header: true
 outfile: "polystest_res.csv"
 ## Number of threads
 # default is 4
-threads: 2
+threads: 1

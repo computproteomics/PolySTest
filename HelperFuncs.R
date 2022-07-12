@@ -147,7 +147,7 @@ Paired <- function(MAData,NumCond,NumReps) {
     ## MA t-test_pvalues
     ptMAvalues <- sapply(1:nrow(tMAData), function(pep) {
       ifelse(sum(!is.na(tMAData[pep,]))>1, 
-             t.test(as.vector(tMAData[pep,]))$p.value,
+             t.test(tMAData[pep,])$p.value,
              NA)
     })
     names(ptMAvalues)<-rownames(tMAData)
@@ -404,11 +404,11 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
     trefData <- Data[,Reps==RRCateg[2,vs]]
     tptvalues<-NULL
     ## t-test_pvalues
-    tptvalues <- sapply(1:nrow(tData), function(pep) {
-      ifelse(sum(!is.na(tData[pep,]))>1 & sum(!is.na(trefData[pep,]))>1, 
-             t.test(tData[pep,],trefData[pep,])$p.value,
-             NA)
-    })
+    run_test <- rowSums(!is.na(tData))>1 & rowSums(!is.na(trefData))>1
+    tptvalues <- NA
+    for (pep in which(run_test)) {
+      tptvalues[pep] <- t.test(tData[pep,],trefData[pep,])$p.value
+    }
     names(tptvalues)<-rownames(tData)
     ptvalues <- cbind(ptvalues,tptvalues)
     
