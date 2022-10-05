@@ -402,10 +402,10 @@ UnpairedDesign <- function(Data,RR, NumCond,NumReps) {
       setProgress(0.1+0.3/(NumComps)*vs, detail = paste("tests for comparison",vs,"of",NumComps))
     tData<-Data[,Reps==RRCateg[1,vs]]
     trefData <- Data[,Reps==RRCateg[2,vs]]
-    tptvalues<-NULL
     ## t-test_pvalues
     run_test <- rowSums(!is.na(tData))>1 & rowSums(!is.na(trefData))>1
-    tptvalues <- NA
+    tptvalues <- vector("numeric", nrow(tData))
+    tptvalues[] <- NA
     for (pep in which(run_test)) {
       tptvalues[pep] <- t.test(tData[pep,],trefData[pep,])$p.value
     }
