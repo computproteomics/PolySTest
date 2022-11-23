@@ -32,14 +32,17 @@ shinyUI(dashboardPage(skin="blue",
         $(id).addClass("active");
         $(idFile).replaceWith(idFile = $(idFile).clone(true));
     });
+$(document).on("shiny:connected", function() {
  window.addEventListener("message", displayMessage, false);
  function displayMessage(evt) { 
- console.log(evt.data)
  var inmessage = JSON.parse(evt.data);
  console.log(inmessage); 
  console.log("read message");
+ evt.source.postMessage("PolySTest: data received",evt.origin);
  Shiny.setInputValue("extdata", evt.data);
-}
+ };
+});
+
   ')),
                                        tags$style(HTML("
       .panel-primary {
