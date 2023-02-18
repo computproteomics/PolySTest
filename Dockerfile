@@ -13,7 +13,7 @@ RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngrad
 RUN R -e "install.packages('BiocManager', repos='http://cran.us.r-project.org'); \
   update.packages(ask=F); \
   BiocManager::install(c('dplyr','plotly'),ask=F)"
-RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','parallel','qvalue','circlize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard','limma'\
+RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','parallel','qvalue','circlize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard','limma','shinyjs'\
 ),ask=F)"
 
 

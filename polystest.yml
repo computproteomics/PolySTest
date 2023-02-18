@@ -3,6 +3,9 @@
 numreps: 3
 ## Number of experimental conditions (time points, cell types, treatments, ...)
 numcond: 4
+## Run normalization before
+# Can be none, median, mean, sum_abs (on absolute values), quantile or cyclicloess from limma
+normalization: none
 ## Paired or unpaired design (true or false)
 # e.g. a time line where the samples where taken from the same patients: paired design
 paired: false

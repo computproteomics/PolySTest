@@ -144,20 +144,20 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
   # adding default UI elements for comparisons
   addCompUIs <- function(el, conditions) {
     print("addCompUIs")
-      div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
-          fluidRow(
-            column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep="")),h6(style = "display:inline;", icon("question-circle"))),
-                   id=paste("selt_",el,sep=""),style="padding:0px;")
-          ),
-          fluidRow(
-            column(4,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
-                                                                     choices = conditions,selected = conditions[el+1])),
-            column(2,h5("vs")),
-            column(4,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
-                                                                     label=NULL,
-                                                                     choices = conditions,selected = conditions[1])),
-            column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
-          ))
+    div(style="padding-right: 10px; padding-left: 0px;",id=paste("selall_",el,sep=""),
+        fluidRow(
+          column(12,align="left",style="padding:0px;",div(p(paste("Comparison ", el, ":",sep="")),h6(style = "display:inline;", icon("question-circle"))),
+                 id=paste("selt_",el,sep=""),style="padding:0px;")
+        ),
+        fluidRow(
+          column(4,align="center",style="padding:0px;",selectInput(paste("sels_",el,sep=""),label=NULL,
+                                                                   choices = conditions,selected = conditions[el+1])),
+          column(2,h5("vs")),
+          column(4,align="center",style="padding:0px;",selectInput(paste("selr_",el,sep=""), 
+                                                                   label=NULL,
+                                                                   choices = conditions,selected = conditions[1])),
+          column(2,align="center",style="padding:0px;",actionButton(paste("selb_",el,sep=""),label=NULL,icon =icon("trash")))
+        ))
   }
   
   observe({  
@@ -240,7 +240,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             dat <- dat[,-(1:(input$ColQuant-1))]
           }
         }
-
+        
         ndatcol <- ncol(dat)
         if (!input$qcol_order) {
           print("reorder columns")
@@ -248,7 +248,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
           act_cols <- rep(0:(NumCond-1),NumReps)*NumReps+rep(1:(NumReps), each=NumCond)
           dat <- dat[,act_cols]
         }
-  
+        
         tncol <- 20
         if (!is.null(addInfo)) {
           tncol <- ncol(dat) + ncol(addInfo)
@@ -263,70 +263,70 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         
       }
       conditions <- paste("C",1:NumCond,sep="")
-
-        for (i in 0:100) {
-          removeUI(selector=paste("#selall_",i,sep=""),immediate=T)
-        }
-        #removeUI(selector="#stat_comparisons div")
-        Comps$num <- length(conditions)-1
-        Comps$ind <- 1:(length(conditions)-1)
-        print(conditions)
-        for (el in (length(conditions)-1):1) {
-          insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)), immediate=T)
-          addTooltip(session,id=paste("selt_",el,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
-          #addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
-          #addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
-          addTooltip(session, paste("selall_",el,sep=""), "")
-        }
+      
+      for (i in 0:100) {
+        removeUI(selector=paste("#selall_",i,sep=""),immediate=T)
+      }
+      #removeUI(selector="#stat_comparisons div")
+      Comps$num <- length(conditions)-1
+      Comps$ind <- 1:(length(conditions)-1)
+      print(conditions)
+      for (el in (length(conditions)-1):1) {
+        insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)), immediate=T)
+        addTooltip(session,id=paste("selt_",el,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
+        #addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
+        #addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
+        addTooltip(session, paste("selall_",el,sep=""), "")
+      }
+      
+      # add new UI elements for comparison
+      if (!is.null(obsadd)) {
+        print("obsadd")
+        obsadd$destroy()
+      }
+      
+      
+      obsadd <<- observeEvent(input$addComp, {
+        print("addComp")
+        if (input$addComp == addCompButton) 
+          return()
+        addCompButton <<- input$addComp
         
-        # add new UI elements for comparison
-        if (!is.null(obsadd)) {
-          print("obsadd")
-          obsadd$destroy()
-        }
         
+        ind <- 1
+        if (length(Comps$ind)>0)
+          ind <- min((1:100)[-Comps$ind])
+        insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)), immediate=T)
+        addTooltip(session,id=paste("selt_",ind,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
+        #addTooltip(session, paste("selr_",ind,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
+        Comps$num <- Comps$num + 1
+        Comps$ind <- c(Comps$ind, ind)
         
-        obsadd <<- observeEvent(input$addComp, {
-          print("addComp")
-            if (input$addComp == addCompButton) 
-              return()
-            addCompButton <<- input$addComp
-            
-            
-            ind <- 1
-            if (length(Comps$ind)>0)
-              ind <- min((1:100)[-Comps$ind])
-            insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)), immediate=T)
-            addTooltip(session,id=paste("selt_",ind,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
-            #addTooltip(session, paste("selr_",ind,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
-            Comps$num <- Comps$num + 1
-            Comps$ind <- c(Comps$ind, ind)
-
+      })
+      
+      # remove UI elements 
+      lapply(0:100, function(i) {
+        obs <- observeEvent(input[[paste("selb_",i,sep="")]],{
+          isolate({
+            # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
+            # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
+            # removeUI(selector=paste("div:has(> #","selr_",i,")",sep=""))
+            # removeUI(selector=paste("div:has(> #","selb_",i,")",sep=""))
+            # removeUI(selector=paste("div:has(> #","selt_",i,")",sep=""))
+            print(paste("Remove sellall_",i))
+            removeUI(selector=paste("#","selall_",i,sep=""),immediate=T)
+            if (sum(Comps$ind == i) > 0) {
+              Comps$num <- Comps$num - 1
+              Comps$ind <- Comps$ind[-which(Comps$ind == i)]
+            }
+            print(Comps$num)
+            print(Comps$ind)
           })
-
-        # remove UI elements 
-        lapply(0:100, function(i) {
-          obs <- observeEvent(input[[paste("selb_",i,sep="")]],{
-            isolate({
-              # output[[paste("div:has(> #","selr_",i,")",sep="")]] <- NULL
-              # output[[paste("div:has(> #","sels_",i,")",sep="")]] <- NULL
-              # removeUI(selector=paste("div:has(> #","selr_",i,")",sep=""))
-              # removeUI(selector=paste("div:has(> #","selb_",i,")",sep=""))
-              # removeUI(selector=paste("div:has(> #","selt_",i,")",sep=""))
-              print(paste("Remove sellall_",i))
-              removeUI(selector=paste("#","selall_",i,sep=""),immediate=T)
-              if (sum(Comps$ind == i) > 0) {
-                Comps$num <- Comps$num - 1
-                Comps$ind <- Comps$ind[-which(Comps$ind == i)]
-              }
-              print(Comps$num)
-              print(Comps$ind)
-            })
-          })
-          
         })
         
-        
+      })
+      
+      
       if(ncol(dat) == NumReps*NumCond) {
         updateCollapse(session,"Input",open="Statistical tests")
       } else {
@@ -388,9 +388,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         })
         
       })
-
+      
       currdata(dat)
-
+      
       # Arrange table header
       sketch = htmltools::withTags(table(
         class = 'display',
@@ -463,561 +463,571 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             # UData <- NULL
             NumComps <- Comps$num
             if (NumComps > 0) {
-            # for (i in 1:NumReps) {
-            #   UData<-cbind(UData,dat[,(NumCond)*(i-1)+refCond])
-            #   UData <- cbind(UData,dat[,(NumCond)*(i-1)+(1:NumCond)[-refCond]])
-            # }
-            # rownames(UData) <- rownames(dat)
-            if (isPaired) {
-              for (i in 1:ncol(RR)) {
-                MAData<-cbind(MAData,dat[,RR[1,i]]-dat[,RR[2,i]])
+              # for (i in 1:NumReps) {
+              #   UData<-cbind(UData,dat[,(NumCond)*(i-1)+refCond])
+              #   UData <- cbind(UData,dat[,(NumCond)*(i-1)+(1:NumCond)[-refCond]])
+              # }
+              # rownames(UData) <- rownames(dat)
+              if (isPaired) {
+                for (i in 1:ncol(RR)) {
+                  MAData<-cbind(MAData,dat[,RR[1,i]]-dat[,RR[2,i]])
+                }
+                rownames(MAData)<-rownames(dat)
+                # qvalues <- Paired(MAData, NumCond-1, NumReps)
+                qvalues <- Paired(MAData, NumComps, NumReps)
+              } else {
+                # qvalues <- Unpaired(UData, NumCond, NumReps)
+                qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
               }
-              rownames(MAData)<-rownames(dat)
-              # qvalues <- Paired(MAData, NumCond-1, NumReps)
-              qvalues <- Paired(MAData, NumComps, NumReps)
-            } else {
-              # qvalues <- Unpaired(UData, NumCond, NumReps)
-              qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
-            }
-            # get q-values for missing values
-            MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
-            # MissingStats <- MissingStats(UData, NumCond, NumReps)
-            
-            
-            setProgress(0.5, detail = paste("Preparing data"))
-            print("Preparing data")
-            LogRatios <- qvalues$lratios
-            Pvalue <- cbind(qvalues$plvalues, MissingStats$pNAvalues, qvalues$pRPvalues, qvalues$pPermutvalues, qvalues$ptvalues)
-            Qvalue <- cbind(qvalues$qlvalues, MissingStats$qNAvalues,qvalues$qRPvalues, qvalues$qPermutvalues, qvalues$qtvalues)
-            Qvalue <- cbind(UnifyQvals(Qvalue,NumComps,NumTests),Qvalue)
-            print(head(Qvalue))
-            # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
-            
-            testNames <- c("limma","Miss test","rank products","permutation test","t-test")
-            colnames(LogRatios) <- paste("log-ratios",compNames)
-            colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumComps),rep(compNames,length(testNames)))
-            testNames2 <- c("PolySTest",testNames)
-            names(TestCols) <- testNames2
-            updateCheckboxGroupInput(session,"selTests",choices = testNames2, selected = "PolySTest")
-            updateCheckboxGroupInput(session,"selComps",choices = compNames, selected=compNames[1])
-            colnames(Qvalue) <- paste("FDR",rep(testNames2,each=NumComps),rep(compNames,length(testNames2)))
-            # colnames(WhereReg) <- paste("Differentially regulated",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
-            
-            # print(cor(log10(Pvalue),use="na.or.complete"))
-            if (!is.null(addInfo))
-              FullReg <- cbind(addInfo[rownames(LogRatios),],LogRatios, Qvalue)#, WhereReg)
-            else 
-              FullReg <- cbind(LogRatios, Qvalue)#, WhereReg)
-            
-            # Calculate best fc and qlim combination for all tests but the t-test
-            setProgress(0.7, detail = paste("Calculating favorable FDR and fc thresholds"))
-            tcomb <- FindFCandQlim(Qvalue, LogRatios)
-            setProgress(0.9, detail = paste("Creating figures"))
-            
-            print(tcomb)
-            
-            # Set fold-change thresholds
-            updateSliderInput(session,"fcval1",min=round(min(LogRatios,na.rm=T),1),
-                              max=0, value=c(-tcomb[1]))
-            updateSliderInput(session,"fcval2",min=0,
-                              max=round(max(LogRatios,na.rm=T),1), value=c(tcomb[1]))
-            
-            # Set q-value threshold
-            updateNumericInput(session,"qval",value=tcomb[2])
-            
-            output$table_stats <- renderText(paste("Number selected features:",length(input$stat_table_rows_selected)))
-            
-            # Arrange table header
-            sketch = htmltools::withTags(table(
-              class = 'display',
-              thead(
-                tr(
-                  th('',style="text-align: center;"),
-                  if(!is.null(addInfo))
-                    th(colspan = ncol(addInfo), 'Metadata',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumComps, 'Log-ratios',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumComps*NumTests, 'FDRs',style="text-align: center;border-left:thin solid;")
-                ),
-                tr(
-                  th('',style="text-align: center;"),
-                  if(!is.null(addInfo))
-                    th(colspan = ncol(addInfo), ''),
-                  th(colspan = NumComps, '',style="text-align: center;border-left:thin solid;border-left:thin solid;"),
-                  th(colspan = NumComps, 'PolySTest',style="text-align: center;border-left:thin solid;color: #AA3333;"),
-                  th(colspan = NumComps, 'limma',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumComps, 'Miss test',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumComps, 'rank products',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumComps, 'permutation test',style="text-align: center;border-left:thin solid;"),
-                  th(colspan = NumComps, 't-test',style="text-align: center;border-left:thin solid;")
-                ),
-                tr(
-                  th('Feature',style="text-align: center;"),
-                  if(!is.null(addInfo))
-                    lapply(colnames(addInfo),th,style="text-align: center;border-left:thin solid;"),
-                  lapply(rep(compNames,NumTests+1), th,style="text-align: center;border-left:thin solid;")
+              # get q-values for missing values
+              MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
+              # MissingStats <- MissingStats(UData, NumCond, NumReps)
+              
+              
+              setProgress(0.5, detail = paste("Preparing data"))
+              print("Preparing data")
+              LogRatios <- qvalues$lratios
+              Pvalue <- cbind(qvalues$plvalues, MissingStats$pNAvalues, qvalues$pRPvalues, qvalues$pPermutvalues, qvalues$ptvalues)
+              Qvalue <- cbind(qvalues$qlvalues, MissingStats$qNAvalues,qvalues$qRPvalues, qvalues$qPermutvalues, qvalues$qtvalues)
+              Qvalue <- cbind(UnifyQvals(Qvalue,NumComps,NumTests),Qvalue)
+              print(head(Qvalue))
+              # WhereReg <- cbind(qvalues$qtvalues<qlim, qvalues$qlvalues<qlim, qvalues$qRPvalues<qlim, qvalues$qPermutvalues<qlim, MissingStats$qNAvalues<qlim)
+              
+              testNames <- c("limma","Miss test","rank products","permutation test","t-test")
+              colnames(LogRatios) <- paste("log-ratios",compNames)
+              colnames(Pvalue) <- paste("p-values",rep(testNames,each=NumComps),rep(compNames,length(testNames)))
+              testNames2 <- c("PolySTest",testNames)
+              names(TestCols) <- testNames2
+              updateCheckboxGroupInput(session,"selTests",choices = testNames2, selected = "PolySTest")
+              updateCheckboxGroupInput(session,"selComps",choices = compNames, selected=compNames[1])
+              colnames(Qvalue) <- paste("FDR",rep(testNames2,each=NumComps),rep(compNames,length(testNames2)))
+              # colnames(WhereReg) <- paste("Differentially regulated",rep(testNames,each=NumCond-1),rep(compNames,length(testNames)))
+              
+              # print(cor(log10(Pvalue),use="na.or.complete"))
+              if (!is.null(addInfo))
+                FullReg <- cbind(addInfo[rownames(LogRatios),],LogRatios, Qvalue)#, WhereReg)
+              else 
+                FullReg <- cbind(LogRatios, Qvalue)#, WhereReg)
+              
+              # Calculate best fc and qlim combination for all tests but the t-test
+              setProgress(0.7, detail = paste("Calculating favorable FDR and fc thresholds"))
+              tcomb <- FindFCandQlim(Qvalue, LogRatios)
+              setProgress(0.9, detail = paste("Creating figures"))
+              
+              print(tcomb)
+              
+              # Set fold-change thresholds
+              updateSliderInput(session,"fcval1",min=round(min(LogRatios,na.rm=T),1),
+                                max=0, value=c(-tcomb[1]))
+              updateSliderInput(session,"fcval2",min=0,
+                                max=round(max(LogRatios,na.rm=T),1), value=c(tcomb[1]))
+              
+              # Set q-value threshold
+              updateNumericInput(session,"qval",value=tcomb[2])
+              
+              output$table_stats <- renderText(paste("Number selected features:",length(input$stat_table_rows_selected)))
+              
+              # Arrange table header
+              sketch = htmltools::withTags(table(
+                class = 'display',
+                thead(
+                  tr(
+                    th('',style="text-align: center;"),
+                    if(!is.null(addInfo))
+                      th(colspan = ncol(addInfo), 'Metadata',style="text-align: center;border-left:thin solid;"),
+                    th(colspan = NumComps, 'Log-ratios',style="text-align: center;border-left:thin solid;"),
+                    th(colspan = NumComps*NumTests, 'FDRs',style="text-align: center;border-left:thin solid;")
+                  ),
+                  tr(
+                    th('',style="text-align: center;"),
+                    if(!is.null(addInfo))
+                      th(colspan = ncol(addInfo), ''),
+                    th(colspan = NumComps, '',style="text-align: center;border-left:thin solid;border-left:thin solid;"),
+                    th(colspan = NumComps, 'PolySTest',style="text-align: center;border-left:thin solid;color: #AA3333;"),
+                    th(colspan = NumComps, 'limma',style="text-align: center;border-left:thin solid;"),
+                    th(colspan = NumComps, 'Miss test',style="text-align: center;border-left:thin solid;"),
+                    th(colspan = NumComps, 'rank products',style="text-align: center;border-left:thin solid;"),
+                    th(colspan = NumComps, 'permutation test',style="text-align: center;border-left:thin solid;"),
+                    th(colspan = NumComps, 't-test',style="text-align: center;border-left:thin solid;")
+                  ),
+                  tr(
+                    th('Feature',style="text-align: center;"),
+                    if(!is.null(addInfo))
+                      lapply(colnames(addInfo),th,style="text-align: center;border-left:thin solid;"),
+                    lapply(rep(compNames,NumTests+1), th,style="text-align: center;border-left:thin solid;")
+                  )
                 )
-              )
-            ))
-            output$stat_table <- DT::renderDataTable({
-              DT::datatable(FullReg,
-                            filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
-                            options = list(scrollX = TRUE,dom = 'Blfrtip',
-                                           columnDefs = list(list(width = '20%', targets = colnames(FullReg))),
-                                           autoWidth=T,lengthMenu = c(5, 10, 50,100),
-                                           buttons = list('colvis', 'copy', 'print')),
-                            extensions=c("Buttons","FixedColumns"),class="compact",
-                            container=sketch) %>%
-                formatSignif(grep("log-ratios",colnames(FullReg),value=T),digits=2) %>%
-                formatSignif(grep("FDR",colnames(FullReg),value=T),digits=2)
+              ))
+              output$stat_table <- DT::renderDataTable({
+                DT::datatable(FullReg,
+                              filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
+                              options = list(scrollX = TRUE,dom = 'Blfrtip',
+                                             columnDefs = list(list(width = '20%', targets = colnames(FullReg))),
+                                             autoWidth=T,lengthMenu = c(5, 10, 50,100),
+                                             buttons = list('colvis', 'copy', 'print')),
+                              extensions=c("Buttons","FixedColumns"),class="compact",
+                              container=sketch) %>%
+                  formatSignif(grep("log-ratios",colnames(FullReg),value=T),digits=2) %>%
+                  formatSignif(grep("FDR",colnames(FullReg),value=T),digits=2)
+                
+              })
               
-            })
-            
-            
-            SubSetLR <- SubSetQval <- FCRegs <- NULL
-            qlim <- 0.01
-            fclim <- c(-1,1)
-            
-            proxy = dataTableProxy('stat_table')
-            
-            observeEvent(input$resetSelection, {
-              proxy %>% DT::selectRows(NULL)
-            })
-            
-            observeEvent(input$allLimsSelection, {
-              print("allLimsSelection started")
-              selCols <- paste("FDR",apply(expand.grid(input$selTests, input$selComps), 1, paste, collapse=" "))
-              if (!is.null(colnames(FCRegs))) {
-                # print(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F])
-                selFeat <- which(rowSums(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F]<input$qval)>0)
+              
+              SubSetLR <- SubSetQval <- FCRegs <- NULL
+              qlim <- 0.01
+              fclim <- c(-1,1)
+              
+              proxy = dataTableProxy('stat_table')
+              
+              observeEvent(input$resetSelection, {
                 proxy %>% DT::selectRows(NULL)
-                if (length(selFeat) > 0)
-                  proxy %>% DT::selectRows(as.numeric(selFeat))
-              }
-              print("allLimsSelection finished")              
-            })
-            
-            observeEvent(input$allPageSelection, {
-              proxy %>% DT::selectRows(NULL)
-              proxy %>% DT::selectRows(input$stat_table_rows_current)
-            })
-            
-            observeEvent(input$allSelection, {
-              proxy %>% DT::selectRows(NULL)
-              proxy %>% DT::selectRows(input$stat_table_rows_all)
-            })
-            
-            observeEvent(input$plotregdistr_click, {
-              print(input$plotregdistr_click$x)
-              print(input$plotregdistr_click$y)
+              })
               
-            })
-            
-            ## Delay reaction to selecting rows in data table
-            triggerUpdate <- debounce(reactive(input$stat_table_rows_selected),2000)
-            
-            observe({
-              print("FCRegs started")
-              input$button
-              input$stat_table
-              sel_prots <- triggerUpdate()
-              qlim <- input$qval
-              fclim <- c(input$fcval1, input$fcval2)
-              # print(input$stat_table_rows_selected)
-              # Selecting only features from selected tests and conditions
-              # print(input$selComps)
-              # print(input$selTests)
-              SubSetLR <<- LogRatios[sel_prots,,drop=F]
-              SubSetQval <<- Qvalue[sel_prots,,drop=F]
-              isolate({
-                SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumComps),drop=F],na.rm=T)),,drop=F]
-                SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumComps),drop=F],na.rm=T)),,drop=F]
-                ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
-                FCRegs <<- Qvalue
-                for (t in 1:NumTests) {
-                  tsign <- Qvalue[,(t-1)*(NumComps)+(1:(NumComps)),drop=F] 
-                  tsign[is.na(tsign)] <- 1
-                  tsign[LogRatios>fclim[1] & LogRatios<fclim[2]] <- 1
-                  FCRegs[,(t-1)*(NumComps)+(1:(NumComps))] <<- tsign
+              observeEvent(input$allLimsSelection, {
+                print("allLimsSelection started")
+                selCols <- paste("FDR",apply(expand.grid(input$selTests, input$selComps), 1, paste, collapse=" "))
+                if (!is.null(colnames(FCRegs))) {
+                  # print(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F])
+                  selFeat <- which(rowSums(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F]<input$qval)>0)
+                  proxy %>% DT::selectRows(NULL)
+                  if (length(selFeat) > 0)
+                    proxy %>% DT::selectRows(as.numeric(selFeat))
                 }
+                print("allLimsSelection finished")              
               })
-              print("FCRegs finished")
-            })
-            
-            
-            
-            incProgress(0.7, detail = paste("Plotting first results"))
-            
-            
-            ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
-            plotPvalueDistr <- function() {
-              print("Plot p-values")
-              isolate({
-                par(mfrow=c(NumComps,length(testNames)))
-                for (i in 1:(NumComps)) {
-                  for (j in 2:NumTests) {
-                    hist(Pvalue[,(NumComps)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+              
+              observeEvent(input$allPageSelection, {
+                proxy %>% DT::selectRows(NULL)
+                proxy %>% DT::selectRows(input$stat_table_rows_current)
+              })
+              
+              observeEvent(input$allSelection, {
+                proxy %>% DT::selectRows(NULL)
+                proxy %>% DT::selectRows(input$stat_table_rows_all)
+              })
+              
+              observeEvent(input$plotregdistr_click, {
+                print(input$plotregdistr_click$x)
+                print(input$plotregdistr_click$y)
+                
+              })
+              
+              ## Delay reaction to selecting rows in data table
+              triggerUpdate <- debounce(reactive(input$stat_table_rows_selected),2000)
+              
+              observe({
+                print("FCRegs started")
+                input$button
+                input$stat_table
+                sel_prots <- triggerUpdate()
+                qlim <- input$qval
+                fclim <- c(input$fcval1, input$fcval2)
+                # print(input$stat_table_rows_selected)
+                # Selecting only features from selected tests and conditions
+                # print(input$selComps)
+                # print(input$selTests)
+                SubSetLR <<- LogRatios[sel_prots,,drop=F]
+                SubSetQval <<- Qvalue[sel_prots,,drop=F]
+                isolate({
+                  SubSetLR <<- SubSetLR[order(rowMins(SubSetQval[,1:(NumComps),drop=F],na.rm=T)),,drop=F]
+                  SubSetQval <<- SubSetQval[order(rowMins(SubSetQval[,1:(NumComps),drop=F],na.rm=T)),,drop=F]
+                  ## Same as Qvalue but with NAs and corresponding fold-changes filtered and set to 1
+                  FCRegs <<- Qvalue
+                  for (t in 1:NumTests) {
+                    tsign <- Qvalue[,(t-1)*(NumComps)+(1:(NumComps)),drop=F] 
+                    tsign[is.na(tsign)] <- 1
+                    tsign[LogRatios>fclim[1] & LogRatios<fclim[2]] <- 1
+                    FCRegs[,(t-1)*(NumComps)+(1:(NumComps))] <<- tsign
                   }
-                }
+                })
+                print("FCRegs finished")
               })
-            }
-            plotPvalueDistr()
-            output$downloadPvalueDistrPdf <- downloadHandler(
-              filename = function() {
-                paste("PvalueDistrPlots", Sys.Date(), ".pdf", sep="");
-              },
-              content = function(file) {
-                pdf(file,height=12,width=20)
-                plotPvalueDistr()
-                dev.off()  
-              })
-            
-            par(mfrow=c(1,1))
-            # volcano plots
-            output$plotvolc <- renderPlot({
-              input$button
-              input$stat_table
-              print("plot volcano plots")
-              sel_prots <- triggerUpdate()
-              qlim <- input$qval
-              fclim <- c(input$fcval1, input$fcval2)
-              plotVolcano <- function() {
-                par(mfrow=c(NumComps,NumTests))
-                for (i in 1:(NumComps)) {
-                  for (j in 1:NumTests) {
-                    plot(LogRatios[,i],-log10(Qvalue[,(NumComps)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
-                         cex=colSelected(0.5,nrow(Qvalue),sel_prots,1),
-                         col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),sel_prots,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
-                    abline(h=-log10(qlim),col="#AA3333",lwd=2)
-                    abline(v=fclim,col="#AA3333",lwd=2)
+              
+              
+              
+              incProgress(0.7, detail = paste("Plotting first results"))
+              
+              
+              ## Plotting DRFs vs q-value thresholds + volcano plots + p-val vs q-vals
+              plotPvalueDistr <- function() {
+                print("Plot p-values")
+                isolate({
+                  par(mfrow=c(NumComps,length(testNames)))
+                  for (i in 1:(NumComps)) {
+                    for (j in 2:NumTests) {
+                      hist(Pvalue[,(NumComps)*(j-2)+i],100, main=testNames2[j],sub=compNames[i],col=TestCols[j],xlab="p-value",border=NA)
+                    }
                   }
-                }
+                })
               }
-              plotVolcano()
-              par(mfrow=c(1,1))
-              output$downloadVolcanoPdf <- downloadHandler(
+              plotPvalueDistr()
+              output$downloadPvalueDistrPdf <- downloadHandler(
                 filename = function() {
-                  paste("VolcanoPlots", Sys.Date(), ".pdf", sep="");
+                  paste("PvalueDistrPlots", Sys.Date(), ".pdf", sep="");
                 },
                 content = function(file) {
                   pdf(file,height=12,width=20)
-                  plotVolcano()
+                  plotPvalueDistr()
                   dev.off()  
                 })
               
-              
-            },height=heightSize)
-            
-            output$plotexpression <- renderPlot({
-              print("plot expressions")
-              input$button
-              input$stat_table
-              input$profiles_scale
-              
-              triggerUpdate()
-              qlim <- input$qval
-              fclim <- c(input$fcval1, input$fcval2)
-              #input$stat_table_rows_selected
-              # print(head(SubSetLR))
-              if (length(SubSetLR)> 0) {
-                withProgress(message="Creating expression profiles ...", min=0,max=1, {
-                  setProgress(0.5)
-                  
-                  # CI plots of max 30 features
-                  SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
-                  indices <- rownames(SubSet)
-                  tdat <- as.matrix(dat[rownames(SubSet), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F])
-                  rownames(tdat) <- strtrim(rownames(tdat), 20)
-                  MeanSet <- SDSet <-  matrix(NA,nrow=nrow(tdat),ncol=NumCond,dimnames = 
-                                                list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
-                  for (c in 1:NumCond) {
-                    MeanSet[,c] <- rowMeans(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
-                    
-                    SDSet[,c] <- rowSds(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
-                  }
-                  if (input$profiles_scale) {
-                    MeanSet <- MeanSet - rowMeans(MeanSet,na.rm=T)
-                  }
-                  
-                  # par(mfrow=c(1,3))
-                  plotExpression <- function() {
-                    layout(t(c(1,1,2,2,3,3)))
-                    plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
-                    # print(colnames(SubSet))
-                    legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=strtrim(rownames(SubSet),20),lwd=3,
-                           title="Features")
-                    # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
-                    #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
-                    #        ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
-                    #        uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
-                    #        ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
-                    plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[1,],pch=16,
-                           xlab="Conditions",xlim=c(0.7,(NumCond+1)-0.7),
-                           ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
-                           uiw=SDSet[1,],type="b",barcol="#000000AA",
-                           ylim=range(MeanSet,na.rm=T),xaxt="none",lwd=1.5)
-                    title(main="Feature expression over conditions")
-                    axis(1,at=1:(NumCond),labels = colnames(MeanSet))
-                    # abline(h=fclim)
-                    if (nrow(MeanSet)>1) {
-                      for (i in 2:nrow(MeanSet)){
-                        # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
-                        #        add = T,pch=16,col=rainbow(nrow(SubSet))[i],
-                        #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
-                        plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
-                               add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
-                               uiw=SDSet[i,],type="b",barcol="#000000AA",lwd=1.5)
-                        
-                        
-                      }
+              par(mfrow=c(1,1))
+              # volcano plots
+              output$plotvolc <- renderPlot({
+                input$button
+                input$stat_table
+                print("plot volcano plots")
+                sel_prots <- triggerUpdate()
+                qlim <- input$qval
+                fclim <- c(input$fcval1, input$fcval2)
+                plotVolcano <- function() {
+                  par(mfrow=c(NumComps,NumTests))
+                  for (i in 1:(NumComps)) {
+                    for (j in 1:NumTests) {
+                      plot(LogRatios[,i],-log10(Qvalue[,(NumComps)*(j-1)+i]), main=testNames2[j],sub=compNames[i],xlab="log fold-change",ylab="-log10(q)",
+                           cex=colSelected(0.5,nrow(Qvalue),sel_prots,1),
+                           col=colSelected(adjustcolor(TestCols[j],alpha.f=0.3),nrow(Qvalue),sel_prots,"#FF9933"),pch=16,ylim=-log10(c(1,min(Qvalue,na.rm=T))))
+                      abline(h=-log10(qlim),col="#AA3333",lwd=2)
+                      abline(v=fclim,col="#AA3333",lwd=2)
                     }
+                  }
+                }
+                plotVolcano()
+                par(mfrow=c(1,1))
+                output$downloadVolcanoPdf <- downloadHandler(
+                  filename = function() {
+                    paste("VolcanoPlots", Sys.Date(), ".pdf", sep="");
+                  },
+                  content = function(file) {
+                    pdf(file,height=12,width=20)
+                    plotVolcano()
+                    dev.off()  
+                  })
+                
+                
+              },height=heightSize)
+              
+              output$plotexpression <- renderPlot({
+                print("plot expressions")
+                input$button
+                input$stat_table
+                input$profiles_scale
+                
+                triggerUpdate()
+                qlim <- input$qval
+                fclim <- c(input$fcval1, input$fcval2)
+                #input$stat_table_rows_selected
+                # print(head(SubSetLR))
+                if (length(SubSetLR)> 0) {
+                  withProgress(message="Creating expression profiles ...", min=0,max=1, {
+                    setProgress(0.5)
                     
-                    # Missing values
-                    # find descent visualization 
-                    
-                    # Compare q-values for each protein and method
-                    # validate(
-                    #   need(length(SubSet)>0, "Please select features from the data table")
-                    # )
-                    
-                    if (length(SubSet)> 0) {
+                    # CI plots of max 30 features
+                    SubSet <- SubSetLR[1:min(nrow(SubSetLR),30),,drop=F]
+                    indices <- rownames(SubSet)
+                    tdat <- as.matrix(dat[rownames(SubSet), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F])
+                    rownames(tdat) <- strtrim(rownames(tdat), 20)
+                    MeanSet <- SDSet <-  matrix(NA,nrow=nrow(tdat),ncol=NumCond,dimnames = 
+                                                  list(x=rownames(tdat),y=paste("Condition",1:NumCond)))
+                    for (c in 1:NumCond) {
+                      MeanSet[,c] <- rowMeans(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
                       
-                      par(mar=rep(0,4))
-                      circos.clear()
-                      circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
-                                 track.margin=c(0,0.02),start.degree=90,gap.degree=4)
-                      circos.initialize(1:(NumComps),xlim=c(0,1))
-                      for (t in 1:NumTests) {
-                        # print(tsign)
-                        nfeat <- min(nrow(SubSet),30)
-                        cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
-                        tsign <- FCRegs[indices,(t-1)*(NumComps)+(1:(NumComps)),drop=F]<qlim
-                        circos.trackPlotRegion(ylim=c(-3,2),track.height=1/12, bg.border="#777777",
-                                               panel.fun = function(x, y) {
-                                                 name = get.cell.meta.data("sector.index")
-                                                 i = get.cell.meta.data("sector.numeric.index")
-                                                 xlim = get.cell.meta.data("xlim")
-                                                 ylim = get.cell.meta.data("ylim")
-                                                 xdiff <- (xlim[2]-xlim[1])/nfeat
-                                                 if(t == 1) {
-                                                   circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", 
-                                                               niceFacing = TRUE,cex = 1,font=2)
-                                                   circos.axis("top", labels = strtrim(rownames(SubSetLR),20),
-                                                               major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
-                                                               labels.cex = 0.8,labels.facing = "reverse.clockwise",
-                                                   )
-                                                 }
-                                                 for (j in which(tsign[,i])) {
-                                                   circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
-                                                               xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                                               col = cols[j], border=NA)
-                                                 }
-                                               })
+                      SDSet[,c] <- rowSds(tdat[,1:NumReps + (c-1)*NumReps,drop=F],na.rm=T)
+                    }
+                    if (input$profiles_scale) {
+                      MeanSet <- MeanSet - rowMeans(MeanSet,na.rm=T)
+                    }
+                    
+                    # par(mfrow=c(1,3))
+                    plotExpression <- function() {
+                      layout(t(c(1,1,2,2,3,3)))
+                      plot(0,0,type="n",bty="n",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
+                      # print(colnames(SubSet))
+                      legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=strtrim(rownames(SubSet),20),lwd=3,
+                             title="Features")
+                      # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
+                      #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
+                      #        ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
+                      #        uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
+                      #        ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
+                      plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[1,],pch=16,
+                             xlab="Conditions",xlim=c(0.7,(NumCond+1)-0.7),
+                             ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
+                             uiw=SDSet[1,],type="b",barcol="#000000AA",
+                             ylim=range(MeanSet,na.rm=T),xaxt="none",lwd=1.5)
+                      title(main="Feature expression over conditions")
+                      axis(1,at=1:(NumCond),labels = colnames(MeanSet))
+                      # abline(h=fclim)
+                      if (nrow(MeanSet)>1) {
+                        for (i in 2:nrow(MeanSet)){
+                          # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
+                          #        add = T,pch=16,col=rainbow(nrow(SubSet))[i],
+                          #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
+                          plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
+                                 add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
+                                 uiw=SDSet[i,],type="b",barcol="#000000AA",lwd=1.5)
+                          
+                          
+                        }
                       }
-                      fccols <- redblue(1001)
-                      # print(SubSet)
-                      circos.trackPlotRegion(ylim=c(-3,2),track.height=1/4, bg.border=NA, panel.fun = function(x, y) {
-                        name = get.cell.meta.data("sector.index")
-                        i = get.cell.meta.data("sector.numeric.index")
-                        xlim = get.cell.meta.data("xlim")
-                        ylim = get.cell.meta.data("ylim")
-                        #circos.text(x=mean(xlim), y=1.7,
-                        #            labels=name, facing = dd, cex=0.6,  adj = aa),
-                        xdiff <- (xlim[2]-xlim[1])/nfeat
-                        for (j in 1:nfeat) {
-                          # print((SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500)
-                          circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
-                                      xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
-                                      col = fccols[(SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500], border=0)
-                        }})
-                      text(0,0,"Log\nratios",cex=0.7)
-                      # label the different tracks
-                      mtext(paste("Successful statistical tests\nfor threshold given above.\nFrom outer to inner circles", 
-                                  paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),sep="\n"),
-                            side=1,outer=T,adj=1,line=-1,cex=0.6)
+                      
+                      # Missing values
+                      # find descent visualization 
+                      
+                      # Compare q-values for each protein and method
+                      # validate(
+                      #   need(length(SubSet)>0, "Please select features from the data table")
+                      # )
+                      
+                      if (length(SubSet)> 0) {
+                        
+                        par(mar=rep(0,4))
+                        circos.clear()
+                        circos.par(cell.padding=c(0,0,0,0),canvas.xlim=c(-1.5,1.5),canvas.ylim=c(-1.5,1.5),
+                                   track.margin=c(0,0.02),start.degree=90,gap.degree=4)
+                        circos.initialize(1:(NumComps),xlim=c(0,1))
+                        for (t in 1:NumTests) {
+                          # print(tsign)
+                          nfeat <- min(nrow(SubSet),30)
+                          cols <- rainbow(nfeat,alpha = 0.8,s=0.7)
+                          tsign <- FCRegs[indices,(t-1)*(NumComps)+(1:(NumComps)),drop=F]<qlim
+                          circos.trackPlotRegion(ylim=c(-3,2),track.height=1/12, bg.border="#777777",
+                                                 panel.fun = function(x, y) {
+                                                   name = get.cell.meta.data("sector.index")
+                                                   i = get.cell.meta.data("sector.numeric.index")
+                                                   xlim = get.cell.meta.data("xlim")
+                                                   ylim = get.cell.meta.data("ylim")
+                                                   xdiff <- (xlim[2]-xlim[1])/nfeat
+                                                   if(t == 1) {
+                                                     circos.text(mean(xlim), max(ylim)+30, compNames[i], facing = "inside", 
+                                                                 niceFacing = TRUE,cex = 1,font=2)
+                                                     circos.axis("top", labels = strtrim(rownames(SubSetLR),20),
+                                                                 major.at=seq(1/(nfeat*2),1-1/(nfeat*2),length=nfeat),minor.ticks=0,
+                                                                 labels.cex = 0.8,labels.facing = "reverse.clockwise",
+                                                     )
+                                                   }
+                                                   for (j in which(tsign[,i])) {
+                                                     circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                                                 xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                                                 col = cols[j], border=NA)
+                                                   }
+                                                 })
+                        }
+                        fccols <- redblue(1001)
+                        # print(SubSet)
+                        circos.trackPlotRegion(ylim=c(-3,2),track.height=1/4, bg.border=NA, panel.fun = function(x, y) {
+                          name = get.cell.meta.data("sector.index")
+                          i = get.cell.meta.data("sector.numeric.index")
+                          xlim = get.cell.meta.data("xlim")
+                          ylim = get.cell.meta.data("ylim")
+                          #circos.text(x=mean(xlim), y=1.7,
+                          #            labels=name, facing = dd, cex=0.6,  adj = aa),
+                          xdiff <- (xlim[2]-xlim[1])/nfeat
+                          for (j in 1:nfeat) {
+                            # print((SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500)
+                            circos.rect(xleft=xlim[1]+(j-1)*xdiff, ybottom=ylim[1],
+                                        xright=xlim[2]-(nfeat-j)*xdiff, ytop=ylim[2],
+                                        col = fccols[(SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500], border=0)
+                          }})
+                        text(0,0,"Log\nratios",cex=0.7)
+                        # label the different tracks
+                        mtext(paste("Successful statistical tests\nfor threshold given above.\nFrom outer to inner circles", 
+                                    paste("Track ",1:NumTests,": ",testNames2,sep="",collapse="\n"),sep="\n"),
+                              side=1,outer=T,adj=1,line=-1,cex=0.6)
+                      }
+                    }
+                    plotExpression()
+                    
+                    output$downloadExprPdf <- downloadHandler(
+                      filename = function() {
+                        paste("SelExpressionProfiles", Sys.Date(), ".pdf", sep="");
+                      },
+                      content = function(file) {
+                        pdf(file,height=8,width=25)
+                        plotExpression()
+                        dev.off()  
+                        
+                      })
+                  })
+                }
+              },height=400)
+              
+              output$plotheatmap <- renderPlotly({
+                print("Plot heatmap")
+                # d3heatmap(SubSetLR)
+                input$button
+                input$stat_table
+                input$heatmap_scale
+                triggerUpdate()
+                qlim <- input$qval
+                fclim <- c(input$fcval, input$fcval2)
+                isolate({
+                  # print((SubSetLR))
+                  # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
+                  p <- plotly_empty()
+                  if (!is.null(SubSetLR)) {
+                    if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
+                      print("running heatmap")
+                      withProgress(message="Creating heatmap ...", min=0,max=1, {
+                        setProgress(0.5)
+                        tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
+                        rownames(tdat) <- strtrim(rownames(tdat), 30)
+                        # print(tdat) 
+                        
+                        # remove data rows with more than 45% missing values
+                        to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
+                        tqvals <- Qvalue[rownames(SubSetLR),1:(NumComps),drop=F]
+                        if (length(to_remove)>0) {
+                          tqvals <- tqvals[-to_remove,]
+                          tdat <- tdat[-to_remove,]
+                        }
+                        # setting colors of p-values
+                        pcols <- rev(c(0.001, 0.01, 0.05, 1))
+                        ttt <- tqvals
+                        for (c in pcols) {
+                          ttt[tqvals <= c] <- c 
+                        }
+                        tqvals <- data.frame(ttt)
+                        for (c in 1:ncol(tqvals))
+                          tqvals[,c] <- paste("<",as.character(tqvals[,c],pcols),sep="")
+                        scaling <- "none"
+                        tqvals <- tqvals[order(rownames(tdat)),]
+                        if(input$heatmap_scale) scaling <- "row"
+                        p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
+                                       RowSideColors = tqvals, row_side_palette = grey.colors)
+                        # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
+                        # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
+                      })
                     }
                   }
-                  plotExpression()
+                })
+                output$downloadHeatmapPdf <- downloadHandler(
+                  filename = function() {
+                    paste("Heatmap", Sys.Date(), ".pdf", sep="");
+                  },
+                  content = function(file) {
+                    if(input$heatmap_scale) scaling <- "row"
+                    ttt <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = scaling,trace="none",cexRow=0.7,plot_method="plotly", 
+                                     RowSideColors = tqvals, row_side_palette = grey.colors, file=file)
+                  })
+                p
+              })#,height=800)
+              
+              incProgress(0.8, detail = paste("Plotting more results"))
+              output$plotregdistr <- renderPlot({
+                print("Plot q-value numbers")
+                qlim <- input$qval
+                input$fcval1
+                input$fcval2
+                input$button
+                isolate({
+                  # print(head(FCRegs))
+                  WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumComps)*(NumComps)+rep(1:(NumComps),each=NumTests-1),drop=F]<qlim
+                  # print(head(WhereRegs))
+                  WhereRegs[WhereRegs] <- 1
+                  deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
+                  # print(deleted_cols)
                   
-                  output$downloadExprPdf <- downloadHandler(
+                  tcolnames <- paste("A",rep(1:(NumComps),each=NumTests-1))
+                  if (length(deleted_cols) > 0) {
+                    tcolnames <- tcolnames[-deleted_cols]
+                    WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
+                  }
+                  tcols <- rep(rainbow(NumComps),each=1)
+                  names(tcols) = rep(paste("A",1:(NumComps)),1)
+                  # print(head(WhereRegs))
+                  plotUpset <- function () {
+                    if(length(WhereRegs)>0) {
+                      #print("Plot UpSet plot")
+                      #print(UpSetR:::FindStartEnd(as.data.frame(WhereRegs)))
+                      #upset(as.data.frame(matrix(as.numeric(rnorm(1000)>0), 100)))
+                      upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
+                            decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
+                            set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
+                                                plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+                    } else {
+                      NULL
+                    }
+                  }
+                  print(plotUpset())
+                  output$downloadUpSetPdf <- downloadHandler(
                     filename = function() {
-                      paste("SelExpressionProfiles", Sys.Date(), ".pdf", sep="");
+                      paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
                     },
                     content = function(file) {
-                      pdf(file,height=8,width=25)
-                      plotExpression()
+                      pdf(file,height=8,width=8)
+                      print(plotUpset())
                       dev.off()  
-                      
                     })
                 })
-              }
-            },height=400)
-            
-            output$plotheatmap <- renderPlotly({
-              print("Plot heatmap")
-              # d3heatmap(SubSetLR)
-              input$button
-              input$stat_table
-              input$heatmap_scale
-              triggerUpdate()
-              qlim <- input$qval
-              fclim <- c(input$fcval, input$fcval2)
-              isolate({
-                # print((SubSetLR))
-                # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
-                p <- plotly_empty()
-                if (!is.null(SubSetLR)) {
-                  if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
-                    print("running heatmap")
-                    withProgress(message="Creating heatmap ...", min=0,max=1, {
-                      setProgress(0.5)
-                      tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
-                      rownames(tdat) <- strtrim(rownames(tdat), 30)
-                      # print(tdat) 
-                      
-                      # remove data rows with more than 45% missing values
-                      to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
-                      tqvals <- Qvalue[rownames(SubSetLR),1:(NumComps),drop=F]
-                      if (length(to_remove)>0) {
-                        tqvals <- tqvals[-to_remove,]
-                        tdat <- tdat[-to_remove,]
-                      }
-                      # setting colors of p-values
-                      pcols <- rev(c(0.001, 0.01, 0.05, 1))
-                      ttt <- tqvals
-                      for (c in pcols) {
-                        ttt[tqvals <= c] <- c 
-                      }
-                      tqvals <- data.frame(ttt)
-                      for (c in 1:ncol(tqvals))
-                        tqvals[,c] <- paste("<",as.character(tqvals[,c],pcols),sep="")
-                      scaling <- "none"
-                      tqvals <- tqvals[order(rownames(tdat)),]
-                      if(input$heatmap_scale) scaling <- "row"
-                      p <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly", 
-                                     RowSideColors = tqvals, row_side_palette = grey.colors)
-                      # p <- heatmaply(SubSetLR,scale = "none",trace="none",cexRow=0.7)
-                      # heatmap.2(SubSetLR,col=bluered,cexCol = 0.7,srtCol=45,scale="none",trace="none",cexRow=0.7)
-                    })
-                  }
-                }
-              })
-              output$downloadHeatmapPdf <- downloadHandler(
-                filename = function() {
-                  paste("Heatmap", Sys.Date(), ".pdf", sep="");
-                },
-                content = function(file) {
-                  if(input$heatmap_scale) scaling <- "row"
-                  ttt <- heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale = scaling,trace="none",cexRow=0.7,plot_method="plotly", 
-                                   RowSideColors = tqvals, row_side_palette = grey.colors, file=file)
-                })
-              p
-            })#,height=800)
-            
-            incProgress(0.8, detail = paste("Plotting more results"))
-            output$plotregdistr <- renderPlot({
-              print("Plot q-value numbers")
-              qlim <- input$qval
-              input$fcval1
-              input$fcval2
-              input$button
-              isolate({
-                # print(head(FCRegs))
-                WhereRegs <- FCRegs[,rep(0:(NumTests-2), NumComps)*(NumComps)+rep(1:(NumComps),each=NumTests-1),drop=F]<qlim
-                # print(head(WhereRegs))
-                WhereRegs[WhereRegs] <- 1
-                deleted_cols <- which(colSums(WhereRegs,na.rm=T)==0)
-                # print(deleted_cols)
                 
-                tcolnames <- paste("A",rep(1:(NumComps),each=NumTests-1))
-                if (length(deleted_cols) > 0) {
-                  tcolnames <- tcolnames[-deleted_cols]
-                  WhereRegs <- WhereRegs[,-deleted_cols,drop=F]
-                }
-                tcols <- rep(rainbow(NumComps),each=1)
-                names(tcols) = rep(paste("A",1:(NumComps)),1)
-                # print(head(WhereRegs))
-                plotUpset <- function () {
-                  if(length(WhereRegs)>0) {
-                    #print("Plot UpSet plot")
-                    #print(UpSetR:::FindStartEnd(as.data.frame(WhereRegs)))
-                    #upset(as.data.frame(matrix(as.numeric(rnorm(1000)>0), 100)))
-                    upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",order.by="degree",
-                          decreasing=T,nintersects = NA,keep.order=T,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
-                          set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=1:ncol(WhereRegs)), 
-                                              plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
-                  } else {
-                    NULL
+              },height=600)
+              
+              output$plotreg <- renderPlot({
+                print("Plot q-value number")
+                qlim <- input$qval
+                input$fcval1
+                input$fcval2
+                input$button
+                par(mfrow=c(1,NumComps))
+                tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
+                plotRegDistr <- function() {
+                  for (i in 1:(NumComps)) {
+                    plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="FDR threshold",
+                         ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
+                    if (i==1)
+                      legend("topleft",legend = testNames2,col=TestCols,lwd=2)
+                    lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
+                    lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
+                    lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
+                    lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
+                    lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
+                    abline(v=qlim,col=2)
                   }
                 }
-                print(plotUpset())
-                output$downloadUpSetPdf <- downloadHandler(
+                plotRegDistr()
+                par(mfrow=c(1,1))
+                output$downloadRegDistrPdf <- downloadHandler(
                   filename = function() {
-                    paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
+                    paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
                   },
                   content = function(file) {
                     pdf(file,height=8,width=8)
-                    print(plotUpset())
+                    plotRegDistr()
                     dev.off()  
                   })
-              })
+                
+                
+              },height=400)
+              setProgress(0.9, detail = paste("Finishing"))
               
-            },height=600)
-            
-            output$plotreg <- renderPlot({
-              print("Plot q-value number")
-              qlim <- input$qval
-              input$fcval1
-              input$fcval2
-              input$button
-              par(mfrow=c(1,NumComps))
-              tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
-              plotRegDistr <- function() {
-                for (i in 1:(NumComps)) {
-                  plot(tmpX,rowSums(sapply((FCRegs[,i]),"<",tmpX),na.rm=T), main=paste("Comparison",i),xlab="FDR threshold",
-                       ylab="Number significant",type="l",col=TestCols[1],ylim=c(1,nrow(Qvalue)),log="xy",lwd=2)
-                  if (i==1)
-                    legend("topleft",legend = testNames2,col=TestCols,lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*1+i]),"<",tmpX),na.rm=T),col=TestCols[2],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*2+i]),"<",tmpX),na.rm=T),col=TestCols[3],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*3+i]),"<",tmpX),na.rm=T),col=TestCols[4],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*4+i]),"<",tmpX),na.rm=T),col=TestCols[5],lwd=2)
-                  lines(tmpX,rowSums(sapply((FCRegs[,(NumComps)*5+i]),"<",tmpX),na.rm=T),col=TestCols[6],lwd=2)
-                  abline(v=qlim,col=2)
-                }
-              }
-              plotRegDistr()
-              par(mfrow=c(1,1))
-              output$downloadRegDistrPdf <- downloadHandler(
+              output$downloadData <- downloadHandler(
                 filename = function() {
-                  paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
+                  paste("Results", Sys.Date(), ".csv", sep="");
                 },
                 content = function(file) {
-                  pdf(file,height=8,width=8)
-                  plotRegDistr()
-                  dev.off()  
+                  write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
                 })
               
+              # Send data back to calling OmicsQ
+              observeEvent(input$retrieve_output, isolate({
+                # make table in right format
+                print("Sending data back")
+                outdata <- as.data.frame(as.matrix(FullReg))
+                BackMessage <- toJSON(list(expr_matrix=as.list(outdata)))
+                js$send_results(dat=BackMessage)
+              }))
               
-            },height=400)
-            setProgress(0.9, detail = paste("Finishing"))
-            
-            output$downloadData <- downloadHandler(
-              filename = function() {
-                paste("Results", Sys.Date(), ".csv", sep="");
-              },
-              content = function(file) {
-                write.csv(cbind(FullReg,Selected=(1:nrow(FullReg) %in% input$stat_table_rows_selected),dat), file)
-              })
-            # output$downloadFigure <- downloadHandler(
-            #   filename = function() {
-            #     paste("Results", Sys.Date(), ".pdf", sep="");
-            #   },
-            #   content = function(file) {
-            #     pdf(file,height=(NumCond-1)*4)
-            #     print(dev.cur())
-            #     replayPlot(pl)
-            #     dev.off()
-            #   })                
+              # output$downloadFigure <- downloadHandler(
+              #   filename = function() {
+              #     paste("Results", Sys.Date(), ".pdf", sep="");
+              #   },
+              #   content = function(file) {
+              #     pdf(file,height=(NumCond-1)*4)
+              #     print(dev.cur())
+              #     replayPlot(pl)
+              #     dev.off()
+              #   })                
             }  
           })
           

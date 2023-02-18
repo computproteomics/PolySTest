@@ -2,10 +2,12 @@ library(shinyBS)
 # library(d3heatmap)
 library(heatmaply)
 library(shinydashboard)
+library(shinyjs)
 title <- tags$img(src="Logo.svg",style="width:200px")
 
 shinyUI(dashboardPage(skin="blue",
-                      dashboardHeader(title=title,dropdownMenu(    
+                      dashboardHeader(title=title,
+                                      dropdownMenu(    
                         type = "notifications", 
                         icon = icon("question-circle"),
                         badgeStatus = NULL,
@@ -22,28 +24,10 @@ shinyUI(dashboardPage(skin="blue",
                       )
                       ),
                       dashboardSidebar(width = "300",
-                                       tags$head(tags$script('
-    Shiny.addCustomMessageHandler("resetFileInputHandler", function(x) {      
-        var id = "#" + x + "_progress";
-        var idFile = "#" + x;
-        var idBar = id + " .bar";
-        $(id).css("visibility", "hidden");
-        $(idBar).css("width", "0%");
-        $(id).addClass("active");
-        $(idFile).replaceWith(idFile = $(idFile).clone(true));
-    });
-$(document).on("shiny:connected", function() {
- window.addEventListener("message", displayMessage, false);
- function displayMessage(evt) { 
- var inmessage = JSON.parse(evt.data);
- console.log(inmessage); 
- console.log("read message");
- evt.source.postMessage("PolySTest: data received",evt.origin);
- Shiny.setInputValue("extdata", evt.data);
- };
-});
-
-  ')),
+                                       tags$head(tags$script(src="ExchangeData.js")),
+                                       useShinyjs(),  # Include shinyjs
+                                       extendShinyjs(script="ExchangeData.js", functions=c("send_results")),
+                                       
                                        tags$style(HTML("
       .panel-primary {
       background-color: #333;
