@@ -165,7 +165,6 @@ if (!is.null(addInfo)) {
 
 
 # Normalize
-incProgress(0.6, detail = "Normalizing")
 if (normalization == "median") {
   dat <- t(t(dat) -
     colMedians(as.matrix(dat), na.rm = TRUE))

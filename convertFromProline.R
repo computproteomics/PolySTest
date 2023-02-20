@@ -105,7 +105,7 @@ for (rep in 1:NumReps)  {
     
   }
 }
-write.csv(proteins, "proteins.csv",row.names=F)
+write.csv(proteins, "proteins.csv",row.names=FALSE)
 
 ## Write parameter values for PolySTest, assuming unpaired design
 params <- paste0("numreps: ",NumReps, "\nnumcond: ", NumCond, "\npaired: false\nrefcond: 0\nfirstquantcol: ",ColQuant,
