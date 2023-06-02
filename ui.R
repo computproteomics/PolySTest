@@ -4,14 +4,15 @@ library(heatmaply)
 library(shinydashboard)
 library(shinyjs)
 title <- tags$img(src="Logo.svg",style="width:200px")
+version <- "1.3.4"
 
 shinyUI(dashboardPage(skin="blue",
                       dashboardHeader(title=title,
                                       dropdownMenu(    
-                        type = "notifications", 
+                      type = "notifications", 
                         icon = icon("question-circle"),
                         badgeStatus = NULL,
-                        headerText = "See also:",
+                        headerText = paste0("Version: ", version),
                         
                         notificationItem("source code and installation instructions", icon = icon("file"),
                                          href = "http://bitbucket.com/veitveit/polystest"),
@@ -24,10 +25,6 @@ shinyUI(dashboardPage(skin="blue",
                       )
                       ),
                       dashboardSidebar(width = "300",
-                                       tags$head(tags$script(src="ExchangeData.js")),
-                                       useShinyjs(),  # Include shinyjs
-                                       extendShinyjs(script="ExchangeData.js", functions=c("send_results")),
-                                       
                                        tags$style(HTML("
       .panel-primary {
       background-color: #333;
@@ -79,6 +76,9 @@ shinyUI(dashboardPage(skin="blue",
                                                                     bsTooltip("addComp","Add new pair of conditions to be tested for differentially regulated features")
                                                     )))),
                       dashboardBody(
+                        tags$head(tags$script(src="ExchangeData.js")),
+                        useShinyjs(),  # Include shinyjs
+                        extendShinyjs(script="ExchangeData.js", functions=c("send_results")),
                         h3(""),
                         box(title="Help (click on the right to see the help page)",width=12, solidHeader = T, status="warning",collapsible = T,collapsed=T,
                             htmlOutput("description"),

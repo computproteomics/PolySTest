@@ -1,4 +1,4 @@
-let result_data = "empty";
+//let result_data = "empty";
 
 // Add a custom message handler to reset file inputs
 Shiny.addCustomMessageHandler("resetFileInputHandler", function(id) {      
@@ -18,6 +18,7 @@ $(document).on("shiny:connected", function() {
 
   function displayMessage(evt) { 
     // Parse the incoming message
+    console.log(evt.data);
     const inmessage = JSON.parse(evt.data);
     console.log(inmessage); 
     console.log("read message");
@@ -32,6 +33,8 @@ $(document).on("shiny:connected", function() {
       
       // Update the Shiny input value to trigger retrieval of the output
       Shiny.setInputValue("retrieve_output", "Get data");
+      setTimeout(function() { Shiny.setInputValue("retrieve_output", "Idle") }, 5000);
+
     } else {
       // Send a response indicating that data was received
       evt.source.postMessage("PolySTest: data received", evt.origin);
@@ -46,15 +49,15 @@ $(document).on("shiny:connected", function() {
  // check ext window and retrieve results
 shinyjs.send_results = function(params)
 {
-  
   //params = shinyjs.getParams(params)
   console.log(params);
 
   var message = params.dat;
   result_data = params.dat;
+  console.log(params.dat);
 //  var extWindow = window.extWindow; 
-
   //console.log(extWindow);
+  //console.log(result_data);
   //setTimeout(sendData, 1000);
 
   /*function sendData() {
@@ -62,5 +65,5 @@ shinyjs.send_results = function(params)
     console.log(message);
     console.log("PolySTest data sent");
   }*/
-}   
+};
 

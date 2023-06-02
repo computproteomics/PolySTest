@@ -313,7 +313,7 @@ if (NumCond > 1 & NumReps > 1) {
   
   cat("------- summary of results --------\n")
   cat("Number of differentially regulated features with FDR < 0.01\n")
-  regMatr <- matrix(colSums(Qvalue < 0.01, na.rm = TRUE),
+regMatr <- matrix(colSums(Qvalue < 0.01, na.rm = TRUE),
                     ncol = length(testNames2)
   )
   colnames(regMatr) <- testNames2

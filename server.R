@@ -95,6 +95,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
       isolate({
         #withProgress(message="Gathering external data ...", value="please wait",  {
         jsonmessage <- fromJSON(input$extdata)
+        print(js$send_results)
         # Loading parameters
         NumCond <- jsonmessage[["numcond"]]
         NumReps <- jsonmessage[["numrep"]]
@@ -1011,11 +1012,15 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
               
               # Send data back to calling OmicsQ
               observeEvent(input$retrieve_output, isolate({
+                print(input$retrieve_output)
                 # make table in right format
-                print("Sending data back")
-                outdata <- as.data.frame(as.matrix(FullReg))
-                BackMessage <- toJSON(list(expr_matrix=as.list(outdata)))
-                js$send_results(dat=BackMessage)
+                if (input$retrieve_output == "Get data") {
+                  print("Sending data back")
+                  outdata <- as.data.frame(as.matrix(FullReg))
+                  print(head(outdata, 1))
+                  BackMessage <- toJSON(list(expr_matrix=as.list(outdata)))
+                  js$send_results(dat=BackMessage)
+                }
               }))
               
               # output$downloadFigure <- downloadHandler(
