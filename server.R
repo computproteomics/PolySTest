@@ -560,6 +560,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 )
               ))
               output$stat_table <- DT::renderDataTable({
+          #print(colnames(FullReg))
                 DT::datatable(FullReg,
                               filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
                               options = list(scrollX = TRUE,dom = 'Blfrtip',
@@ -970,7 +971,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 input$fcval1
                 input$fcval2
                 input$button
-                par(mfrow=c(1,NumComps))
+                par(mfrow=c(min(5, NumComps),ceiling(NumComps / 5)))
                 tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
                 plotRegDistr <- function() {
                   for (i in 1:(NumComps)) {
