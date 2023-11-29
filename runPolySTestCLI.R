@@ -215,7 +215,7 @@ for (i in 1:NumCond) {
       }
     }
   }
-  if (!is.na(lcsname)) {
+  if (!is.na(lcsname) & sum(lcsname == conditions) == 0 ) {
     conditions[i] <- lcsname
   }
 }
