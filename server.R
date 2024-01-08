@@ -1,13 +1,12 @@
-# Use hommel test (see https://stats.stackexchange.com/questions/76643/combining-p-values-from-different-statistical-tests-applied-on-the-same-data) for details and then smallest p-value for results
+# Use hommel test (see https://stats.stackexchange.com/questions/76643/combining-p-values-from-different-statistical-tests-applied-on-the-same-data)
+# for details and then smallest p-value for results
 
-# library(shinyBS)
 library(DT)
 library(circlize)
 library(UpSetR)
 library(matrixStats)
 library(qvalue)
 library(heatmaply)
-# library(d3heatmap)
 library(gplots)
 library(jsonlite)
 source("HelperFuncs.R")
@@ -19,81 +18,79 @@ options(java.parameters="-Xss2560k")
 # for debugging:
 # options(shiny.reactlog=TRUE)
 
-
-shinyServer(function(input, output,clientData,session) {
-  currdata <- reactiveVal(NULL)
-  FullReg <- NULL
-  obsadd <- NULL
-  actFileName <- NULL
-  extdatatable <- reactiveVal(NULL)
-  Comps <- reactiveValues(ind=vector(), num=NULL, RR=NULL, compNames=NULL) 
-  currButton <- 0
-  addCompButton <- 0
-  NumTests <- 6
-  TestCols <- c("#33AAAA","#33AA33","#AA3333","#AA33AA","#AAAA33","#3333AA")
-  addInfo <- NULL # additional info to be re-added after analysis
+shinyServer(function(input, output, clientData, session) {
+  
+  # Reactive values and global variables
+  currdata <- reactiveVal(NULL)  # Stores the current data content
+  FullReg <- NULL  # Output table
+  obsadd <- NULL  # Placeholder for adding new comparison UI elements
+  actFileName <- NULL  # Placeholder for the actual file name for input
+  extdatatable <- reactiveVal(NULL)  # Stores external data table submitted to PolySTest via JSON message
+  Comps <- reactiveValues(ind=vector(), num=NULL, RR=NULL, compNames=NULL)  # Stores comparison information
+  currButton <- 0  # Current button state of input$button
+  addCompButton <- 0  # Check whether new comparison button needs to be added
+  NumTests <- 6  # Number of different statistical tests including the combined PolySTest
+  TestCols <- c("#33AAAA","#33AA33","#AA3333","#AA33AA","#AAAA33","#3333AA")  # Colors for tests
+  addInfo <- NULL  # Additional information from the original table to be re-added after analysis
+  
+  # Function to calculate the height size
   heightSize = function() {
-    if(!is.null(Comps$num)) {
-      max(200,(Comps$num)*200)
+    if (!is.null(Comps$num)) {
+      max(200, (Comps$num) * 200)
     } else {
       200
     }
   }
+  
+  # Function to calculate the height size 2
   heightSize2 = function() {
-    (Comps$num)*400
+    (Comps$num) * 400
   }
+  
+  # Function to select colors for columns
   colSelected = function(col, num, sel, col2) {
-    ttt <- rep(col,num)
+    ttt <- rep(col, num)
     ttt[sel] <- col2
     return(ttt)
   }
   
+  
+  
+  
+  # Render text outputs
   output$messages <- renderText("")
-  output$thead <- renderText("Multiple statistical tests for the detection for differentially regulated features")
-  output$description <- renderText("The methods are designed to carry out statistical tests on data with few replicates and 
-                                   high amounts of missing values. ")
-  output$description2 <- renderText("We recommend this method for datasets with a minimum of 1000 features (rows of the table)
-                                   and at least 3 replicates. The method is based on ratios between
-features within the replicate, i.e. the tests are carried out on paired tests.")
-  output$description3 <- renderText("For details, see <i>manuscript in preparation</i>
-                                  ")
-  output$description4 <- renderText("Data input: Data table of <b>log-transformed</b> (quantitative) omics data (csv file) with separate columns for feature information and quantification values. If row names is set,
-                                    then the first column of the csv file provides unique features names (no duplicates).
-                                    Columns with quantifications follow after all other columns and start with columns number <i>First column for quantification</i>.The quantification values should be 
-                                    log-transformed intensity/abundance values (not ratios) which have been normalized to be comparable. Be aware that not normalized
-                                    or wrongly normalized data might increase the number of false positives. The 
-                                   order of the columns is required to either be A1, A2, A3, ..., B1, B2, B3, ... or A1, B1, C1, ..., where
-                                   1,2,3 ... are the conditions and A,B,... denote replicates. We require identical number of replicates per condtion. 
-                                    In the case of slight differing replicate numbers, add empty columns. 
-                                    The tests check for differentially regulated features
-                                    versus the \"reference\" condition. For each comparison (log-ratio), we provide various visualizations for further investigation.")
-  #   output$NumReps <- renderText("Number of replicates")
-  #   output$NumCond <- renderText("Number of conditions")
-  #   output$refCond <- renderText("Reference condition")
+  output$thead <- renderText("Multiple statistical tests for the detection 
+                             for differentially regulated features")
+  output$description <- renderText("The methods are designed to carry out 
+                                   statistical tests on data with few 
+                                   replicates and high amounts of missing values.")
+  output$description2 <- renderText("We recommend this method for datasets with a minimum of 1000 features (rows of the table) and at least 3 replicates. The method is based on ratios between features within the replicate, i.e. the tests are carried out on paired tests.")
+  output$description3 <- renderText("For details, see <i>manuscript in preparation</i>")
+  output$description4 <- renderText("Data input: Data table of <b>log-transformed</b> (quantitative) omics data (csv file) with separate columns for feature information and quantification values. If row names is set, then the first column of the csv file provides unique features names (no duplicates). Columns with quantifications follow after all other columns and start with columns number <i>First column for quantification</i>. The quantification values should be log-transformed intensity/abundance values (not ratios) which have been normalized to be comparable. Be aware that not normalized or wrongly normalized data might increase the number of false positives. The order of the columns is required to either be A1, A2, A3, ..., B1, B2, B3, ... or A1, B1, C1, ..., where 1,2,3 ... are the conditions and A,B,... denote replicates. We require identical number of replicates per condtion. In the case of slight differing replicate numbers, add empty columns. The tests check for differentially regulated features versus the \"reference\" condition. For each comparison (log-ratio), we provide various visualizations for further investigation.")
   
-  
+  # Download data handler
   output$downloadData <- downloadHandler(
     filename = function() {
       validate(
-        need(F,"No data")
-      )      
-      paste("Results", Sys.Date(), ".csv", sep="");
+        need(F, "No data")
+      )
+      paste("Results", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
       write.csv(FullReg, file)
     }
   )
   
-  # upon selecting example data
+  # Observe event for selecting example data
   observeEvent(input$example, {
     currdata("EXAMPLE")
   })
   
-  # load external data if available
+  
+  # load external data if submitted
   observe({
     if (!is.null(input$extdata)) {
       isolate({
-        #withProgress(message="Gathering external data ...", value="please wait",  {
         jsonmessage <- fromJSON(input$extdata)
         print(js$send_results)
         # Loading parameters
@@ -107,39 +104,32 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         print(names(expr_matr))
         output$fileInText <- renderText({
           validate(need(!is.null(expr_matr), "Uploaded data empty"))
-          validate(need(length(expr_matr)>1, "Uploaded data does not contain multiple columns"))
-          validate(need(sum(duplicated(expr_matr[[1]]),na.rm=T)==0,"Duplicated feature names in first column!"))
+          validate(need(length(expr_matr) > 1, "Uploaded data does not contain multiple columns"))
+          validate(need(sum(duplicated(expr_matr[[1]]), na.rm = T) == 0, "Duplicated feature names in first column!"))
           tdat <- expr_matr[[1]]
           for (i in 2:length(expr_matr)) {
             validate(need(length(expr_matr[[i]]) == length(expr_matr[[1]]),
                           paste("Wrong array length of sample", names(expr_matr)[i])))
-            if (i < ColQuant){
+            if (i < ColQuant) {
               tdat <- data.frame(tdat, expr_matr[[i]])
             } else {
               tdat <- data.frame(tdat, as.numeric(expr_matr[[i]]))
             }
           }
           colnames(tdat) <- names(expr_matr)
-          updateNumericInput(session,"NumCond",value=NumCond)
-          updateNumericInput(session,"NumReps",value=NumReps)
-          updateCheckboxInput(session, "is_paired", value=isPaired)
-          updateCheckboxInput(session, "qcol_order", value=isGrouped)
-          updateCheckboxInput(session, "ColQuant", value=ColQuant)
+          updateNumericInput(session, "NumCond", value = NumCond)
+          updateNumericInput(session, "NumReps", value = NumReps)
+          updateCheckboxInput(session, "is_paired", value = isPaired)
+          updateCheckboxInput(session, "qcol_order", value = isGrouped)
+          updateCheckboxInput(session, "ColQuant", value = ColQuant)
           extdatatable(tdat)
           print("Loaded external data")
           return(paste("Loaded external data"))
         })
         
       })
-      #})
     }
   })
-  
-  
-  # # when changing reference condition, reset necessary stuff
-  # observeEvent(input$refCond, {
-  #   reset(input$button)
-  # })
   
   
   # adding default UI elements for comparisons
@@ -261,22 +251,18 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         updateNumericInput(session,"NumReps",max=ncol(dat))
         updateCollapse(session,"Input",open = "Data layout",close="Data input")
         
-        
       }
       conditions <- paste("C",1:NumCond,sep="")
       
       for (i in 0:100) {
         removeUI(selector=paste("#selall_",i,sep=""),immediate=T)
       }
-      #removeUI(selector="#stat_comparisons div")
       Comps$num <- length(conditions)-1
       Comps$ind <- 1:(length(conditions)-1)
       print(conditions)
       for (el in (length(conditions)-1):1) {
         insertUI("#stat_comparisons","afterEnd",ui=tagList(addCompUIs(el,conditions)), immediate=T)
         addTooltip(session,id=paste("selt_",el,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
-        #addTooltip(session,id=paste("sels_",el,sep=""),title="Condition which is compared to reference (taking log-ratios)",trigger="hover")
-        #addTooltip(session, paste("selr_",el,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
         addTooltip(session, paste("selall_",el,sep=""), "")
       }
       
@@ -298,8 +284,9 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         if (length(Comps$ind)>0)
           ind <- min((1:100)[-Comps$ind])
         insertUI("#addComp","beforeBegin",ui=tagList(addCompUIs(ind,conditions)), immediate=T)
-        addTooltip(session,id=paste("selt_",ind,sep=""),title="Condition and reference condition which will be compared (taking log-ratios)",trigger="hover")
-        #addTooltip(session, paste("selr_",ind,sep=""),title="Reference condition to be compared with (taking log-ratios)",trigger="hover")
+        addTooltip(session,id=paste("selt_",ind,sep=""),title="Condition and 
+                   reference condition which will be compared 
+                   (taking log-ratios)",trigger="hover")
         Comps$num <- Comps$num + 1
         Comps$ind <- c(Comps$ind, ind)
         
@@ -374,8 +361,10 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
             updateCollapse(session,"Input",close = "Statistical testing")
           }
           
-          paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format /setup</b></br>",""),
-                ifelse(ndatcol != NumReps*NumCond,"<b>Column number doesn't fit with number of replicates and conditions!</b><br/>",""),
+          paste(ifelse(mode(as.matrix(dat))!="numeric","<b>Wrong file format 
+                       /setup</b></br>",""),
+                ifelse(ndatcol != NumReps*NumCond,"<b>Column number doesn't fit 
+                       with number of replicates and conditions!</b><br/>",""),
                 "Number of features: ",nrow(dat),
                 "<br/>Number of data columns in file:", ndatcol,
                 "<br/>Percentage of missing values:",
@@ -560,7 +549,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 )
               ))
               output$stat_table <- DT::renderDataTable({
-          #print(colnames(FullReg))
+                #print(colnames(FullReg))
                 DT::datatable(FullReg,
                               filter = list(position = 'top', clear = FALSE),colnames = c('model' = 1),
                               options = list(scrollX = TRUE,dom = 'Blfrtip',
@@ -624,10 +613,7 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 sel_prots <- triggerUpdate()
                 qlim <- input$qval
                 fclim <- c(input$fcval1, input$fcval2)
-                # print(input$stat_table_rows_selected)
                 # Selecting only features from selected tests and conditions
-                # print(input$selComps)
-                # print(input$selTests)
                 SubSetLR <<- LogRatios[sel_prots,,drop=F]
                 SubSetQval <<- Qvalue[sel_prots,,drop=F]
                 isolate({
@@ -747,11 +733,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                       # print(colnames(SubSet))
                       legend("topright",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7),legend=strtrim(rownames(SubSet),20),lwd=3,
                              title="Features")
-                      # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices)[1],1:(NumCond-1),drop=F],pch=16,
-                      #        xlab="Conditions",xlim=c(0.7,(NumCond)-0.7),
-                      #        ylab="log-ratios",col=rainbow(nrow(SubSet),alpha = 0.8,s=0.7)[1],
-                      #        uiw=qvalues$Sds[input$stat_table_rows_selected][1],type="b",barcol="#000000FF",
-                      #        ylim=range(LogRatios,na.rm=T),xaxt="none",lwd=1.5)
                       plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[1,],pch=16,
                              xlab="Conditions",xlim=c(0.7,(NumCond+1)-0.7),
                              ylab="expression values",col=rainbow(nrow(MeanSet),alpha = 0.8,s=0.7)[1],
@@ -762,9 +743,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                       # abline(h=fclim)
                       if (nrow(MeanSet)>1) {
                         for (i in 2:nrow(MeanSet)){
-                          # plotCI(1:(NumCond-1)+runif(1,-0.1,0.1),LogRatios[as.vector(indices[i]),1:(NumCond-1),drop=F],
-                          #        add = T,pch=16,col=rainbow(nrow(SubSet))[i],
-                          #        uiw=qvalues$Sds[input$stat_table_rows_selected][i],type="b",barcol="#000000FF",lwd=1.5) 
                           plotCI(1:(NumCond)+runif(1,-0.1,0.1),MeanSet[i,],
                                  add = T,pch=16,col=rainbow(nrow(MeanSet))[i],
                                  uiw=SDSet[i,],type="b",barcol="#000000AA",lwd=1.5)
@@ -865,7 +843,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 fclim <- c(input$fcval, input$fcval2)
                 isolate({
                   # print((SubSetLR))
-                  # SubSetLR <- SubSetLR[rowSums(!is.na(SubSetLR))>1,,drop=F]
                   p <- plotly_empty()
                   if (!is.null(SubSetLR)) {
                     if (length(SubSetLR)> 0 & nrow(SubSetLR)>1) {
@@ -874,7 +851,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                         setProgress(0.5)
                         tdat <- dat[rownames(SubSetLR), (rep(1:NumReps,NumCond)-1)*NumCond+rep(1:NumCond,each=NumReps),drop=F]
                         rownames(tdat) <- strtrim(rownames(tdat), 30)
-                        # print(tdat) 
                         
                         # remove data rows with more than 45% missing values
                         to_remove <- which(rowSums(is.na(tdat)) > ncol(tdat)*0.45)
@@ -1024,16 +1000,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
                 }
               }))
               
-              # output$downloadFigure <- downloadHandler(
-              #   filename = function() {
-              #     paste("Results", Sys.Date(), ".pdf", sep="");
-              #   },
-              #   content = function(file) {
-              #     pdf(file,height=(NumCond-1)*4)
-              #     print(dev.cur())
-              #     replayPlot(pl)
-              #     dev.off()
-              #   })                
             }  
           })
           
@@ -1041,7 +1007,6 @@ features within the replicate, i.e. the tests are carried out on paired tests.")
         }
       })
     }
-    #       output$messages <- renderText("finished")
     
   },height=heightSize)
   

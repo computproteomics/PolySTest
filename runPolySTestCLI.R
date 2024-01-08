@@ -294,7 +294,6 @@ if (NumCond > 1 & NumReps > 1) {
     qvalues$qPermutvalues, qvalues$qtvalues
   )
   Qvalue <- cbind(UnifyQvals(Qvalue, ncomps, 5), Qvalue)
-  # print(head(LogRatios))
   
   colnames(LogRatios) <- paste("log-ratios", compNames)
   colnames(Pvalue) <- paste(

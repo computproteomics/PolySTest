@@ -1,0 +1,206 @@
+#' Paired Test Analysis
+#'
+#' This function performs paired test analysis on the given MAData.
+#'
+#' @param MAData A matrix containing the data for the analysis.
+#' @param NumCond The number of conditions in the analysis.
+#' @param NumReps The number of replicates per condition.
+#'
+#' @return A list containing the results of the paired test analysis, including p-values, q-values, and ratios.
+#'
+#' @examples
+#' MAData <- matrix(rnorm(100), ncol = 5)
+#' results <- Paired(MAData, 5, 2)
+#' print(results)
+#'
+#' @export
+Paired <- function(MAData, NumCond, NumReps) {
+  MAReps <- rep(1:NumCond, NumReps)
+  
+  cat("Running paired tests\n")
+  ## limma with ratios
+  limma_out <- limma_paired(MAData, NumCond, NumReps)
+  plvalues <- limma_out$plvalues
+  qlvalues <- limma_out$qlvalues
+  Sds <- limma_out$Sds
+  
+  cat("limma completed\n")
+  
+  ## p-value objects
+  ptvalues <- NULL
+  pRPvalues <- matrix(NA,
+                      ncol = NumCond, nrow = nrow(MAData),
+                      dimnames = list(rows = rownames(MAData), cols = paste("RP p-values", 1:NumCond))
+  )
+  pPermutvalues <- matrix(NA,
+                          ncol = NumCond, nrow = nrow(MAData),
+                          dimnames = list(rows = rownames(MAData), cols = paste("Permutation p-values", 1:NumCond))
+  )
+  
+  ## q-value objects
+  qRPvalues <- qtvalues <- qPermutvalues <- matrix(NA, nrow = nrow(MAData), ncol = NumCond, dimnames = list(rows = rownames(MAData), cols = 1:NumCond))
+  
+  lratios <- NULL
+  
+  cat("Running rank products and permutations tests ...\n")
+  pb <- txtProgressBar(0.9, NumCond)
+  for (vs in 1:NumCond) {
+    if (!is.null(getDefaultReactiveDomain())) {
+      setProgress(0.1 + 0.3 / NumCond * vs, detail = paste("tests for comparison", vs, "of", NumCond))
+    }
+    
+    tMAData <- MAData[, MAReps == vs]
+    
+    ## t-tests
+    ttest_out <- ttest_paired(tMAData)
+    ptvalues <- cbind(ptvalues, ttest_out$ptvalues)
+    qtvalues[, vs] <- ttest_out$qtvalues
+    
+    ## rank products
+    tRPMAData <- MAData[, MAReps == vs]
+    # Up
+    RPMAUp_pvalues <- RPStats(tRPMAData, NumReps)
+    # Down
+    RPMADown_pvalues <- RPStats(-tRPMAData, NumReps)
+    ttt <- rowMins(cbind(RPMAUp_pvalues, RPMADown_pvalues), na.rm = T) * 2
+    ttt[ttt > 1] <- 1
+    pRPvalues[names(RPMAUp_pvalues), vs] <- ttt
+    tqs <- p.adjust(na.omit(pRPvalues[, vs]), method = "BH")
+    qRPvalues[names(tqs), vs] <- tqs
+    
+    ## Permutation tests
+    perm_out <- permtest_paired(tMAData, NumReps)
+    pPermutvalues[, vs] <- perm_out$pPermutvalues
+    qPermutvalues[, vs] <- perm_out$qPermutvalues
+    
+    lratios <- cbind(lratios, rowMeans(MAData[, MAReps == i], na.rm = T))
+    setTxtProgressBar(pb, vs)
+  }
+  cat("rank products and permutation test completed\n")
+  close(pb)
+  
+  return(list(
+    lratios = lratios, ptvalues = ptvalues, plvalues = plvalues,
+    pRPvalues = pRPvalues, pPermutvalues = pPermutvalues,
+    qtvalues = qtvalues, qlvalues = qlvalues,
+    qRPvalues = qRPvalues, qPermutvalues = qPermutvalues,
+    Sds = Sds))
+}
+
+#' Perform paired limma analysis
+#'
+#' This function performs paired limma analysis on MAData.
+#'
+#' @param MAData A matrix of gene expression data.
+#' @param NumCond The number of conditions.
+#' @param NumReps The number of replicates per condition.
+#'
+#' @return A list containing the p-values and q-values.
+#' @keywords limma paired analysis
+#' @export
+limma_paired <- function(MAData, NumCond, NumReps) {
+  MAReps <- rep(1:NumCond, NumReps)
+  ## limma with ratios
+  design <- plvalues <- NULL
+  for (c in (1:(NumCond))) {
+    design <- cbind(design, as.numeric(MAReps == c))
+  }
+  lm.fittedMA <- lmFit(MAData, design)
+  lm.bayesMA <- eBayes(lm.fittedMA)
+  topTable(lm.bayesMA)
+  plvalues <- lm.bayesMA$p.value
+  qlvalues <- matrix(NA, nrow = nrow(plvalues), ncol = ncol(plvalues), dimnames = dimnames(plvalues))
+  # qvalue correction
+  for (i in 1:ncol(plvalues)) {
+    tqs <- qvalue(na.omit(plvalues[, i]))$qvalues
+    qlvalues[names(tqs), i] <- tqs
+  }
+  return(plvalues = plvalues, qlvalues = qlvalues, Sds = sqrt(lm.bayesMA$s2.post))
+}
+
+#' Perform paired t-tests
+#' 
+#' This function performs row-wise paired t-tests on a data frame containing 
+#' log-fold changes
+#' 
+#' @param tMAData A matrix of data for running row-wise t-tests
+#' 
+#' @return A list containing the p-values and q-values (qvalue package)
+#' @keywords t-test paired analysis
+#' @export
+#' @examples
+#' tMAData <- matrix(rnorm(100), nrow = 10)
+#' tMAData <- cbind(tMAData, tMAData)
+#' tout <- ttest_paired(tMAData)
+#' head(tout$qtvalues)
+ttest_paired <- function(tMAData) {
+  ## t-tests
+  ptvalues <- sapply(1:nrow(tMAData), function(pep) {
+    ifelse(sum(!is.na(tMAData[pep, ])) > 1,
+           t.test(tMAData[pep, ])$p.value,
+           NA
+    )
+  })
+  names(ptvalues) <- rownames(tMAData)
+  # Storey FDR correction
+  tqs <- qvalue(na.omit(ptvalues[, i]))$qvalues
+  qtvalues <- rep(NA, length(ptvalues))
+  names(qtvalues) <- names(ptvalues)
+  qtvalues[names(tqs)] <- tqs
+  
+  return(list(ptvalues = ptvalues, qtvalues = qtvalues))
+}
+
+#' Perform permutation tests
+#' 
+#' This function performs permutation tests on the given tMAData
+#' The permutation tests determine an empirical null distribution of t-values for 
+#' the p-value calculation
+#' 
+#' @param tMAData A matrix of data for running permutation tests
+#' 
+#' @return A list containing the p-values and q-values (Benjamini-Hochberg)
+#' @keywords permutation paired analysis
+#' @export
+#' @examples
+#' tMAData <- matrix(rnorm(100), nrow = 10)
+#' tout <- permtest_paired(tMAData)
+#' head(tout$qPermutvalues)
+permtest_paired <- function(tMAData) {
+  ## Permutation tests
+  # if necessary, add columns from randomized full set to reach min. NumPermCols replicates
+  # randomizing also sign to avoid tendencies to one or the other side
+  if (ncol(tMAData) < NumPermCols) {
+    AddDat <- matrix(sample(as.vector(tMAData), (NumPermCols - ncol(tMAData)) * nrow(tMAData), replace = T), nrow = nrow(tMAData))
+    PermMAData <- cbind(tMAData, AddDat)
+  } else {
+    PermMAData <- tMAData
+  }
+  # calculate t-values for real data
+  RealStats <- StatsForPermutTest(tMAData, Paired = T)
+  # run in parallel to speed up
+  cl <- makeCluster(NumThreads)
+  clusterExport(cl = cl, varlist = c("NumReps", "PermMAData", "RPStats", "StatsForPermutTest"), envir = environment())
+  clusterEvalQ(cl = cl, library(matrixStats))
+  
+  # calculate t-values for permuted data
+  PermutOut <- parLapply(cl, seq_len(NTests), function(x) {
+    indat <- apply(
+      PermMAData, 1,
+      function(y) sample(y, NumReps) * sample(c(1, -1), NumReps, replace = T)
+    )
+    StatsForPermutTest(t(indat), T)
+  })
+  stopCluster(cl)
+  
+  # calculate p-values
+  PermutOut <- matrix(unlist(PermutOut), nrow = nrow(tMAData))
+  pPermutvalues <- apply(cbind(RealStats, PermutOut), 1, function(x) ifelse(is.na(x[1]), NA, (1 + sum(x[1] < x[-1], na.rm = T)) / (sum(!is.na(x)))))
+  qPermutvalues <- rep(NA, length(pPermutvalues))
+  names(qPermutvalues) <- names(pPermutvalues)
+  # Benjamini-Hochberg FDR correction
+  tqs <- p.adjust(na.omit(pPermutvalues[, i]), method = "BH")
+  qPermutvalues[names(tqs), i] <- tqs
+  
+  return(list(pPermutvalues = pPermutvalues, qPermutvalues = qPermutvalues))
+}
