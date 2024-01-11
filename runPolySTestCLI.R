@@ -1,103 +1,9 @@
 #!/usr/bin/env Rscript
 
+# load libraries
 library(yaml)
 library(shiny)
 
-######## reading parameter file
-args <- commandArgs(trailingOnly = TRUE)
-if (length(args) == 0) {
-  stop("You need to specify the parameter file, see polystest.yml
-        in the main folder as example and descriptions of the parameter values.
-       This function needs to be carried out in the folder where the
-       PolySTest files are located", call. = FALSE)
-}
-parfile <- args[1]
-print(paste("Reading", parfile))
-
-## read all parameters from yaml file + checks
-pars <- yaml.load_file(parfile)
-NumReps <- pars$numreps
-if (!is.integer(NumReps)) {
-  stop("Number of replicates is not a positive integer number", call. = FALSE)
-}
-if (NumReps < 0) {
-  stop("Number of replicates is not a positive integer number", call. = FALSE)
-}
-NumCond <- pars$numcond
-if (!is.integer(NumCond)) {
-  stop("Number of conditions is not a positive integer number", call. = FALSE)
-}
-if (NumCond < 0) {
-  stop("Number of conditions is not a positive integer number", call. = FALSE)
-}
-normalization <- pars$normalization
-if (all(normalization != c(
-  "none", "quantile", "median",
-  "mean", "sum_abs", "cyclicloess"
-))) {
-  warning("No allowed normalization parameter value out of 'none',
-  'quantile', 'median', 'mean', 'sum_abs' or 'cyclicloess'", call. = FALSE)
-  normalization <- "none"
-}
-isPaired <- pars$paired
-if (!is.logical(isPaired)) {
-  stop("paired parameter should be 'true' or 'false'")
-}
-refCond <- pars$refcond
-if (!is.integer(NumCond)) {
-  stop("Parameter refCond is not a positive integer number", call. = FALSE)
-}
-if (NumCond < 0) {
-  stop("Parameter refCond is not a positive integer number", call. = FALSE)
-}
-ColQuant <- pars$firstquantcol
-if (!is.integer(ColQuant)) {
-  stop("Parameter firstquantcol is not a positive integer number", call. = FALSE)
-}
-if (ColQuant < 1) {
-  stop("Parameter firstquantcol is not a positive integer number > 0",
-       call. = FALSE
-  )
-}
-filename <- pars$csvfile
-if (!file.exists(filename)) {
-  stop("csvfile does not exist", call. = FALSE)
-}
-delim <- pars$delim
-if (all(delim != c("tab", ";", ",", "|"))) {
-  stop("No allowed delim parameter value out of ',', ';', '|' or 'tab'",
-       call. = FALSE
-  )
-}
-decimal <- pars$decimal
-if (all(decimal != c(",", "."))) {
-  stop("No allowed decimal parameter value out of ',' or '.'", call. = FALSE)
-}
-is_header <- pars$header
-if (!is.logical(is_header)) {
-  stop("header parameter should be 'true' or 'false'", call. = FALSE)
-}
-rep_grouped <- pars$rep_grouped
-if (!is.logical(rep_grouped)) {
-  stop("rep_grouped parameter should be 'true' or 'false'", call. = FALSE)
-}
-outfile <- pars$outfile
-if (file.exists(outfile)) {
-  warning(paste0(
-    "******** WARNING: The file ", outfile,
-    " will be overwritten!!"
-  ))
-}
-threads <- pars$threads
-if (!is.integer(threads)) {
-  stop("Parameter threads is not a positive integer number", call. = FALSE)
-}
-if (threads < 1) {
-  stop("Parameter threads is not a positive integer number > 0", call. = FALSE)
-}
-# setting environment variable
-Sys.setenv(SHINY_THREADS = threads)
-Sys.getenv("SHINY_THREADS")
 ## reading helper functions
 # need to change to the source path and back
 currPath <- getwd()
@@ -111,17 +17,68 @@ script.basename <- dirname(script.name)
 cat(paste0("Getting R functions from files located in ", script.basename), "\n")
 setwd(script.basename)
 source("HelperFuncs.R")
+source("StatTestUnpaired.R")
+source("StatTestPaired.R")
 setwd(currPath)
 
+######## reading parameter file
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) {
+  stop("You need to specify the parameter file, see polystest.yml
+        in the main folder as example and descriptions of the parameter values.
+       This function needs to be carried out in the folder where the
+       PolySTest files are located", call. = FALSE)
+}
+parfile <- args[1]
+
+## read parameter file, show error otherwise
+if(file.exists(parfile)) {
+  cat(paste("Reading", parfile))
+} else {
+  stop(paste("Parameter file", parfile, "does not exist!"))
+}
+pars <- yaml.load_file(parfile)
+
+validate_parameters(pars)
+
+NumReps <- pars$numreps
+NumCond <- pars$numcond
+normalization <- pars$normalization
+isPaired <- pars$paired
+refCond <- pars$refcond
+ColQuant <- pars$firstquantcol
+delim <- pars$delim
 if (delim == "tab") {
   delim <- "\t"
 }
+decimal <- pars$decimal
+is_header <- pars$header
+rep_grouped <- pars$rep_grouped
+outfile <- pars$outfile
+if (file.exists(outfile)) {
+  warning(paste0(
+    "******** WARNING: The file ", outfile,
+    " will be overwritten!!"
+  ))
+}
+
+filename <- pars$csvfile
+if (!file.exists(filename)) {
+  stop("csvfile does not exist", call. = FALSE)
+}
+threads <- pars$threads
+# setting environment variable (if available)
+Sys.setenv(SHINY_THREADS = threads)
+Sys.getenv("SHINY_THREADS")
+
+## Read file
 dat <- read.csv(filename,
                 header = is_header, sep = delim, dec = decimal,
                 stringsAsFactors = F
 )
 rownames(dat) <- paste("feature", 1:nrow(dat))
 
+# Data preparation
 if (ColQuant - 1 > ncol(dat)) {
   stop("To large parameter firstquantcol!", call. = FALSE)
 }
@@ -141,6 +98,8 @@ if (refCond > NumCond) {
 }
 
 ndatcol <- ncol(dat)
+
+# Reorder columns for replicates being grouped together
 if (!rep_grouped) {
   print("reorder columns")
   act_cols <- rep(0:(NumCond - 1), NumReps) * NumReps +
@@ -181,92 +140,19 @@ if (normalization == "median") {
   )
 }
 
-
-
-conditions <- paste("C", 1:NumCond, sep = "")
-## setting conditions names to common name of column names if there is any
-# function to calculated "longest common substring" of 2 strings
-# (from   https://stackoverflow.com/questions/35381180/identify-a-common-pattern)
-lcs <- function(a, b) {
-  A <- strsplit(a, "")[[1]]
-  B <- strsplit(b, "")[[1]]
-  L <- matrix(0, length(A), length(B))
-  ones <- which(outer(A, B, "=="), arr.ind = TRUE)
-  ones <- ones[order(ones[, 1]), , drop = F]
-  if (nrow(ones) > 0) {
-    for (i in seq_len(nrow(ones))) {
-      v <- ones[i, , drop = FALSE]
-      L[v] <- ifelse(any(v == 1), 1, L[v - 1] + 1)
-    }
-    paste0(A[(-max(L) + 1):0 + which(L == max(L),
-                                     arr.ind = TRUE
-    )[1]], collapse = "")
-  } else {
-    return(NA)
-  }
-}
-for (i in 1:NumCond) {
-  condnames <- colnames(dat)[0:(NumReps - 1) * NumCond + i]
-  lcsname <- condnames[1]
-  if (length(condnames) > 1) {
-    for (j in 2:length(condnames)) {
-      if (!is.na(lcsname)) {
-        lcsname <- lcs(lcsname, condnames[j])
-      }
-    }
-  }
-  if (!is.na(lcsname) & sum(lcsname == conditions) == 0 ) {
-    conditions[i] <- lcsname
-  }
-}
+####### Defining conditions from names 
+conditions <- update_conditions_with_lcs(dat, NumCond, NumReps, conditions = paste("C", 1:NumCond, sep = "")) 
 
 ####### Defining comparison for statistical tests
-# all vs. all or all vs. refCond?
-
 FullReg <- allComps <- NULL
-## Check for only one replicate per condition of only 1 condition
+
 if (NumCond > 1 & NumReps > 1) {
-  
-  
-  if (refCond > 0) {
-    allComps <- cbind(conditions[refCond], conditions[conditions != conditions[refCond]])
-  } else {
-    for (i in seq_len(NumCond - 1)) {
-      for (j in (i + 1):NumCond) {
-        allComps <- rbind(allComps, c(conditions[i], conditions[j]))
-      }
-    }
-  }
-  
-  cat("\nAll pairwise comparison between conditions:")
-  colnames(allComps) <- paste("Condition", c("A", "B"))
-  rownames(allComps) <- paste("Comparison", seq_len(nrow(allComps)))
-  print(knitr::kable(t(allComps)))
-  
-  allComps <- unique(allComps)
-  allComps <- allComps[allComps[, 1, drop = F] != allComps[, 2, drop = F], , drop = F]
-  compNames <- paste(allComps[, 2], " vs ", allComps[, 1], sep = "")
+  allComps <- create_pairwise_comparisons(conditions, refCond)
   ncomps <- nrow(allComps)
   
-  valComps <- matrix(NA, nrow = ncomps, ncol = ncol(allComps))
-  for (i in seq_len(length(allComps))) {
-    valComps[i] <-
-      as.numeric(which(conditions == allComps[i]))
-  }
-  RR <- matrix(NA, ncol = ncomps * NumReps, nrow = 2)
-  for (j in 1:ncomps) {
-    compCond <- valComps[j, 2]
-    refCond <- valComps[j, 1]
-    RR[1, seq(j, ncomps * NumReps, ncomps)] <-
-      seq(compCond, NumCond * NumReps, NumCond)
-    RR[2, seq(j, ncomps * NumReps, ncomps)] <-
-      seq(refCond, NumCond * NumReps, NumCond)
-  }
-  
-  ###### Run tests
-  
+  RR <- convert_comps_to_indices(allComps, conditions, NumCond, NumReps)
+
   # for maybe later to include onlyLIMMA option
-  testNames <- c("limma", "Miss test", "rank products", "permutation test", "t-test")
   MAData <- NULL
   if (isPaired) {
     for (i in seq_len(ncol(RR))) {
@@ -283,45 +169,14 @@ if (NumCond > 1 & NumReps > 1) {
   )
   MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
   
-  ### Preparing data for output
-  LogRatios <- qvalues$lratios
-  Pvalue <- cbind(
-    qvalues$plvalues, MissingStats$pNAvalues, qvalues$pRPvalues,
-    qvalues$pPermutvalues, qvalues$ptvalues
-  )
-  Qvalue <- cbind(
-    qvalues$qlvalues, MissingStats$qNAvalues, qvalues$qRPvalues,
-    qvalues$qPermutvalues, qvalues$qtvalues
-  )
-  Qvalue <- cbind(UnifyQvals(Qvalue, ncomps, 5), Qvalue)
+  # Prepare output data
+  FullReg <- prepare_output_data(dat, qvalues, MissingStats, allComps)
   
-  colnames(LogRatios) <- paste("log-ratios", compNames)
-  colnames(Pvalue) <- paste(
-    "p-values", rep(testNames, each = ncomps),
-    rep(compNames, length(testNames))
-  )
-  testNames2 <- c("PolySTest", testNames)
-  colnames(Qvalue) <- paste(
-    "FDR", rep(testNames2, each = ncomps),
-    rep(compNames, length(testNames2))
-  )
-  fullData <- cbind(addInfo, dat)
-  FullReg <- cbind(as.data.frame(fullData), LogRatios, Qvalue)
-  
-  #### report some statistics
-  
-  cat("------- summary of results --------\n")
-  cat("Number of differentially regulated features with FDR < 0.01\n")
-regMatr <- matrix(colSums(Qvalue < 0.01, na.rm = TRUE),
-                    ncol = length(testNames2)
-  )
-  colnames(regMatr) <- testNames2
-  rownames(regMatr) <- compNames
-  print(knitr::kable(regMatr))
 } else {
   cat("!!!  Warning: Only one condition or one replicate per condition, no statistical tests performed  !!!\n")
   FullReg <- cbind(as.data.frame(addInfo), dat)
 }
+
 
 
 #### Save results

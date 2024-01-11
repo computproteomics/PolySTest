@@ -115,7 +115,7 @@ limma_paired <- function(MAData, NumCond, NumReps) {
     tqs <- qvalue(na.omit(plvalues[, i]))$qvalues
     qlvalues[names(tqs), i] <- tqs
   }
-  return(plvalues = plvalues, qlvalues = qlvalues, Sds = sqrt(lm.bayesMA$s2.post))
+  return(list(plvalues = plvalues, qlvalues = qlvalues, Sds = sqrt(lm.bayesMA$s2.post)))
 }
 
 #' Perform paired t-tests
@@ -143,7 +143,7 @@ ttest_paired <- function(tMAData) {
   })
   names(ptvalues) <- rownames(tMAData)
   # Storey FDR correction
-  tqs <- qvalue(na.omit(ptvalues[, i]))$qvalues
+  tqs <- qvalue(na.omit(ptvalues))$qvalues
   qtvalues <- rep(NA, length(ptvalues))
   names(qtvalues) <- names(ptvalues)
   qtvalues[names(tqs)] <- tqs
@@ -158,6 +158,7 @@ ttest_paired <- function(tMAData) {
 #' the p-value calculation
 #' 
 #' @param tMAData A matrix of data for running permutation tests
+#' @param NumReps Number of replicates
 #' 
 #' @return A list containing the p-values and q-values (Benjamini-Hochberg)
 #' @keywords permutation paired analysis
@@ -166,7 +167,7 @@ ttest_paired <- function(tMAData) {
 #' tMAData <- matrix(rnorm(100), nrow = 10)
 #' tout <- permtest_paired(tMAData)
 #' head(tout$qPermutvalues)
-permtest_paired <- function(tMAData) {
+permtest_paired <- function(tMAData, NumReps) {
   ## Permutation tests
   # if necessary, add columns from randomized full set to reach min. NumPermCols replicates
   # randomizing also sign to avoid tendencies to one or the other side
@@ -199,8 +200,8 @@ permtest_paired <- function(tMAData) {
   qPermutvalues <- rep(NA, length(pPermutvalues))
   names(qPermutvalues) <- names(pPermutvalues)
   # Benjamini-Hochberg FDR correction
-  tqs <- p.adjust(na.omit(pPermutvalues[, i]), method = "BH")
-  qPermutvalues[names(tqs), i] <- tqs
+  tqs <- p.adjust(na.omit(pPermutvalues), method = "BH")
+  qPermutvalues[names(tqs)] <- tqs
   
   return(list(pPermutvalues = pPermutvalues, qPermutvalues = qPermutvalues))
 }
