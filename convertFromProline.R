@@ -8,7 +8,8 @@ args = commandArgs(trailingOnly=TRUE)
 if (length(args)!=2) {
   stop("\n**** Script to read Proline output, take the log, to configure the PolySTest parameter file and to write csv-files to be read by PolySTest (both protein and peptide level).****
 You need to specify these two files in the given order: experimental design (txt-file) and Excel output file from Proline.
-The output are two parameter files pep_param.yml and prot_param_yml that can be read by runPolySTestCLI.R as well as the files peptides.csv and proteins.csv
+The output are two parameter files pep_param.yml and prot_param_yml that can be read by runPolySTestCLI.R as well as the files peptide_ions_profline.csv
+peptides_proline.csv and proteins_proline.csv
        ", call.=FALSE)
 }  
 
@@ -22,9 +23,9 @@ expDesign <- read.csv(filename, sep="\t")
 filename <- args[2]
 if (!file.exists(filename))
   stop("Proline output file does not exist", call.=FALSE)
-# reading peptides
 
-peptides <- as.data.frame(read_excel(filename, "Quantified peptide ions"))
+# reading peptide ions
+peptide_ions <- as.data.frame(read_excel(filename, "Quantified peptide ions"))
 
 # reading protein table
 proteins <- as.data.frame(read_excel(filename, "Protein sets"))
@@ -61,16 +62,14 @@ rownames(expDesign) <- paste(expDesign$condition,expDesign$replicate)
 
 ### On peptide level
 # set number of columns before input
-ColQuant <- min(which(colnames(peptides) %in% expDesign$sample))
-oldpeptides <- peptides
-peptides <- peptides[,1:(ColQuant-1)]
+ColQuant <- min(which(colnames(peptide_ions) %in% expDesign$sample))
+print(colnames(peptide_ions))
+peptides <- peptide_ions[,1:(ColQuant-1)]
 for (rep in 1:NumReps)  {
   for (cond in unique(expDesign$condition)) {
     sample <- expDesign[paste(cond,rep), 1]
-    if (any(sample == colnames(oldpeptides))) {
-      dat <- log2(oldpeptides[,sample])
-      # print(head(dat))
-      # dat <- dat - median(dat, na.rm=T)
+    if (any(sample == colnames(peptide_ions))) {
+      dat <- log2(peptide_ions[,sample])
       peptides <- cbind(peptides, dat)
     } else {
       peptides <- cbind(peptides, NA)
@@ -78,6 +77,8 @@ for (rep in 1:NumReps)  {
     colnames(peptides)[ncol(peptides)] <-  paste(cond,rep)
   }
 }
+write.csv(peptide_ions, "peptide_ions.csv",row.names=F)
+
 write.csv(peptides, "peptides.csv",row.names=F)
 
 ## Write parameter values for PolySTest, assuming unpaired design
