@@ -69,7 +69,7 @@ Paired <- function(MAData, NumCond, NumReps) {
     qRPvalues[names(tqs), vs] <- tqs
     
     ## Permutation tests
-    perm_out <- permtest_paired(tMAData, NumReps)
+    perm_out <- permtest_paired(tMAData)
     pPermutvalues[, vs] <- perm_out$pPermutvalues
     qPermutvalues[, vs] <- perm_out$qPermutvalues
     
@@ -91,7 +91,8 @@ Paired <- function(MAData, NumCond, NumReps) {
 #'
 #' This function performs paired limma analysis on MAData.
 #'
-#' @param MAData A matrix of gene expression data.
+#' @param MAData A matrix of gene expression data. The rows are genes and the columns are samples. 
+#' Replicates must be grouped together.
 #' @param NumCond The number of conditions.
 #' @param NumReps The number of replicates per condition.
 #'
@@ -158,7 +159,6 @@ ttest_paired <- function(tMAData) {
 #' the p-value calculation
 #' 
 #' @param tMAData A matrix of data for running permutation tests
-#' @param NumReps Number of replicates
 #' 
 #' @return A list containing the p-values and q-values (Benjamini-Hochberg)
 #' @keywords permutation paired analysis
@@ -167,8 +167,22 @@ ttest_paired <- function(tMAData) {
 #' tMAData <- matrix(rnorm(100), nrow = 10)
 #' tout <- permtest_paired(tMAData)
 #' head(tout$qPermutvalues)
-permtest_paired <- function(tMAData, NumReps) {
+permtest_paired <- function(tMAData) {
   ## Permutation tests
+  NumReps <- ncol(tMAData)
+  # if there is an object NumPermCols, use it, otherwise use default value
+  if (exists("NumPermCols")) {
+    NumPermCols <- NumPermCols
+  } else {
+    NumPermCols <- 7
+  }
+  # if there is an object NumTests, use it, otherwise use default value
+  if (exists("NumTests")) {
+    NTests <- NumTests
+  } else {
+    NTests <- 1000
+  }
+  
   # if necessary, add columns from randomized full set to reach min. NumPermCols replicates
   # randomizing also sign to avoid tendencies to one or the other side
   if (ncol(tMAData) < NumPermCols) {

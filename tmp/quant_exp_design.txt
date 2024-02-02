@@ -1,3 +1,0 @@
-mzdb_file_path	biological_group	biorep	fraction	techrep
-./extra/example_dataset/OVEMB150205_25.raw.mzDB	50fmol	1	1	1
-./extra/example_dataset/OVEMB150205_27.raw.mzDB	50fmol	2	1	1

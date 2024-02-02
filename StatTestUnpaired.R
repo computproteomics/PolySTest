@@ -58,7 +58,7 @@ Unpaired <- function(Data, NumCond, NumReps) {
     qtvalues[, vs - 1] <- ttest_out$qtvalues
     
     ## rank products
-    rp_out <- rp_unpaired(tData, trefData, NumReps)
+    rp_out <- rp_unpaired(tData, trefData)
     pRPvalues[, vs - 1] <- rp_out$pRPvalues
     qRPvalues[, vs - 1] <- rp_out$qRPvalues
     
@@ -84,7 +84,7 @@ Unpaired <- function(Data, NumCond, NumReps) {
 #' This function performs significance analysis using different statistical tests such as limma, rank products, and permutation tests.
 #'
 #' @param Data A matrix of gene expression data.
-#' @param RR A matrix specifying the experimental design.
+#' @param RR A matrix specifying the coniditons to be compared
 #' @param NumCond The number of conditions in the experiment.
 #' @param NumReps The number of replicates per condition.
 #'
@@ -149,7 +149,7 @@ UnpairedDesign <- function(Data, RR, NumCond, NumReps) {
     
     
     ## rank products
-    rp_out <- rp_unpaired(tData, trefData, NumReps)
+    rp_out <- rp_unpaired(tData, trefData)
     pRPvalues[, vs ] <- rp_out$pRPvalues
     qRPvalues[, vs ] <- rp_out$qRPvalues
     
@@ -170,18 +170,23 @@ UnpairedDesign <- function(Data, RR, NumCond, NumReps) {
 
 #' Perform unpaired limma analysis
 #' This function performs unpaired limma analysis on Data.
-#' Input: Data - a matrix of gene expression data
-#'       NumCond - the number of conditions
-#'      NumReps - the number of replicates per condition
-#' Output: a list containing the p-values (plvalues) and q-values (qlvalues) of the limma analysis
+#' @param Data A matrix of gene expression data.
+#' @param NumCond The number of conditions in the experiment.
+#' @param NumReps The number of replicates per condition.
+#' @param RRCateg A matrix specifying the coniditons to be compared
+#' @return A list containing the following results:
+#'  - plvalues: The p-values from limma tests.
+#'  - qlvalues: The q-values from limma tests.
+#'  - Sds: The standard deviations of the Bayesian linear model.
+#'  @details This function performs unpaired limma analysis on Data. It calculates the p-values and q-values for each row, indicating the significance of the difference between the two datasets.
 #' @keywords limma unpaired analysis
 #' @export
 #' @examples
-#' Data <- matrix(rnorm(100), ncol = 5)
-#' results <- Unpaired(Data, 5, 2)
-#' print(results)
-#' @export
-#' @keywords limma unpaired analysis
+#' # Example usage of limma_unpaired function
+#' data <- matrix(rnorm(100), nrow = 10, ncol = 10)
+#' RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
+#' result <- limma_unpaired(data, 3, 5, RRCateg)
+#' print(head(result))
 limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
   Reps <- rep(1:NumCond, NumReps)
   NumComps <- ncol(RRCateg)
@@ -259,12 +264,12 @@ ttest_unpaired <- function(tData, trefData) {
 #' @examples
 #' tData <- matrix(rnorm(1000), nrow = 100)
 #' trefData <- matrix(rnorm(1000), nrow = 100)
-#' NumReps <- 10
-#' rp_unpaired(tData, trefData, NumReps)
+#' rp_unpaired(tData, trefData)
 #'
 #' @export
-rp_unpaired <- function(tData, trefData, NumReps) {
+rp_unpaired <- function(tData, trefData) {
   # calculate NumRPPairs random pairing combinations and then take mean of p-values
+  NumReps <- ncol(tData)
   tpRPvalues <- matrix(NA,
                        ncol = NumRPPairs, nrow = nrow(tData),
                        dimnames = list(rows = rownames(tData), cols = 1:NumRPPairs)
@@ -306,7 +311,6 @@ rp_unpaired <- function(tData, trefData, NumReps) {
 #'
 #' @param tData The test data matrix.
 #' @param trefData The reference data matrix.
-#' @param NumReps The number of repetitions for permutation testing.
 #'
 #' @return A list containing the p-values and q-values for the permutation test.
 #'
@@ -319,11 +323,24 @@ rp_unpaired <- function(tData, trefData, NumReps) {
 #' @examples
 #' tData <- matrix(rnorm(1000), nrow = 100)
 #' trefData <- matrix(rnorm(1000), nrow = 100)
-#' NumReps <- 10
-#' result <- perm_unpaired(tData, trefData, NumReps)
+#' result <- perm_unpaired(tData, trefData)
 #'
 #' @export
-perm_unpaired <- function(tData, trefData, NumReps) {
+perm_unpaired <- function(tData, trefData) {
+  NumReps <- ncol(tData)
+  # if there is an object NumPermCols, use it, otherwise use default value
+  if (exists("NumPermCols")) {
+    NumPermCols <- NumPermCols
+  } else {
+    NumPermCols <- 7
+  }
+  # if there is an object NumTests, use it, otherwise use default value
+  if (exists("NumTests")) {
+    NTests <- NumTests
+  } else {
+    NTests <- 1000
+  }
+  
   # add columns from randomized full set to reach min. NumPermCols replicates
   # randomizing also sign to avoid tendencies to one or the other side
   # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects

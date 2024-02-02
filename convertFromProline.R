@@ -38,8 +38,9 @@ cat(paste0("****** Found ", NumCond, " different experimental conditions with up
 knitr::kable(table(expDesign[,2]))
 
 # create names of samples
-sample_names <- sub("\\.mzDB","", expDesign[,1])
-sample_names <- sub("\\./","", sample_names)
+sample_names <- basename(expDesign[,1])
+sample_names <- gsub(".mzDB","",sample_names)
+sample_names <- gsub(".raw","",sample_names)
 sample_names <- paste0("abundance_",sample_names)
 expDesign[,1] <- sample_names
 expDesign <- expDesign[,1:2]
@@ -63,6 +64,7 @@ rownames(expDesign) <- paste(expDesign$condition,expDesign$replicate)
 ### On peptide level
 # set number of columns before input
 ColQuant <- min(which(colnames(peptide_ions) %in% expDesign$sample))
+print(expDesign)
 print(colnames(peptide_ions))
 peptides <- peptide_ions[,1:(ColQuant-1)]
 for (rep in 1:NumReps)  {
@@ -74,18 +76,18 @@ for (rep in 1:NumReps)  {
     } else {
       peptides <- cbind(peptides, NA)
     }
-    colnames(peptides)[ncol(peptides)] <-  paste(cond,rep)
+    colnames(peptides)[ncol(peptides)] <-  paste("abundance", cond,rep, sep="_")
   }
 }
-write.csv(peptide_ions, "peptide_ions.csv",row.names=F)
+write.csv(peptide_ions, "peptide_ions_proline.csv",row.names=F)
 
-write.csv(peptides, "peptides.csv",row.names=F)
+write.csv(peptides, "peptides_proline.csv",row.names=F)
 
 ## Write parameter values for PolySTest, assuming unpaired design
 params <- paste0("numreps: ",NumReps, "\nnumcond: ", NumCond, "\npaired: false\nrefcond: 0\nfirstquantcol: ",ColQuant,
                  "\nrep_grouped: true\ncsvfile: peptides.csv\ndelim: ','\ndecimal: '.'\nheader: true\noutfile: 'polystest_pep_res.csv'\nthreads: 2\n")
 writeLines(params, "pep_param.yml")
-cat(paste0("Files pep_param.yml and peptides.txt written\n"))
+cat(paste0("Files pep_param.yml , peptide_ions_proline.csv and peptides_proline.txt written\n"))
 
 ## now on protein level     
 ColQuant <- min(which(colnames(proteins) %in% expDesign$sample))
@@ -112,7 +114,7 @@ write.csv(proteins, "proteins.csv",row.names=FALSE)
 params <- paste0("numreps: ",NumReps, "\nnumcond: ", NumCond, "\npaired: false\nrefcond: 0\nfirstquantcol: ",ColQuant,
                  "\nrep_grouped: true\ncsvfile: proteins.csv\ndelim: ','\ndecimal: '.'\nheader: true\noutfile: 'polystest_prot_res.csv'\nthreads: 2\n")
 writeLines(params, "prot_param.yml")
-cat(paste0("Files prot_param.yml and proteins.txt written\n"))
+cat(paste0("Files prot_param.yml and proteins_proline.txt written\n"))
 
 
 
