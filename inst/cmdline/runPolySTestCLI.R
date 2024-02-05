@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 
 # load libraries
+library(PolySTest)
 library(yaml)
-library(shiny)
 
 ## reading helper functions
 # need to change to the source path and back
@@ -13,13 +13,6 @@ script.name <- sub(
   file.arg.name, "",
   initial.options[grep(file.arg.name, initial.options)]
 )
-script.basename <- dirname(script.name)
-cat(paste0("Getting R functions from files located in ", script.basename), "\n")
-setwd(script.basename)
-source("HelperFuncs.R")
-source("StatTestUnpaired.R")
-source("StatTestPaired.R")
-setwd(currPath)
 
 ######## reading parameter file
 args <- commandArgs(trailingOnly = TRUE)
@@ -76,17 +69,11 @@ dat <- read.csv(filename,
                 header = is_header, sep = delim, dec = decimal,
                 stringsAsFactors = F
 )
-rownames(dat) <- paste("feature", 1:nrow(dat))
 
 # Data preparation
 if (ColQuant - 1 > ncol(dat)) {
   stop("To large parameter firstquantcol!", call. = FALSE)
 }
-addInfo <- dat[, 1:(ColQuant - 1), drop = F]
-for (c in 1:ncol(addInfo)) {
-  addInfo[, c] <- as.character(addInfo[, c])
-}
-dat <- dat[, -(1:(ColQuant - 1))]
 
 if (ncol(dat) < NumCond * NumReps) {
   stop("Not enough quantitative columns!", call. = F)
@@ -97,7 +84,9 @@ if (refCond > NumCond) {
         than the number of conditions", .call = F)
 }
 
-ndatcol <- ncol(dat)
+# Split data into feature metadata and quantitative data
+addInfo <- dat[, seq_len(ColQuant - 1), drop = F]
+dat <- dat[, -(seq_len(ColQuant - 1))]
 
 # Reorder columns for replicates being grouped together
 if (!rep_grouped) {
@@ -106,22 +95,32 @@ if (!rep_grouped) {
     rep(1:(NumReps), each = NumCond)
   dat <- dat[, act_cols]
 }
+
+# Convert quantitative data to matrix if not already
+quantDataMatrix <- as.matrix(dat)
+rownames(quantDataMatrix) <- paste("feature", 1:nrow(dat))
+
+# Create a DataFrame for sample metadata (colData)
+# Assuming 'addInfo' contains feature-level metadata, adjust accordingly if it's sample-level metadata
+sampleMetadata <- DataFrame(Condition = rep(paste("Condition", 1:NumCond), each = NumReps),
+                            Replicate = rep(1:NumReps, NumCond))
+
+# Create the SummarizedExperiment object
+fulldata <- SummarizedExperiment(assays = list(quant = quantDataMatrix),
+                           colData = sampleMetadata)
+rowData(fulldata) <- DataFrame(addInfo)
+# Adding metadata
+metadata(fulldata) <- list(
+  NumReps = NumReps,
+  NumCond = NumCond
+)
+
+# Display experimental setup
 cat("\nExperimental setup as read:")
-knitr::kable(matrix(colnames(dat),
-                    ncol = NumCond, byrow = T,
-                    dimnames = list(
-                      rows = paste("Replicate", 1:NumReps),
-                      cols = paste("Condition", 1:NumCond)
-                    )
-))
+print(knitr::kable(colData(fulldata)))
 
-tncol <- 0
-if (!is.null(addInfo)) {
-  tncol <- ncol(dat) + ncol(addInfo)
-} else {
-  tncol <- ncol(dat)
-}
-
+# Access the assay data
+dat <- assay(fulldata, "quant")
 
 # Normalize
 if (normalization == "median") {
@@ -140,44 +139,31 @@ if (normalization == "median") {
   )
 }
 
-####### Defining conditions from names 
-conditions <- update_conditions_with_lcs(dat, NumCond, NumReps, conditions = paste("C", 1:NumCond, sep = "")) 
+# Update the assay data in 'fulldata'
+assay(fulldata, "quant") <- dat
+
+####### Defining conditions from names
+fulldata <- update_conditions_with_lcs(fulldata)
+conditions <- unique(colData(fulldata)$Condition)
 
 ####### Defining comparison for statistical tests
 FullReg <- allComps <- NULL
 
 if (NumCond > 1 & NumReps > 1) {
   allComps <- create_pairwise_comparisons(conditions, refCond)
-  ncomps <- nrow(allComps)
-  
-  RR <- convert_comps_to_indices(allComps, conditions, NumCond, NumReps)
 
-  # for maybe later to include onlyLIMMA option
-  MAData <- NULL
+  # Run tests via wrappers
   if (isPaired) {
-    for (i in seq_len(ncol(RR))) {
-      MAData <- cbind(MAData, dat[, RR[1, i]] - dat[, RR[2, i]])
-    }
-    rownames(MAData) <- rownames(dat)
-    qvalues <- Paired(MAData, ncomps, NumReps)
+    fulldata <- PolySTest_paired(fulldata, allComps)
   } else {
-    qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
+    fulldata <- PolySTest_unpaired(fulldata, allComps)
   }
-  MissingStats <- list(
-    pNAvalues = matrix(1, ncol = ncomps, nrow = nrow(dat)),
-    qNAvalues = matrix(1, ncol = ncomps, nrow = nrow(dat))
-  )
-  MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
-  
-  # Prepare output data
-  FullReg <- prepare_output_data(dat, qvalues, MissingStats, allComps)
-  
+
 } else {
   cat("!!!  Warning: Only one condition or one replicate per condition, no statistical tests performed  !!!\n")
-  FullReg <- cbind(as.data.frame(addInfo), dat)
 }
 
-
+FullReg <- cbind(rowData(fulldata), assay(fulldata))
 
 #### Save results
 write.csv(FullReg, outfile)

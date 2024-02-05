@@ -1,171 +1,100 @@
-#' Unpaired
+#' PolySTest for unpaired tests
 #'
-#' This function performs significance analysis for unpaired data.
+#' Combining the power of different statistical tests
 #'
-#' @param Data A matrix of gene expression data.
-#' @param NumCond The number of conditions.
-#' @param NumReps The number of replicates per condition.
+#' @param fulldata A SummarizedExperiment or derived object that contains
+#' the quantitative data as required for PolySTest
+#' @param allComps A matrix containing the reference matrix specifying the
+#' pairs of conditions to compare (each comparison given as separate row)
 #'
-#' @return A list containing various results of the significance analysis, including lratios, 
-#' ptvalues, plvalues, pRPvalues, pPermutvalues, qtvalues, qlvalues, qRPvalues, qPermutvalues, and Sds.
+#' @return SummarizedExperiment with added columns for p-values and q-values
+#' in rowData
 #'
 #' @examples
-#' Data <- matrix(rnorm(100), ncol = 5)
-#' result <- Unpaired(Data, 5, 2)
-#' print(result)
+#' # Assuming 'fulldata' is a SummarizedExperiment object
+#' # and 'allComps' is a matrix containing the reference matrix
+#' # specifying the pairs of conditions to compare
+#' PolySTest_unpaired(fulldata, allComps)
 #'
 #' @export
-# for comparison versus first condition in table
-Unpaired <- function(Data, NumCond, NumReps) {
-  ##########################################################
-  # significance analysis
-  Reps <- rep(1:NumCond, NumReps)
-  
-  # Normalize row-wise by mean
-  Data <- Data - rowMeans(Data, na.rm = T)
-  
-  
-  ## limma
-  cat("Running limma\n")
-  limma_out <- limma_unpaired(Data, NumCond, NumReps, rbind(1, seq(2, NumCond, by = 1)))
-  plvalues <- limma_out$plvalues
-  qlvalues <- limma_out$qlvalues
-  
-  cat("limma completed\n")
-  
-  ## p-value objects
-  ptvalues <- qtvalues <- matrix(NA, nrow = nrow(Data), ncol = NumCond - 1, dimnames = list(rows = rownames(Data), cols = 1:(NumCond - 1)))
-  pRPvalues <- matrix(NA, ncol = NumCond - 1, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = paste("RP p-values", 1:(NumCond - 1))))
-  pPermutvalues <- matrix(NA, ncol = NumCond - 1, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = paste("Permutation p-values", 1:(NumCond - 1))))
-  ## q-value objects
-  qRPvalues <- qtvalues <- qPermutvalues <- matrix(NA, nrow = nrow(Data), ncol = NumCond - 1, dimnames = list(rows = rownames(Data), cols = 1:(NumCond - 1)))
-  
-  lratios <- NULL
-  
-  cat("Running rank products and permutations tests ...\n")
-  pb <- txtProgressBar(1.9, NumCond)
-  for (vs in seq(from = 2, to = NumCond, by = 1)) {
-    if (!is.null(getDefaultReactiveDomain())) {
-      setProgress(0.1 + 0.3 / (NumCond - 1) * vs, detail = paste("tests for comparison", vs - 1, "of", NumCond - 1))
-    }
-    tData <- Data[, Reps == vs]
-    trefData <- Data[, Reps == 1]
-    
-    
-    ## t-test
-    ttest_out <- ttest_unpaired(tData, trefData)
-    ptvalues[, vs - 1] <- ttest_out$ptvalues
-    qtvalues[, vs - 1] <- ttest_out$qtvalues
-    
-    ## rank products
-    rp_out <- rp_unpaired(tData, trefData)
-    pRPvalues[, vs - 1] <- rp_out$pRPvalues
-    qRPvalues[, vs - 1] <- rp_out$qRPvalues
-    
-    
-    ## Permutation tests
-    perm_out <- perm_unpaired(tData, trefData, NumReps)
-    pPermutvalues[, vs - 1] <- perm_out$pPermutvalues
-    qPermutvalues[, vs - 1] <- perm_out$qPermutvalues
-    
-    lratios <- cbind(lratios, rowMeans(Data[, Reps == vs], na.rm = T) - rowMeans(Data[, Reps == 1], na.rm = T))
-    setTxtProgressBar(pb, vs)
-  }
-  close(pb)
-  
-  return(list(
-    lratios = lratios, ptvalues = ptvalues, plvalues = plvalues, pRPvalues = pRPvalues, pPermutvalues = pPermutvalues,
-    qtvalues = qtvalues, qlvalues = qlvalues, qRPvalues = qRPvalues, qPermutvalues = qPermutvalues, Sds = sqrt(lm.bayes$s2.post)
-  ))
-}
+#' @importFrom SummarizedExperiment SummarizedExperiment
+#'
+PolySTest_paired <- function(fulldata, allComps) {
 
-#' UnpairedDesign function
-#'
-#' This function performs significance analysis using different statistical tests such as limma, rank products, and permutation tests.
-#'
-#' @param Data A matrix of gene expression data.
-#' @param RR A matrix specifying the coniditons to be compared
-#' @param NumCond The number of conditions in the experiment.
-#' @param NumReps The number of replicates per condition.
-#'
-#' @return A list containing the following results:
-#'   - lratios: The log ratios of gene expression between conditions.
-#'   - ptvalues: The p-values from t-tests.
-#'   - plvalues: The p-values from limma tests.
-#'   - pRPvalues: The p-values from rank products tests.
-#'   - pPermutvalues: The p-values from permutation tests.
-#'   - qtvalues: The q-values from t-tests.
-#'   - qlvalues: The q-values from limma tests.
-#'   - qRPvalues: The q-values from rank products tests.
-#'   - qPermutvalues: The q-values from permutation tests.
-#'   - Sds: The standard deviations of the Bayesian linear model.
-#'
-#' @examples
-#' # Example usage of UnpairedDesign function
-#' data <- matrix(rnorm(100), nrow = 10, ncol = 10)
-#' RR <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
-#' result <- UnpairedDesign(data, RR, 3, 5)
-#' print(result)
-#'
-#' @export
-UnpairedDesign <- function(Data, RR, NumCond, NumReps) {
-  ##########################################################
-  # significance analysis
+  # check fulldata
+  check_for_polystest(fulldata)
+
+  # Extracting the assay data
+  Data <- assay(fulldata, "quant")
+
+  # Extracting the metadata
+  NumReps <- metadata(fulldata)$NumReps
+  NumCond <- metadata(fulldata)$NumCond
+
+  # Extrating contrast details
   Reps <- rep(1:NumCond, NumReps)
-  
+  conditions <- unique(colData(fulldata)$Condition)
+  # Make indices for pairings
+  RRCateg <- matrix(NA, nrow = nrow(allComps), ncol = 2)
+  for (i in 1:nrow(allComps)) {
+    RRCateg[i, 1] <- as.numeric(which(conditions == allComps[i, 1]))
+    RRCateg[i, 2] <- as.numeric(which(conditions == allComps[i, 2]))
+  }
+  NumComps <- nrow(allComps)
+
   # Normalize row-wise by mean
   Data <- Data - rowMeans(Data, na.rm = T)
-  
-  # Number of tests
-  NumComps <- ncol(RR) / NumReps
-  RRCateg <- RR[, 1:NumComps, drop = F]
-  
+
+  # Prepare output data
+  tests <-  c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
+  p_values <- q_values <- matrix(NA, nrow=nrow(Data), ncol=length(tests)*NumComps)
+  colnames(p_values) <- paste0("p-values_", rep(tests, each=NumComps), rep(1:NumComps, length(tests)))
+  colnames(q_values) <- paste0("q-values_", rep(tests, each=NumComps), rep(1:NumComps, length(tests)))
+
   ## limma
   cat("Running limma tests\n")
   lm_out <- limma_unpaired(Data, NumCond, NumReps, RRCateg)
-  plvalues <- lm_out$plvalues
-  qlvalues <- lm_out$qlvalues
-  Sds <- lm_out$Sds
-  
+  p_values[, "limma" %in% colnames(p_values)] <- limma_out$plvalues
+  q_values[, "limma" %in% colnames(q_values)] <- limma_out$qlvalues
+  Sds <- limma_out$Sds
+  cat("limma completed\n")
+
   ## rank products + t-test
-  ptvalues <- qtvalues <- matrix(NA, nrow = nrow(Data), ncol = NumComps, dimnames = list(rows = rownames(Data), cols = 1:NumComps))
-  pRPvalues <- qRPvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = paste("RP p-values", 1:(NumComps))))
-  pPermutvalues <- qPermutvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = paste("Permutation p-values", 1:(NumComps))))
   lratios <- NULL
   cat("Running rank products and permutations tests ...\n")
   pb <- txtProgressBar(0.9, NumComps)
-  
+
   for (vs in 1:NumComps) {
-    if (!is.null(getDefaultReactiveDomain())) {
-      setProgress(0.1 + 0.3 / (NumComps) * vs, detail = paste("tests for comparison", vs, "of", NumComps))
+    if (!is.null(shiny::getDefaultReactiveDomain())) {
+      shiny::setProgress(0.1 + 0.3 / (NumComps) * vs, detail = paste("tests for comparison", vs, "of", NumComps))
     }
     tData <- Data[, Reps == RRCateg[1, vs]]
     trefData <- Data[, Reps == RRCateg[2, vs]]
-    
+
     ## t-test
     ttest_out <- ttest_unpaired(tData, trefData)
-    ptvalues[, vs ] <- ttest_out$ptvalues
-    qtvalues[, vs ] <- ttest_out$qtvalues
-    
-    
+    p_values[, ("t-test" %in% colnames(p_values))[vs]] <- ttest_out$ptvalues
+    q_values[, ("t-test" %in% colnames(q_values))[vs]] <- ttest_out$qtvalues
+
     ## rank products
     rp_out <- rp_unpaired(tData, trefData)
-    pRPvalues[, vs ] <- rp_out$pRPvalues
-    qRPvalues[, vs ] <- rp_out$qRPvalues
-    
+    p_values[, ("rank_products" %in% colnames(p_values))[vs]] <- rp_out$pRPvalues
+    q_values[, ("rank_products" %in% colnames(q_values))[vs]] <- rp_out$qRPvalues
+
     ## Permutation tests
-    perm_out <- perm_unpaired(tData, trefData, NumReps)
-    pPermutvalues[, vs ] <- perm_out$pPermutvalues
-    qPermutvalues[, vs ] <- perm_out$qPermutvalues
-    
+    perm_out <- perm_unpaired(tData, trefData)
+    p_values[, ("permutation_test" %in% colnames(p_values))[vs]] <- perm_out$pPermutvalues
+    q_values[, ("permutation_test" %in% colnames(q_values))[vs]] <- perm_out$qPermutvalues
+
     lratios <- cbind(lratios, rowMeans(Data[, Reps == RRCateg[1, vs]], na.rm = T) - rowMeans(Data[, Reps == RRCateg[2, vs]], na.rm = T))
     setTxtProgressBar(pb, vs)
   }
   close(pb)
-  
-  return(list(
-    lratios = lratios, ptvalues = ptvalues, plvalues = plvalues, pRPvalues = pRPvalues, pPermutvalues = pPermutvalues,
-    qtvalues = qtvalues, qlvalues = qlvalues, qRPvalues = qRPvalues, qPermutvalues = qPermutvalues, Sds = Sds))
+
+  # Prepare output data
+  fulldata <- prepare_output_data(fulldata, p_values, q_values, lratios, tests, allComps)
+
+return(fulldata)
 }
 
 #' Perform unpaired limma analysis
@@ -173,7 +102,7 @@ UnpairedDesign <- function(Data, RR, NumCond, NumReps) {
 #' @param Data A matrix of gene expression data.
 #' @param NumCond The number of conditions in the experiment.
 #' @param NumReps The number of replicates per condition.
-#' @param RRCateg A matrix specifying the coniditons to be compared
+#' @param RRCateg A matrix specifying the conditons to be compared
 #' @return A list containing the following results:
 #'  - plvalues: The p-values from limma tests.
 #'  - qlvalues: The q-values from limma tests.
@@ -181,9 +110,11 @@ UnpairedDesign <- function(Data, RR, NumCond, NumReps) {
 #'  @details This function performs unpaired limma analysis on Data. It calculates the p-values and q-values for each row, indicating the significance of the difference between the two datasets.
 #' @keywords limma unpaired analysis
 #' @export
+#' @import limma
+#' @import qvalue
 #' @examples
 #' # Example usage of limma_unpaired function
-#' data <- matrix(rnorm(100), nrow = 10, ncol = 10)
+#' data <- matrix(rnorm(1500), ncol = 15)
 #' RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
 #' result <- limma_unpaired(data, 3, 5, RRCateg)
 #' print(head(result))
@@ -197,20 +128,20 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
   for (i in (1:NumComps)) {
     contrasts <- append(contrasts, paste(colnames(design)[RRCateg[2, i]], "-", colnames(design)[RRCateg[1, i]], sep = ""))
   }
-  contrast.matrix <- makeContrasts(contrasts = contrasts, levels = design)
-  lm.fitted <- lmFit(Data, design)
-  
-  lm.contr <- contrasts.fit(lm.fitted, contrast.matrix)
-  lm.bayes <- eBayes(lm.contr)
+  contrast.matrix <- limma::makeContrasts(contrasts = contrasts, levels = design)
+  lm.fitted <- limma::lmFit(Data, design)
+
+  lm.contr <- limma::contrasts.fit(lm.fitted, contrast.matrix)
+  lm.bayes <- limma::eBayes(lm.contr)
   topTable(lm.bayes)
   plvalues <- lm.bayes$p.value
   qlvalues <- matrix(NA, nrow = nrow(plvalues), ncol = ncol(plvalues), dimnames = dimnames(plvalues))
   # qvalue correction
   for (i in 1:ncol(plvalues)) {
-    tqs <- qvalue(na.omit(plvalues[, i]))$qvalues
+    tqs <- qvalue::qvalue(na.omit(plvalues[, i]))$qvalues
     qlvalues[names(tqs), i] <- tqs
   }
-  
+
   return(list(plvalues = plvalues, qlvalues = qlvalues, Sds = sqrt(lm.bayes$s2.post)))
 }
 
@@ -232,6 +163,7 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
 #' print(result$qtvalues)
 #'
 #' @export
+#' @import qvalue
 ttest_unpaired <- function(tData, trefData) {
   ## t-tests
   tptvalues <- sapply(1:nrow(tData), function(pep) {
@@ -242,11 +174,11 @@ ttest_unpaired <- function(tData, trefData) {
   })
   names(tptvalues) <- rownames(tData)
   ptvalues <- tptvalues
-  tqs <- qvalue(na.omit(ptvalues))$qvalues
+  tqs <- qvalue::qvalue(na.omit(ptvalues))$qvalues
   qtvalues <- rep(NA, length(ptvalues))
   names(qtvalues) <- names(ptvalues)
   qtvalues[names(tqs)] <- tqs
-  
+
   return(list(ptvalues = ptvalues, qtvalues = qtvalues))
 }
 
@@ -267,17 +199,27 @@ ttest_unpaired <- function(tData, trefData) {
 #' rp_unpaired(tData, trefData)
 #'
 #' @export
+#' @import matrixStats
+#' @import parallel
+#'
 rp_unpaired <- function(tData, trefData) {
   # calculate NumRPPairs random pairing combinations and then take mean of p-values
+  if (exists("NumRPPairs")) {
+    NumRPPairs <- NumRPPairs
+  } else {
+    NumRPPairs <- 100
+  }
+
   NumReps <- ncol(tData)
   tpRPvalues <- matrix(NA,
                        ncol = NumRPPairs, nrow = nrow(tData),
                        dimnames = list(rows = rownames(tData), cols = 1:NumRPPairs)
   )
-  cl <- makeCluster(NumThreads)
-  clusterExport(cl = cl, varlist = c("NumReps", "tData", "trefData", "RPStats"), envir = environment())
-  clusterEvalQ(cl = cl, library(matrixStats))
-  
+  NumThreads <- get_numthreads()
+  cl <- parallel::makeCluster(NumThreads)
+  parallel::clusterExport(cl = cl, varlist = c("NumReps", "tData", "trefData", "RPStats"), envir = environment())
+  parallel::clusterEvalQ(cl = cl, library(matrixStats))
+
   RPparOut <- parallel::parLapply(cl, 1:NumRPPairs, function(x) {
     tRPMAData <- tData[, sample(1:NumReps)] - trefData[, sample(1:NumReps)]
     # Up
@@ -290,7 +232,7 @@ rp_unpaired <- function(tData, trefData) {
     ttt
   })
   stopCluster(cl)
-  
+
   for (p in 1:NumRPPairs) {
     # print(RPparOut[[p]])
     tpRPvalues[names(RPparOut[[p]]), p] <- RPparOut[[p]]
@@ -301,7 +243,7 @@ rp_unpaired <- function(tData, trefData) {
   names(qRPvalues) <- names(pRPvalues)
   tqs <- p.adjust(na.omit(pRPvalues), method = "BH")
   qRPvalues[names(tqs)] <- tqs
-  
+
   return(list(pRPvalues = pRPvalues, qRPvalues = qRPvalues))
 }
 
@@ -315,9 +257,9 @@ rp_unpaired <- function(tData, trefData) {
 #' @return A list containing the p-values and q-values for the permutation test.
 #'
 #' @details The function adds columns from the randomized full set to reach the minimum number of
-#' permutation columns (NumPermCols) replicates. It randomizes the sign as well to avoid 
-#' tendencies to one or the other side. In the unpaired case, it also normalizes by the 
-#' mean of the entire sample to avoid strange effects. The function then performs permutation 
+#' permutation columns (NumPermCols) replicates. It randomizes the sign as well to avoid
+#' tendencies to one or the other side. In the unpaired case, it also normalizes by the
+#' mean of the entire sample to avoid strange effects. The function then performs permutation
 #' testing using parallel computing, and calculates the p-values and q-values based on the permutation results.
 #'
 #' @examples
@@ -326,6 +268,9 @@ rp_unpaired <- function(tData, trefData) {
 #' result <- perm_unpaired(tData, trefData)
 #'
 #' @export
+#' @import matrixStats
+#' @import parallel
+#' @import qvalue
 perm_unpaired <- function(tData, trefData) {
   NumReps <- ncol(tData)
   # if there is an object NumPermCols, use it, otherwise use default value
@@ -340,23 +285,26 @@ perm_unpaired <- function(tData, trefData) {
   } else {
     NTests <- 1000
   }
-  
+
   # add columns from randomized full set to reach min. NumPermCols replicates
   # randomizing also sign to avoid tendencies to one or the other side
   # In the unpaired case, also normalize by mean of the entire sample to avoid strange effects
   tData <- tData - mean(as.numeric(unlist(tData)), na.rm = T)
   trefData <- trefData - mean(as.numeric(unlist(trefData)), na.rm = T)
   if (ncol(tData) * 2 < NumPermCols) {
-    AddDat <- matrix(sample(as.vector(unlist(tData)), (NumPermCols * 0.5 - ncol(tData)) * nrow(tData), replace = T), nrow = nrow(tData))
+    AddDat <- matrix(sample(as.vector(unlist(tData)),
+                            (NumPermCols - ncol(tData)) * nrow(tData), replace = T),
+                     nrow = nrow(tData))
     PermData <- cbind(tData, AddDat)
-    AddDat <- matrix(sample(as.vector(unlist(trefData)), (NumPermCols * 0.5 - ncol(trefData)) * nrow(trefData), replace = T), nrow = nrow(trefData))
+    AddDat <- matrix(sample(as.vector(unlist(trefData)), (NumPermCols - ncol(trefData)) * nrow(trefData), replace = T), nrow = nrow(trefData))
     PermFullData <- cbind(PermData, trefData, AddDat)
   } else {
     PermFullData <- cbind(tData, trefData)
   }
   RealStats <- StatsForPermutTest(as.matrix(cbind(trefData, tData)), Paired = F)
   # print(head(PermFullData))
-  
+
+  NumThreads <- get_numthreads()
   cl <- makeCluster(NumThreads)
   clusterExport(cl = cl, varlist = c("NumReps", "PermFullData", "RPStats", "StatsForPermutTest"), envir = environment())
   clusterEvalQ(cl = cl, library(matrixStats))
@@ -365,15 +313,15 @@ perm_unpaired <- function(tData, trefData) {
     StatsForPermutTest(t(indat), F)
   })
   stopCluster(cl)
-  
+
   PermutOut <- matrix(unlist(PermutOut), nrow = nrow(tData))
   PermutOut[!is.finite(PermutOut)] <- NA
   RealStats[!is.finite(RealStats)] <- NA
   pPermutvalues <- apply(cbind(RealStats, PermutOut), 1, function(x) ifelse(is.na(x[1]) | sum(!is.na(x)) == 0, NA, (1 + sum(x[1] < x[-1], na.rm = T)) / (sum(!is.na(x)))))
   qPermutvalues <- rep(NA, length(pPermutvalues))
   names(qPermutvalues) <- names(pPermutvalues)
-  tqs <- qvalue(na.omit(pPermutvalues))$qvalues
+  tqs <- qvalue::qvalue(na.omit(pPermutvalues))$qvalues
   qPermutvalues[names(tqs)] <- tqs
-  
+
   return(list(pPermutvalues = pPermutvalues, qPermutvalues = qPermutvalues))
 }
