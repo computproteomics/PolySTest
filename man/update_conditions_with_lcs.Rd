@@ -4,27 +4,28 @@
 \alias{update_conditions_with_lcs}
 \title{Update Conditions with Longest Common Subsequence}
 \usage{
-update_conditions_with_lcs(dat, numCond, numReps, conditions)
+update_conditions_with_lcs(fulldata, default = NULL)
 }
 \arguments{
-\item{dat}{A data frame or matrix with column names.}
+\item{fulldata}{A SummarizedExperiment or derived object that contains
+the quantitative data as specified for PolySTest}
 
-\item{numCond}{The number of conditions to process.}
-
-\item{numReps}{The number of replicates for each condition.}
-
-\item{conditions}{A vector of condition names to be updated.}
+\item{default}{A vector of the length of the number of conditions suggesting
+their names}
 }
 \value{
-Updated vector of condition names.
+Summariz3dExperiment with updated conditions
 }
 \description{
 This function iterates over a set of conditions and updates each condition
 with the longest common subsequence of column names associated with that condition.
 }
 \examples{
-dat <- matrix(ncol = 6, nrow = 10)
-colnames(dat) <- c("Cond1_Rep1", "Cond1_Rep2", "Cond2_Rep1", "Cond2_Rep2", "Cond3_Rep1", "Cond3_Rep2")
-conditions <- c("Cond1", "Cond2", "Cond3")
-update_conditions_with_lcs(dat, 3, 2, conditions)
+se <- SummarizedExperiment(assays = list(counts = matrix(rnorm(200), ncol = 10)))
+metadata(se) <- list(NumCond = 2, NumReps = 5)
+colnames(assay(se)) <- c(paste("CondA_Rep", 1:5, sep = ""),
+                         paste("CondB_Rep", 1:5, sep = ""))
+default_conditions <- c("Condition_A", "Condition_B")
+updated_conditions <- update_conditions_with_lcs(se, default_conditions)
+print(colData(updated_conditions))
 }

@@ -7,10 +7,10 @@
 limma_paired(MAData, NumCond, NumReps)
 }
 \arguments{
-\item{MAData}{A matrix of gene expression data. The rows are genes and the columns are samples.
+\item{MAData}{A ratio matrix of gene expression data. The rows are genes and the columns are samples.
 Replicates must be grouped together.}
 
-\item{NumCond}{The number of conditions.}
+\item{NumCond}{The number of ratios to check vs zero level}
 
 \item{NumReps}{The number of replicates per condition.}
 }

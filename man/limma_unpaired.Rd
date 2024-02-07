@@ -14,7 +14,7 @@ limma_unpaired(Data, NumCond, NumReps, RRCateg)
 
 \item{NumReps}{The number of replicates per condition.}
 
-\item{RRCateg}{A matrix specifying the coniditons to be compared}
+\item{RRCateg}{A matrix specifying the conditons to be compared}
 }
 \value{
 A list containing the following results:

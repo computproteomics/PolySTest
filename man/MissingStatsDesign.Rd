@@ -5,12 +5,12 @@
 \title{Function of calculation of Miss tests. This happens between full
 groups and thus does not have distinction for pairwise testing.}
 \usage{
-MissingStatsDesign(Data, RR, NumCond, NumReps)
+MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
 }
 \arguments{
 \item{Data}{A matrix containing the expression data with rows as features and columns as samples}
 
-\item{RR}{A matrix containing the reference matrix specifying the pairs of conditions to compare}
+\item{RRCateg}{A matrix containing the indices of the conditions to compare (each row is a pairing)}
 
 \item{NumCond}{The number of conditions in the dataset}
 

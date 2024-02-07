@@ -19,7 +19,7 @@
 #' @export
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #'
-PolySTest_paired <- function(fulldata, allComps) {
+PolySTest_unpaired <- function(fulldata, allComps) {
 
   # check fulldata
   check_for_polystest(fulldata)
@@ -34,13 +34,13 @@ PolySTest_paired <- function(fulldata, allComps) {
   # Extrating contrast details
   Reps <- rep(1:NumCond, NumReps)
   conditions <- unique(colData(fulldata)$Condition)
-  # Make indices for pairings
-  RRCateg <- matrix(NA, nrow = nrow(allComps), ncol = 2)
-  for (i in 1:nrow(allComps)) {
-    RRCateg[i, 1] <- as.numeric(which(conditions == allComps[i, 1]))
-    RRCateg[i, 2] <- as.numeric(which(conditions == allComps[i, 2]))
-  }
   NumComps <- nrow(allComps)
+  # Make indices for pairings
+  RRCateg <- matrix(NA, ncol = nrow(allComps), nrow = 2)
+  for (i in 1:nrow(allComps)) {
+    RRCateg[1, i] <- as.numeric(which(conditions == allComps[i, 1]))
+    RRCateg[2, i] <- as.numeric(which(conditions == allComps[i, 2]))
+  }
 
   # Normalize row-wise by mean
   Data <- Data - rowMeans(Data, na.rm = T)
@@ -48,16 +48,23 @@ PolySTest_paired <- function(fulldata, allComps) {
   # Prepare output data
   tests <-  c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
   p_values <- q_values <- matrix(NA, nrow=nrow(Data), ncol=length(tests)*NumComps)
-  colnames(p_values) <- paste0("p-values_", rep(tests, each=NumComps), rep(1:NumComps, length(tests)))
-  colnames(q_values) <- paste0("q-values_", rep(tests, each=NumComps), rep(1:NumComps, length(tests)))
+  rownames(p_values) <- rownames(q_values) <- rownames(Data)
+  colnames(p_values) <- paste0("p-values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
+  colnames(q_values) <- paste0("q-values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
 
   ## limma
   cat("Running limma tests\n")
   lm_out <- limma_unpaired(Data, NumCond, NumReps, RRCateg)
-  p_values[, "limma" %in% colnames(p_values)] <- limma_out$plvalues
-  q_values[, "limma" %in% colnames(q_values)] <- limma_out$qlvalues
-  Sds <- limma_out$Sds
+  p_values[, grep("p-values_limma", colnames(p_values))] <- lm_out$plvalues
+  q_values[, grep("q-values_limma", colnames(q_values))] <- lm_out$qlvalues
+  Sds <- lm_out$Sds
   cat("limma completed\n")
+
+  cat("Running Miss test\n")
+  MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
+  p_values[, grep("p-values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
+  q_values[, grep("q-values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
+  cat("Miss test completed\n")
 
   ## rank products + t-test
   lratios <- NULL
@@ -68,23 +75,23 @@ PolySTest_paired <- function(fulldata, allComps) {
     if (!is.null(shiny::getDefaultReactiveDomain())) {
       shiny::setProgress(0.1 + 0.3 / (NumComps) * vs, detail = paste("tests for comparison", vs, "of", NumComps))
     }
-    tData <- Data[, Reps == RRCateg[1, vs]]
+    tData <- Data[, Reps == RRCateg[1,  vs]]
     trefData <- Data[, Reps == RRCateg[2, vs]]
 
     ## t-test
     ttest_out <- ttest_unpaired(tData, trefData)
-    p_values[, ("t-test" %in% colnames(p_values))[vs]] <- ttest_out$ptvalues
-    q_values[, ("t-test" %in% colnames(q_values))[vs]] <- ttest_out$qtvalues
+    p_values[, grep("p-values_t-test", colnames(p_values))[vs]] <- ttest_out$ptvalues
+    q_values[, grep("q-values_t-test", colnames(q_values))[vs]] <- ttest_out$qtvalues
 
     ## rank products
     rp_out <- rp_unpaired(tData, trefData)
-    p_values[, ("rank_products" %in% colnames(p_values))[vs]] <- rp_out$pRPvalues
-    q_values[, ("rank_products" %in% colnames(q_values))[vs]] <- rp_out$qRPvalues
+    p_values[, grep("p-values_rank_products",  colnames(p_values))[vs]] <- rp_out$pRPvalues
+    q_values[, grep("q-values_rank_products", colnames(q_values))[vs]] <- rp_out$qRPvalues
 
     ## Permutation tests
     perm_out <- perm_unpaired(tData, trefData)
-    p_values[, ("permutation_test" %in% colnames(p_values))[vs]] <- perm_out$pPermutvalues
-    q_values[, ("permutation_test" %in% colnames(q_values))[vs]] <- perm_out$qPermutvalues
+    p_values[, grep("p-values_permutation_test", colnames(p_values))[vs]] <- perm_out$pPermutvalues
+    q_values[, grep("q-values_permutation_test", colnames(q_values))[vs]] <- perm_out$qPermutvalues
 
     lratios <- cbind(lratios, rowMeans(Data[, Reps == RRCateg[1, vs]], na.rm = T) - rowMeans(Data[, Reps == RRCateg[2, vs]], na.rm = T))
     setTxtProgressBar(pb, vs)
@@ -113,11 +120,18 @@ return(fulldata)
 #' @import limma
 #' @import qvalue
 #' @examples
-#' # Example usage of limma_unpaired function
-#' data <- matrix(rnorm(1500), ncol = 15)
-#' RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
-#' result <- limma_unpaired(data, 3, 5, RRCateg)
-#' print(head(result))
+#'  dataMatrix <- matrix(rnorm(100), nrow = 10)
+#' colData <- DataFrame(Condition = rep(c("A", "B"), each = 5))
+#' rowData <- DataFrame(Gene = paste("Gene", 1:10))
+#' fulldata <- SummarizedExperiment(assays = list(quant = dataMatrix),
+#'                                  colData = colData, rowData = rowData)
+#' metadata(fulldata) <- list(NumCond = 2, NumReps = 5)
+#' #  Specifying comparisons
+#' allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
+#' # Run function
+#' results <- PolySTest_unpaired(fulldata, allComps)
+#' # found differentially regulated features
+#'
 limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
   Reps <- rep(1:NumCond, NumReps)
   NumComps <- ncol(RRCateg)

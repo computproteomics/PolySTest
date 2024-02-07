@@ -9,7 +9,7 @@ library(qvalue)
 library(heatmaply)
 library(gplots)
 library(jsonlite)
-source("HelperFuncs.R")
+library(PolySTest)
 
 validate <- shiny::validate
 

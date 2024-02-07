@@ -1,5 +1,3 @@
-
-
 # Permutations: min 7 replicates, if not available, then generate from entire data
 
 #' Set number of threads (default is 4)
@@ -15,7 +13,7 @@ get_numthreads <- function() {
   shiny_threads <- as.numeric(Sys.getenv("SHINY_THREADS"))
   if (!is.na(shiny_threads)) {
     NumThreads <- shiny_threads
-    print(paste("Set number of threads to", NumThreads))
+#    print(paste("Set number of threads to", NumThreads))
   }
   return(NumThreads)
 }
@@ -329,7 +327,6 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
   cl <- makeCluster(NumThreads)
   clusterExport(cl = cl, varlist = c("Qvalue", "NumCond", "LogRatios", "qrange"), envir = environment())
   clusterEvalQ(cl = cl, library(matrixStats))
-  # print(head(Qvalue))
   BestVals <- parallel::parLapply(cl, fcRange, function(fc) {
     # range of tests to consider:
     for (t in c(1, 2, 4)) {
@@ -384,6 +381,7 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
 UnifyQvals <- function(Qvalue, NumComps, NumTests) {
   cat("Calculating PolySTest FDRs ...\n")
   UnifiedQvalue <- matrix(NA, ncol = NumComps, nrow = nrow(Qvalue))
+  colnames(UnifiedQvalue) <- paste("q-values_polystest_fdr_", 1:NumComps)
   for (i in 1:(NumComps)) {
     UnifiedQvalue[, i] <- colMins(apply(Qvalue[, seq(i, ncol(Qvalue) - NumComps, NumComps)], 1, p.adjust, "hommel"), na.rm = T)
   }
@@ -500,7 +498,7 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
   }
 
   #Update colData of fulldata
-  colData(fulldata)$Condition <- rep(factor(conditions), numReps)
+  colData(fulldata)$Condition <- rep(conditions, numReps)
 
   return(fulldata)
 }
@@ -556,13 +554,14 @@ prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, a
 
   # Separate t-test p-values
   if ("t-test" %in% testNames) {
-    ttestQvalue <- Qvalue[, "t-test" %in% testNames]
-    Qvalue <- Qvalue[, - ("t-test" %in% testNames)]
+    ttestQvalue <- Qvalue[, grep("q-values_t-test", colnames(Qvalue))]
+    Qvalue <- Qvalue[, - grep("q-values_t-test", colnames(Qvalue))]
     num_tests <- num_tests - 1
   }
 
   # Unify q-values if needed (assuming UnifyQvals is a function to unify q-values)
   Qvalue <- cbind(UnifyQvals(Qvalue, numComps, num_tests), Qvalue)
+
   if ("t-test" %in% testNames) {
     Qvalue <- cbind(Qvalue, ttestQvalue)
     # move "t-test" to end
@@ -573,11 +572,11 @@ prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, a
   # Set column names for log-ratios, p-values, and q-values
   compNames <- apply(allComps, 1, function(x) paste(x[2], "vs", x[1]))
   colnames(LogRatios) <- paste("log-ratios", compNames)
-  colnames(Pvalue) <- paste("p-values", rep(testNames, each=nrow(allComps)), rep(compNames, num_tests))
-  colnames(Qvalue) <-  paste("q-values", rep(testNames2, each=nrow(allComps)), rep(compNames, num_tests+1))
+  colnames(Pvalue) <- paste("p-values", rep(testNames, each=numComps), rep(compNames, num_tests))
+  colnames(Qvalue) <-  paste("q-values", rep(testNames2, each=numComps), rep(compNames, num_tests+1))
 
   # Combine all data into a single data frame
-  rowData(fulldata) <- cbind(rowData(fullData), LogRatios, Qvalue, Pvalue)
+  rowData(fulldata) <- cbind(rowData(fulldat), LogRatios, Qvalue, Pvalue)
 
   # Assuming FullReg contains q-values and you are interested in features with FDR < 0.01
   cat("------- Summary of Results --------\n")
