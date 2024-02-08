@@ -102,13 +102,13 @@ rownames(quantDataMatrix) <- paste("feature", 1:nrow(dat))
 
 # Create a DataFrame for sample metadata (colData)
 # Assuming 'addInfo' contains feature-level metadata, adjust accordingly if it's sample-level metadata
-sampleMetadata <- DataFrame(Condition = rep(paste("Condition", 1:NumCond), NumReps),
+sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:NumCond), NumReps),
                             Replicate = rep(1:NumReps, each=NumCond))
 
 # Create the SummarizedExperiment object
 fulldata <- SummarizedExperiment(assays = list(quant = quantDataMatrix),
                            colData = sampleMetadata)
-rowData(fulldata) <- DataFrame(addInfo)
+rowData(fulldata) <- data.frame(addInfo)
 # Adding metadata
 metadata(fulldata) <- list(
   NumReps = NumReps,

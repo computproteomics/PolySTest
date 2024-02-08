@@ -6,20 +6,46 @@
 #' the quantitative data as required for PolySTest
 #' @param allComps A matrix containing the reference matrix specifying the
 #' pairs of conditions to compare (each comparison given as separate row)
+#' @param statTests A character vector specifying the statistical tests to be
+#' used. The available tests are: "limma", "Miss_Test", "t-test", "rank_products",
+#' and "permutation_test"
+#'
+#' @details This function performs unpaired statistical tests on the data in
+#' 'fulldata' using the pairs of conditions specified in 'allComps'. It
+#' calculates the p-values and q-values for each row for the statistical tests
+#' used. The statistical tests available are: LIMMA, Miss_Test, t-test, Rank Products,
+#' and a permutation test based on t values. The function returns a
+#' SummarizedExperiment object with added columns for p-values and q-values in
+#' rowData.
 #'
 #' @return SummarizedExperiment with added columns for p-values and q-values
 #' in rowData
 #'
 #' @examples
-#' # Assuming 'fulldata' is a SummarizedExperiment object
-#' # and 'allComps' is a matrix containing the reference matrix
-#' # specifying the pairs of conditions to compare
-#' PolySTest_unpaired(fulldata, allComps)
+#' library(SummarizedExperiment)
+#'
+#' # Creating mock quantitative data and sample metadata
+#' quantData <- matrix(rnorm(200), nrow=20, ncol=10)
+#' colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
+#'                          paste("Sample", 1:5, "_Condition_B", sep=""))
+#' rownames(quantData) <- paste("Gene", 1:20)
+#' sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each=5))
+#'
+#' # Creating the SummarizedExperiment object
+#' fulldata <- SummarizedExperiment(assays=list(quant=quantData),
+#'                                  colData=sampleMetadata)
+#' metadata(fulldata) <- list(NumReps = 5, NumCond = 2)
+#'
+#' # Specifying pairs of conditions to compare
+#' allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
+#'
+#' # Running the PolySTest_unpaired function
+#' results <- PolySTest_unpaired(fulldata, allComps)
 #'
 #' @export
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #'
-PolySTest_unpaired <- function(fulldata, allComps) {
+PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")) {
 
   # check fulldata
   check_for_polystest(fulldata)
@@ -46,29 +72,46 @@ PolySTest_unpaired <- function(fulldata, allComps) {
   Data <- Data - rowMeans(Data, na.rm = T)
 
   # Prepare output data
-  tests <-  c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
+  tests <-  statTests
+  # Check for the right test names
+  if (any(!tests %in% c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test"))) {
+    stop("Invalid test name(s) specified. They should one or more of: 'limma', 'Miss_Test', 't-test', 'rank_products', 'permutation_test'")
+  }
   p_values <- q_values <- matrix(NA, nrow=nrow(Data), ncol=length(tests)*NumComps)
   rownames(p_values) <- rownames(q_values) <- rownames(Data)
   colnames(p_values) <- paste0("p-values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
   colnames(q_values) <- paste0("q-values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
 
   ## limma
-  cat("Running limma tests\n")
-  lm_out <- limma_unpaired(Data, NumCond, NumReps, RRCateg)
-  p_values[, grep("p-values_limma", colnames(p_values))] <- lm_out$plvalues
-  q_values[, grep("q-values_limma", colnames(q_values))] <- lm_out$qlvalues
-  Sds <- lm_out$Sds
-  cat("limma completed\n")
+  Sds <- NULL
+  if (any("limma" %in% tests)) {
+    cat("Running limma tests\n")
+    lm_out <- limma_unpaired(Data, NumCond, NumReps, RRCateg)
+    p_values[, grep("p-values_limma", colnames(p_values))] <- lm_out$plvalues
+    q_values[, grep("q-values_limma", colnames(q_values))] <- lm_out$qlvalues
+    Sds <- lm_out$Sds
+    cat("limma completed\n")
+  }
 
-  cat("Running Miss test\n")
-  MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
-  p_values[, grep("p-values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
-  q_values[, grep("q-values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
-  cat("Miss test completed\n")
+  if (any("Miss_Test" %in% tests)) {
+    cat("Running Miss test\n")
+    MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
+    p_values[, grep("p-values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
+    q_values[, grep("q-values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
+    cat("Miss test completed\n")
+  }
 
   ## rank products + t-test
   lratios <- NULL
-  cat("Running rank products and permutations tests ...\n")
+  if (any("rank_products" %in% tests)) {
+    cat("Running rank products ...\n")
+  }
+  if (any("t-test" %in% tests)) {
+    cat("Running t-tests ...\n")
+  }
+  if (any("permutation_test" %in% tests)) {
+    cat("Running permutation tests ...\n")
+  }
   pb <- txtProgressBar(0.9, NumComps)
 
   for (vs in 1:NumComps) {
@@ -79,19 +122,25 @@ PolySTest_unpaired <- function(fulldata, allComps) {
     trefData <- Data[, Reps == RRCateg[2, vs]]
 
     ## t-test
-    ttest_out <- ttest_unpaired(tData, trefData)
-    p_values[, grep("p-values_t-test", colnames(p_values))[vs]] <- ttest_out$ptvalues
-    q_values[, grep("q-values_t-test", colnames(q_values))[vs]] <- ttest_out$qtvalues
+    if (any("t-test" %in% tests)) {
+      ttest_out <- ttest_unpaired(tData, trefData)
+      p_values[, grep("p-values_t-test", colnames(p_values))[vs]] <- ttest_out$ptvalues
+      q_values[, grep("q-values_t-test", colnames(q_values))[vs]] <- ttest_out$qtvalues
+    }
 
     ## rank products
-    rp_out <- rp_unpaired(tData, trefData)
-    p_values[, grep("p-values_rank_products",  colnames(p_values))[vs]] <- rp_out$pRPvalues
-    q_values[, grep("q-values_rank_products", colnames(q_values))[vs]] <- rp_out$qRPvalues
+    if (any("rank_products" %in% tests)) {
+      rp_out <- rp_unpaired(tData, trefData)
+      p_values[, grep("p-values_rank_products",  colnames(p_values))[vs]] <- rp_out$pRPvalues
+      q_values[, grep("q-values_rank_products", colnames(q_values))[vs]] <- rp_out$qRPvalues
+    }
 
     ## Permutation tests
-    perm_out <- perm_unpaired(tData, trefData)
-    p_values[, grep("p-values_permutation_test", colnames(p_values))[vs]] <- perm_out$pPermutvalues
-    q_values[, grep("q-values_permutation_test", colnames(q_values))[vs]] <- perm_out$qPermutvalues
+    if (any("permutation_test" %in% tests)) {
+      perm_out <- perm_unpaired(tData, trefData)
+      p_values[, grep("p-values_permutation_test", colnames(p_values))[vs]] <- perm_out$pPermutvalues
+      q_values[, grep("q-values_permutation_test", colnames(q_values))[vs]] <- perm_out$qPermutvalues
+    }
 
     lratios <- cbind(lratios, rowMeans(Data[, Reps == RRCateg[1, vs]], na.rm = T) - rowMeans(Data[, Reps == RRCateg[2, vs]], na.rm = T))
     setTxtProgressBar(pb, vs)
@@ -101,28 +150,37 @@ PolySTest_unpaired <- function(fulldata, allComps) {
   # Prepare output data
   fulldata <- prepare_output_data(fulldata, p_values, q_values, lratios, tests, allComps)
 
-return(fulldata)
+  return(fulldata)
 }
 
 #' Perform unpaired limma analysis
+#'
 #' This function performs unpaired limma analysis on Data.
-#' @param Data A matrix of gene expression data.
+#' @param Data A matrix of quantitative expression data.
 #' @param NumCond The number of conditions in the experiment.
 #' @param NumReps The number of replicates per condition.
 #' @param RRCateg A matrix specifying the conditons to be compared
+#' (each comparison given as separate column).
 #' @return A list containing the following results:
 #'  - plvalues: The p-values from limma tests.
 #'  - qlvalues: The q-values from limma tests.
 #'  - Sds: The standard deviations of the Bayesian linear model.
-#'  @details This function performs unpaired limma analysis on Data. It calculates the p-values and q-values for each row, indicating the significance of the difference between the two datasets.
+#'  @details This function performs unpaired limma analysis on Data. It
+#'  calculates the p-values and q-values for each row, indicating the
+#'  significance of the difference between the two datasets.RRCateg is a
+#'  matrix specifying the conditons to be compared (each comparison given
+#'  as separate column). It thus has always 2 rows and n columns, where n
+#'  is the number of comparisons. The function returns a list containing
+#'  the p-values and q-values for each comparison, as well as the standard
+#'  deviations of the Bayesian linear model.
 #' @keywords limma unpaired analysis
 #' @export
 #' @import limma
 #' @import qvalue
 #' @examples
 #'  dataMatrix <- matrix(rnorm(100), nrow = 10)
-#' colData <- DataFrame(Condition = rep(c("A", "B"), each = 5))
-#' rowData <- DataFrame(Gene = paste("Gene", 1:10))
+#' colData <- data.frame(Condition = rep(c("A", "B"), each = 5))
+#' rowData <- data.frame(Gene = paste("Gene", 1:10))
 #' fulldata <- SummarizedExperiment(assays = list(quant = dataMatrix),
 #'                                  colData = colData, rowData = rowData)
 #' metadata(fulldata) <- list(NumCond = 2, NumReps = 5)
@@ -161,11 +219,17 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
 
 #' Perform unpaired t-tests on two datasets
 #'
-#' This function performs unpaired t-tests between corresponding rows of two datasets.
-#' It calculates the p-values and q-values for each row, indicating the significance of the difference between the two datasets.
+#' @details
+#' This function performs unpaired t-tests between corresponding rows of two
+#' datasets.
+#' It calculates the p-values and q-values for each row, indicating the
+#' significance of the difference between the two datasets. We require
+#'  providing the same number of samples (columns) per group.
 #'
-#' @param tData The first dataset, a matrix or data frame
-#' @param trefData The second dataset, a matrix or data frame
+#' @param tData A matrix or data frame with the quantitative features (via rows)
+#' of the first group
+#' @param trefData A matrix or data frame with the quantitative features (via rows)
+#' of the second group
 #'
 #' @return A list containing the p-values and q-values for each row
 #'
@@ -179,6 +243,11 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
 #' @export
 #' @import qvalue
 ttest_unpaired <- function(tData, trefData) {
+  # Check for the same column numbers
+  if (ncol(tData) != ncol(trefData)) {
+    stop("The number of columns in the two datasets must be the same")
+  }
+
   ## t-tests
   tptvalues <- sapply(1:nrow(tData), function(pep) {
     ifelse(sum(!is.na(tData[pep, ])) > 1 & sum(!is.na(trefData[pep, ])) > 1,
@@ -197,12 +266,15 @@ ttest_unpaired <- function(tData, trefData) {
 }
 
 
-#' rp_unpaired function
+#' Perform unpaired rank products test
 #'
-#' This function calculates the p-values and q-values for unpaired random pairing combinations.
+#' @details
+#' This function calculates the p-values and q-values using rankd product
+#' statistics. The function requires having the same number of samples per
+#' group. The function uses parallel computing to speed up the calculations.
 #'
-#' @param tData The data matrix for the test group.
-#' @param trefData The data matrix for the reference group.
+#' @param tData The data matrix for the test group (features are rows).
+#' @param trefData The data matrix for the reference group (features are rows).
 #' @param NumReps The number of replicates.
 #'
 #' @return A list containing the p-values and q-values.
@@ -223,6 +295,12 @@ rp_unpaired <- function(tData, trefData) {
   } else {
     NumRPPairs <- 100
   }
+
+  # Check for the same column numbers
+  if (ncol(tData) != ncol(trefData)) {
+    stop("The number of columns in the two datasets must be the same")
+  }
+
 
   NumReps <- ncol(tData)
   tpRPvalues <- matrix(NA,
@@ -261,12 +339,14 @@ rp_unpaired <- function(tData, trefData) {
   return(list(pRPvalues = pRPvalues, qRPvalues = qRPvalues))
 }
 
-#' perm_unpaired function
+#' Perform unpaired permutation tests
 #'
-#' This function performs permutation testing for unpaired data.
+#' This function performs permutation testing for unpaired data. The permutation
+#' testing is based on comparing the t-values of the real data with the t-values
+#' of the permuted data.
 #'
-#' @param tData The test data matrix.
-#' @param trefData The reference data matrix.
+#' @param tData The data matrix for the test group (features are rows).
+#' @param trefData The data matrix for the reference group (features are rows).
 #'
 #' @return A list containing the p-values and q-values for the permutation test.
 #'
@@ -275,6 +355,7 @@ rp_unpaired <- function(tData, trefData) {
 #' tendencies to one or the other side. In the unpaired case, it also normalizes by the
 #' mean of the entire sample to avoid strange effects. The function then performs permutation
 #' testing using parallel computing, and calculates the p-values and q-values based on the permutation results.
+#' Both groups needs to consist of the same number of samples (columns).
 #'
 #' @examples
 #' tData <- matrix(rnorm(1000), nrow = 100)
@@ -286,6 +367,11 @@ rp_unpaired <- function(tData, trefData) {
 #' @import parallel
 #' @import qvalue
 perm_unpaired <- function(tData, trefData) {
+  # Check for the same column numbers
+  if (ncol(tData) != ncol(trefData)) {
+    stop("The number of columns in the two datasets must be the same")
+  }
+
   NumReps <- ncol(tData)
   # if there is an object NumPermCols, use it, otherwise use default value
   if (exists("NumPermCols")) {

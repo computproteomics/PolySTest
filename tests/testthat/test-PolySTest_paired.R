@@ -14,7 +14,7 @@ test_that("PolySTest_unpaired", {
   allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
 
   # Run function
-  results <- PolySTest_unpaired(fulldata, allComps)
+  results <- PolySTest_paired(fulldata, allComps)
 
   # Check for added columns in rowData
   expect_true(any(grepl("p-values", colnames(rowData(results)))))
@@ -22,13 +22,13 @@ test_that("PolySTest_unpaired", {
   expect_equal(sum(rowData(results)$'q-values PolySTest B vs A' < 0.01), 0 )
 
   # Run with different setupt
-  results <- PolySTest_unpaired(fulldata, allComps, statTests = c("t-test", "limma"))
+  results <- PolySTest_paired(fulldata, allComps, statTests = c("t-test", "limma"))
   expect_true(any(grepl("q-values", colnames(rowData(results)))))
   expect_equal(sum(rowData(results)$'q-values limma B vs A' < 0.01), 0 )
 
   # Run with different setupt
-  results <- PolySTest_unpaired(fulldata, allComps, statTests = c("t-test", "limma", "rank_products"))
+  results <- PolySTest_paired(fulldata, allComps, statTests = c("t-test", "limma", "rank_products"))
   expect_true(any(grepl("q-values", colnames(rowData(results)))))
   expect_equal(sum(rowData(results)$'q-values PolySTest B vs A' < 0.01), 0 )
 
-  })
+})

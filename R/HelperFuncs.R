@@ -13,7 +13,7 @@ get_numthreads <- function() {
   shiny_threads <- as.numeric(Sys.getenv("SHINY_THREADS"))
   if (!is.na(shiny_threads)) {
     NumThreads <- shiny_threads
-#    print(paste("Set number of threads to", NumThreads))
+    #    print(paste("Set number of threads to", NumThreads))
   }
   return(NumThreads)
 }
@@ -283,32 +283,40 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
 }
 
 
-# Note: This function requires the 'matrixStats' and 'parallel' packages to be installed.
 #' Find Optimal Fold-Change and Q-Value Thresholds
 #'
-#' This function calculates the "optimal" fold-change and q-value thresholds by maximizing the
-#' percental output of features commonly found for limma, rank products, permutation tests, and NA tests.
-#' It sets any NA values in the Qvalue matrix to 1, determines the smallest q-value, selects a range
-#' of q-values around it, runs over different fold-change (FC) thresholds, modifies the Qvalue matrix
-#' based on the FC threshold, calculates the distribution of significant features for each q-value
-#' threshold, and returns the combination of FC and q-value thresholds that result in the highest mean
-#' distribution of significant features.
-#' TODO: adapt to output of Paired/Unpaired functions
+#' Identifies the optimal fold-change (FC) and q-value thresholds that maximize
+#' the number of significant features identified across different statistical
+#' tests. It processes a matrix of q-values, applying various fold-change thresholds,
+#' and computes the distribution of significant features for each q-value threshold
+#' to determine the optimal combination of thresholds.
 #'
-#' @param Qvalue A matrix of q-values for the test results from Unpaired or Paired
-#' @param LogRatios A matrix of log ratios.
+#' @param Qvalue A matrix of q-values obtained from statistical tests such as PolySTest, limma,
+#'        rank products, and permutation tests. NA values in the matrix are treated as non-significant.
+#' @param LogRatios A matrix of log2 fold-change ratios for the same comparisons.
 #'
-#' @return A numeric vector containing the optimal fold-change threshold and q-value threshold.
+#' @return A numeric vector containing two elements: the optimal fold-change threshold
+#'         and the optimal q-value threshold, which together maximize the number of
+#'         significant features detected.
+#'
+#' @details The function first replaces NA values in the Qvalue matrix with 1 to
+#'          denote non-significant results. It then identifies the smallest q-value
+#'          and calculates a range of q-values around this minimum. For each fold-change
+#'          threshold, the function adjusts the Qvalue matrix and calculates the number
+#'          of significant features for each q-value threshold. The combination yielding
+#'          the highest mean distribution of significant features is considered optimal.
 #'
 #' @examples
-#' Qvalue <- matrix(c(0.01, 0.02, 0.03, 0.04, 0.05), nrow = 5, ncol = 3)
+#' # Example Qvalue and LogRatios matrices
+#' Qvalue <- matrix(c(0.01, 0.02, 0.03, 0.04), nrow = 4, ncol = 3)
 #' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
+#' # Find optimal thresholds
 #' thresholds <- FindFCandQlim(Qvalue, LogRatios)
 #' print(thresholds)
 #'
 #' @export
-#' @importFrom parallel makeCluster stopCluster clusterExport clusterEvalQ
 #' @importFrom matrixStats colMins
+#' @importFrom parallel makeCluster stopCluster clusterExport clusterEvalQ
 #' @keywords internal
 FindFCandQlim <- function(Qvalue, LogRatios) {
   BestComb <- c(0, 0)
@@ -383,7 +391,7 @@ UnifyQvals <- function(Qvalue, NumComps, NumTests) {
   UnifiedQvalue <- matrix(NA, ncol = NumComps, nrow = nrow(Qvalue))
   colnames(UnifiedQvalue) <- paste("q-values_polystest_fdr_", 1:NumComps)
   for (i in 1:(NumComps)) {
-    UnifiedQvalue[, i] <- colMins(apply(Qvalue[, seq(i, ncol(Qvalue) - NumComps, NumComps)], 1, p.adjust, "hommel"), na.rm = T)
+    UnifiedQvalue[, i] <- colMins(apply(Qvalue[, seq(i, ncol(Qvalue), NumComps)], 1, p.adjust, "hommel"), na.rm = T)
   }
   UnifiedQvalue
 }
@@ -547,10 +555,47 @@ create_ratio_matrix <- function(fulldata, allComps) {
   return(MAData)
 }
 
+#' Prepare Output Data for PolySTest Results
+#'
+#' This function processes the results of PolySTest, including log-ratios, p-values,
+#' and q-values for each statistical test applied, and integrates them into the
+#' rowData of the provided SummarizedExperiment object. It optionally handles
+#' separate t-test q-values and unifies q-values across multiple tests.
+#'
+#' @param fulldat A SummarizedExperiment object containing the initial dataset.
+#' @param Pvalue A matrix of p-values from the statistical tests.
+#' @param Qvalue A matrix of q-values corresponding to the p-values.
+#' @param LogRatios A matrix of log-ratio values for the comparisons.
+#' @param testNames A vector of names for each of the statistical tests performed.
+#' @param allComps A matrix specifying the pairs of conditions compared,
+#'        each row represents a pair.
+#'
+#' @details This function first checks for the presence of t-test results within
+#'          the provided data, segregates them if present, and then optionally
+#'          unifies q-values across tests if more than one test is specified.
+#'          It then organizes and renames the matrices of log-ratios, p-values,
+#'          and q-values according to the comparisons and tests performed, and
+#'          merges these matrices into the rowData of the provided
+#'          SummarizedExperiment object. Finally, it prints a summary of the
+#'          number of features with FDR < 0.01 for each test and comparison.
+#'
+#' @return The updated SummarizedExperiment object with additional columns in
+#'         rowData for log-ratios, p-values, and q-values.
+#'
+#' @examples
+#' # Assuming 'fulldat' is your SummarizedExperiment object, 'Pvalue', 'Qvalue',
+#' # and 'LogRatios' are matrices of your test results, 'testNames' is your
+#' # vector of test names, and 'allComps' specifies your condition pairs:
+#' # fulldat <- prepare_output_data(fulldat, Pvalue, Qvalue, LogRatios, testNames, allComps)
+#'
+#' @export
+#' @importFrom SummarizedExperiment rowData
+#' @import knitr
 prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, allComps) {
-  testNames2 <- c("PolySTest", testNames)
   num_tests <- length(testNames)
   numComps <- nrow(allComps)
+  testNames2 <- testNames
+  num_tests2 <- num_tests
 
   # Separate t-test p-values
   if ("t-test" %in% testNames) {
@@ -560,7 +605,12 @@ prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, a
   }
 
   # Unify q-values if needed (assuming UnifyQvals is a function to unify q-values)
-  Qvalue <- cbind(UnifyQvals(Qvalue, numComps, num_tests), Qvalue)
+  if (num_tests > 1) {
+    cat("Unifying q-values across tests ...\n")
+    Qvalue <- cbind(UnifyQvals(Qvalue, numComps, num_tests), Qvalue)
+    num_tests2 <- num_tests + 1
+    testNames2 <- c("PolySTest", testNames)
+  }
 
   if ("t-test" %in% testNames) {
     Qvalue <- cbind(Qvalue, ttestQvalue)
@@ -573,7 +623,7 @@ prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, a
   compNames <- apply(allComps, 1, function(x) paste(x[2], "vs", x[1]))
   colnames(LogRatios) <- paste("log-ratios", compNames)
   colnames(Pvalue) <- paste("p-values", rep(testNames, each=numComps), rep(compNames, num_tests))
-  colnames(Qvalue) <-  paste("q-values", rep(testNames2, each=numComps), rep(compNames, num_tests+1))
+  colnames(Qvalue) <-  paste("q-values", rep(testNames2, each=numComps), rep(compNames, num_tests2))
 
   # Combine all data into a single data frame
   rowData(fulldata) <- cbind(rowData(fulldat), LogRatios, Qvalue, Pvalue)
