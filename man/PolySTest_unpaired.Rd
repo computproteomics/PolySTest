@@ -4,7 +4,11 @@
 \alias{PolySTest_unpaired}
 \title{PolySTest for unpaired tests}
 \usage{
-PolySTest_unpaired(fulldata, allComps)
+PolySTest_unpaired(
+  fulldata,
+  allComps,
+  statTests = c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
+)
 }
 \arguments{
 \item{fulldata}{A SummarizedExperiment or derived object that contains
@@ -12,6 +16,10 @@ the quantitative data as required for PolySTest}
 
 \item{allComps}{A matrix containing the reference matrix specifying the
 pairs of conditions to compare (each comparison given as separate row)}
+
+\item{statTests}{A character vector specifying the statistical tests to be
+used. The available tests are: "limma", "Miss_Test", "t-test", "rank_products",
+and "permutation_test"}
 }
 \value{
 SummarizedExperiment with added columns for p-values and q-values
@@ -20,10 +28,34 @@ in rowData
 \description{
 Combining the power of different statistical tests
 }
+\details{
+This function performs unpaired statistical tests on the data in
+'fulldata' using the pairs of conditions specified in 'allComps'. It
+calculates the p-values and q-values for each row for the statistical tests
+used. The statistical tests available are: LIMMA, Miss_Test, t-test, Rank Products,
+and a permutation test based on t values. The function returns a
+SummarizedExperiment object with added columns for p-values and q-values in
+rowData.
+}
 \examples{
-# Assuming 'fulldata' is a SummarizedExperiment object
-# and 'allComps' is a matrix containing the reference matrix
-# specifying the pairs of conditions to compare
-PolySTest_unpaired(fulldata, allComps)
+library(SummarizedExperiment)
+
+# Creating mock quantitative data and sample metadata
+quantData <- matrix(rnorm(200), nrow=20, ncol=10)
+colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
+                         paste("Sample", 1:5, "_Condition_B", sep=""))
+rownames(quantData) <- paste("Gene", 1:20)
+sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each=5))
+
+# Creating the SummarizedExperiment object
+fulldata <- SummarizedExperiment(assays=list(quant=quantData),
+                                 colData=sampleMetadata)
+metadata(fulldata) <- list(NumReps = 5, NumCond = 2)
+
+# Specifying pairs of conditions to compare
+allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
+
+# Running the PolySTest_unpaired function
+results <- PolySTest_unpaired(fulldata, allComps)
 
 }

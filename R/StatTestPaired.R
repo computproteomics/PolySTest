@@ -103,7 +103,7 @@ PolySTest_paired <- function(fulldata, allComps, statTests = c("limma", "Miss_Te
 
   if (any("Miss_Test" %in% tests)) {
     cat("Running Miss test\n")
-    MissingStats <- MissingStatsDesign(dat, RRCateg, NumCond, NumReps)
+    MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
     p_values[, grep("p-values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
     q_values[, grep("q-values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
     cat("Miss test completed\n")

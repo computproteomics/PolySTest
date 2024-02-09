@@ -2,19 +2,19 @@
 % Please edit documentation in R/StatTestUnpaired.R
 \name{limma_unpaired}
 \alias{limma_unpaired}
-\title{Perform unpaired limma analysis
-This function performs unpaired limma analysis on Data.}
+\title{Perform unpaired limma analysis}
 \usage{
 limma_unpaired(Data, NumCond, NumReps, RRCateg)
 }
 \arguments{
-\item{Data}{A matrix of gene expression data.}
+\item{Data}{A matrix of quantitative expression data.}
 
 \item{NumCond}{The number of conditions in the experiment.}
 
 \item{NumReps}{The number of replicates per condition.}
 
-\item{RRCateg}{A matrix specifying the conditons to be compared}
+\item{RRCateg}{A matrix specifying the conditons to be compared
+(each comparison given as separate column).}
 }
 \value{
 A list containing the following results:
@@ -22,19 +22,32 @@ A list containing the following results:
 \item plvalues: The p-values from limma tests.
 \item qlvalues: The q-values from limma tests.
 \item Sds: The standard deviations of the Bayesian linear model.
-@details This function performs unpaired limma analysis on Data. It calculates the p-values and q-values for each row, indicating the significance of the difference between the two datasets.
+@details This function performs unpaired limma analysis on Data. It
+calculates the p-values and q-values for each row, indicating the
+significance of the difference between the two datasets.RRCateg is a
+matrix specifying the conditons to be compared (each comparison given
+as separate column). It thus has always 2 rows and n columns, where n
+is the number of comparisons. The function returns a list containing
+the p-values and q-values for each comparison, as well as the standard
+deviations of the Bayesian linear model.
 }
 }
 \description{
-Perform unpaired limma analysis
 This function performs unpaired limma analysis on Data.
 }
 \examples{
-# Example usage of limma_unpaired function
-data <- matrix(rnorm(1500), ncol = 15)
-RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
-result <- limma_unpaired(data, 3, 5, RRCateg)
-print(head(result))
+ dataMatrix <- matrix(rnorm(100), nrow = 10)
+colData <- data.frame(Condition = rep(c("A", "B"), each = 5))
+rowData <- data.frame(Gene = paste("Gene", 1:10))
+fulldata <- SummarizedExperiment(assays = list(quant = dataMatrix),
+                                 colData = colData, rowData = rowData)
+metadata(fulldata) <- list(NumCond = 2, NumReps = 5)
+#  Specifying comparisons
+allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
+# Run function
+results <- PolySTest_unpaired(fulldata, allComps)
+# found differentially regulated features
+
 }
 \keyword{analysis}
 \keyword{limma}

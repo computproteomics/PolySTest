@@ -7,43 +7,54 @@ test_that("overall test of full workflow", {
 
   ## Read file
   dat <- read.csv(filename, row.names=1, stringsAsFactors = F)
-  ndatcol <- ncol(dat)
 
+  ## Reduce to first 200
+  dat <- dat[1:200,]
+
+  sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:NumCond), NumReps),
+                               Replicate = rep(1:NumReps, each=NumCond))
+
+  # Create the SummarizedExperiment object
+  fulldata <- SummarizedExperiment(assays = list(quant = dat),
+                                   colData = sampleMetadata)
+  # Adding metadata
+  metadata(fulldata) <- list(
+    NumReps = NumReps,
+    NumCond = NumCond
+  )
+
+  # Access the assay data
+  dat <- assay(fulldata, "quant")
 
   # Normalize
   dat <- t(t(dat) -
              colMedians(as.matrix(dat), na.rm = TRUE))
 
+  # Update the assay data in 'fulldata'
+  assay(fulldata, "quant") <- dat
+
   ####### Defining conditions from names
-  conditions <- update_conditions_with_lcs(dat, NumCond, NumReps, conditions = paste("C", 1:NumCond, sep = ""))
+  fulldata <- update_conditions_with_lcs(fulldata)
+  conditions <- unique(colData(fulldata)$Condition)
 
   ####### Defining comparison for statistical tests
   FullReg <- allComps <- NULL
 
-  allComps <- create_pairwise_comparisons(conditions, 1)
-  ncomps <- nrow(allComps)
+  allComps <- create_pairwise_comparisons(conditions, 2)
 
-  RR <- convert_comps_to_indices(allComps, conditions, NumCond, NumReps)
+  # Run paired tests
+  fulldata <- PolySTest_paired(fulldata, allComps)
 
-  # for maybe later to include onlyLIMMA option
-  MAData <- NULL
-  for (i in seq_len(ncol(RR))) {
-    MAData <- cbind(MAData, dat[, RR[1, i]] - dat[, RR[2, i]])
-  }
-  rownames(MAData) <- rownames(dat)
-  qvalues <- Paired(MAData, ncomps, NumReps)
-  qvalues <- UnpairedDesign(dat, RR, NumCond, NumReps)
-  MissingStats <- list(
-    pNAvalues = matrix(1, ncol = ncomps, nrow = nrow(dat)),
-    qNAvalues = matrix(1, ncol = ncomps, nrow = nrow(dat))
-  )
-  MissingStats <- MissingStatsDesign(dat, RR, NumCond, NumReps)
-
-  # Prepare output data
-  FullReg <- prepare_output_data(dat, qvalues, MissingStats, allComps)
-  DRFs <- FullReg[,32] < 0.01
+  DRFs <- rowData(fulldata)[,"q-values PolySTest HF.Rep. vs TTA.Rep."] < 0.01
   expect_equal(sum(DRFs), 21)
-  expect_match(names(DRFs)[4], "A7VJC2")
+  expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
+
+  # Run unpaired tests
+  fulldata <- PolySTest_unpaired(fulldata, allComps)
+  DRFs <- rowData(fulldata)[,"q-values PolySTest HF.Rep. vs TTA.Rep."] < 0.01
+  expect_equal(sum(DRFs), 21)
+  expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
+
 
 })
 

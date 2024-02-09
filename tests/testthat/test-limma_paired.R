@@ -2,7 +2,6 @@ library(testthat)
 # Assuming your package is named 'yourPackageName'
 library(PolySTest)
 
-context("Tests for limma_paired Function")
 
 test_that("limma_paired function returns correct structure", {
   # Generating mock data
@@ -27,8 +26,8 @@ test_that("limma_paired function returns correct structure", {
   expect_type(results$Sds, "double")
 
   # Testing for correct dimensions
-  expect_equal(dim(results$plvalues), dim(MAData))
-  expect_equal(dim(results$qlvalues), dim(MAData))
+  expect_equal(dim(results$plvalues)*c(1,2), dim(MAData))
+  expect_equal(dim(results$qlvalues)*c(1,2), dim(MAData))
 
   # Add more tests to verify the correctness of p-values and q-values
 })

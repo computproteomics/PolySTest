@@ -7,16 +7,24 @@
 ttest_unpaired(tData, trefData)
 }
 \arguments{
-\item{tData}{The first dataset, a matrix or data frame}
+\item{tData}{A matrix or data frame with the quantitative features (via rows)
+of the first group}
 
-\item{trefData}{The second dataset, a matrix or data frame}
+\item{trefData}{A matrix or data frame with the quantitative features (via rows)
+of the second group}
 }
 \value{
 A list containing the p-values and q-values for each row
 }
 \description{
-This function performs unpaired t-tests between corresponding rows of two datasets.
-It calculates the p-values and q-values for each row, indicating the significance of the difference between the two datasets.
+Perform unpaired t-tests on two datasets
+}
+\details{
+This function performs unpaired t-tests between corresponding rows of two
+datasets.
+It calculates the p-values and q-values for each row, indicating the
+significance of the difference between the two datasets. We require
+providing the same number of samples (columns) per group.
 }
 \examples{
 tData <- matrix(rnorm(100), nrow = 10)

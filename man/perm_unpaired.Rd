@@ -2,20 +2,22 @@
 % Please edit documentation in R/StatTestUnpaired.R
 \name{perm_unpaired}
 \alias{perm_unpaired}
-\title{perm_unpaired function}
+\title{Perform unpaired permutation tests}
 \usage{
 perm_unpaired(tData, trefData)
 }
 \arguments{
-\item{tData}{The test data matrix.}
+\item{tData}{The data matrix for the test group (features are rows).}
 
-\item{trefData}{The reference data matrix.}
+\item{trefData}{The data matrix for the reference group (features are rows).}
 }
 \value{
 A list containing the p-values and q-values for the permutation test.
 }
 \description{
-This function performs permutation testing for unpaired data.
+This function performs permutation testing for unpaired data. The permutation
+testing is based on comparing the t-values of the real data with the t-values
+of the permuted data.
 }
 \details{
 The function adds columns from the randomized full set to reach the minimum number of
@@ -23,6 +25,7 @@ permutation columns (NumPermCols) replicates. It randomizes the sign as well to 
 tendencies to one or the other side. In the unpaired case, it also normalizes by the
 mean of the entire sample to avoid strange effects. The function then performs permutation
 testing using parallel computing, and calculates the p-values and q-values based on the permutation results.
+Both groups needs to consist of the same number of samples (columns).
 }
 \examples{
 tData <- matrix(rnorm(1000), nrow = 100)

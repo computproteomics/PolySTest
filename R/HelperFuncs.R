@@ -255,7 +255,8 @@ MissingStats <- function(Data, NumCond, NumReps) {
 #'
 #' @examples
 #' Pvalue <- matrix(c(0.01, 0.02, 0.03, 0.04, 0.05), nrow = 4, ncol = 3)
-#' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
+#' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8,
+#'                      -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
 #' thresholds <- FindFCandQlimAlternative(Pvalue, LogRatios)
 #' print(thresholds)
 #'
@@ -309,7 +310,8 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
 #' @examples
 #' # Example Qvalue and LogRatios matrices
 #' Qvalue <- matrix(c(0.01, 0.02, 0.03, 0.04), nrow = 4, ncol = 3)
-#' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
+#' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7,
+#'                       1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
 #' # Find optimal thresholds
 #' thresholds <- FindFCandQlim(Qvalue, LogRatios)
 #' print(thresholds)
@@ -562,7 +564,7 @@ create_ratio_matrix <- function(fulldata, allComps) {
 #' rowData of the provided SummarizedExperiment object. It optionally handles
 #' separate t-test q-values and unifies q-values across multiple tests.
 #'
-#' @param fulldat A SummarizedExperiment object containing the initial dataset.
+#' @param fulldata A SummarizedExperiment object containing the initial dataset.
 #' @param Pvalue A matrix of p-values from the statistical tests.
 #' @param Qvalue A matrix of q-values corresponding to the p-values.
 #' @param LogRatios A matrix of log-ratio values for the comparisons.
@@ -591,7 +593,7 @@ create_ratio_matrix <- function(fulldata, allComps) {
 #' @export
 #' @importFrom SummarizedExperiment rowData
 #' @import knitr
-prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, allComps) {
+prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, allComps) {
   num_tests <- length(testNames)
   numComps <- nrow(allComps)
   testNames2 <- testNames
@@ -626,7 +628,7 @@ prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, a
   colnames(Qvalue) <-  paste("q-values", rep(testNames2, each=numComps), rep(compNames, num_tests2))
 
   # Combine all data into a single data frame
-  rowData(fulldata) <- cbind(rowData(fulldat), LogRatios, Qvalue, Pvalue)
+  rowData(fulldata) <- cbind(rowData(fulldata), LogRatios, Qvalue, Pvalue)
 
   # Assuming FullReg contains q-values and you are interested in features with FDR < 0.01
   cat("------- Summary of Results --------\n")
@@ -657,7 +659,6 @@ prepare_output_data <- function(fulldat, Pvalue, Qvalue, LogRatios, testNames, a
 #'
 #' @export
 check_for_polystest <- function(se) {
-  require(SummarizedExperiment)
 
   # Check for required metadata
   if (!("NumReps" %in% names(metadata(se))) || !("NumCond" %in% names(metadata(se)))) {

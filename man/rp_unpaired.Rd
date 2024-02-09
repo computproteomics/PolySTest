@@ -2,14 +2,14 @@
 % Please edit documentation in R/StatTestUnpaired.R
 \name{rp_unpaired}
 \alias{rp_unpaired}
-\title{rp_unpaired function}
+\title{Perform unpaired rank products test}
 \usage{
 rp_unpaired(tData, trefData)
 }
 \arguments{
-\item{tData}{The data matrix for the test group.}
+\item{tData}{The data matrix for the test group (features are rows).}
 
-\item{trefData}{The data matrix for the reference group.}
+\item{trefData}{The data matrix for the reference group (features are rows).}
 
 \item{NumReps}{The number of replicates.}
 }
@@ -17,7 +17,12 @@ rp_unpaired(tData, trefData)
 A list containing the p-values and q-values.
 }
 \description{
-This function calculates the p-values and q-values for unpaired random pairing combinations.
+Perform unpaired rank products test
+}
+\details{
+This function calculates the p-values and q-values using rankd product
+statistics. The function requires having the same number of samples per
+group. The function uses parallel computing to speed up the calculations.
 }
 \examples{
 tData <- matrix(rnorm(1000), nrow = 100)

@@ -1,11 +1,12 @@
 library(testthat)
 library(SummarizedExperiment)
 
-test_that("PolySTest_unpaired", {
+test_that("PolySTest_paired", {
   # Setup mock SummarizedExperiment object
   dataMatrix <- matrix(rnorm(1000), nrow = 100)
-  colData <- DataFrame(Condition = rep(c("A", "B"), each = 5))
-  rowData <- DataFrame(Gene = paste("Gene", 1:100))
+  rownames(dataMatrix) <- paste("Gene", 1:100)
+  colData <- data.frame(Condition = rep(c("A", "B"), each = 5))
+  rowData <- data.frame(Gene = paste("Gene", 1:100))
   fulldata <- SummarizedExperiment(assay = list(quant = dataMatrix),
                                    colData = colData, rowData = rowData)
   metadata(fulldata) <- list(NumCond = 2, NumReps = 5)

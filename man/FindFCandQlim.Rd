@@ -7,26 +7,37 @@
 FindFCandQlim(Qvalue, LogRatios)
 }
 \arguments{
-\item{Qvalue}{A matrix of q-values for the test results from Unpaired or Paired}
+\item{Qvalue}{A matrix of q-values obtained from statistical tests such as PolySTest, limma,
+rank products, and permutation tests. NA values in the matrix are treated as non-significant.}
 
-\item{LogRatios}{A matrix of log ratios.}
+\item{LogRatios}{A matrix of log2 fold-change ratios for the same comparisons.}
 }
 \value{
-A numeric vector containing the optimal fold-change threshold and q-value threshold.
+A numeric vector containing two elements: the optimal fold-change threshold
+and the optimal q-value threshold, which together maximize the number of
+significant features detected.
 }
 \description{
-This function calculates the "optimal" fold-change and q-value thresholds by maximizing the
-percental output of features commonly found for limma, rank products, permutation tests, and NA tests.
-It sets any NA values in the Qvalue matrix to 1, determines the smallest q-value, selects a range
-of q-values around it, runs over different fold-change (FC) thresholds, modifies the Qvalue matrix
-based on the FC threshold, calculates the distribution of significant features for each q-value
-threshold, and returns the combination of FC and q-value thresholds that result in the highest mean
-distribution of significant features.
-TODO: adapt to output of Paired/Unpaired functions
+Identifies the optimal fold-change (FC) and q-value thresholds that maximize
+the number of significant features identified across different statistical
+tests. It processes a matrix of q-values, applying various fold-change thresholds,
+and computes the distribution of significant features for each q-value threshold
+to determine the optimal combination of thresholds.
+}
+\details{
+The function first replaces NA values in the Qvalue matrix with 1 to
+denote non-significant results. It then identifies the smallest q-value
+and calculates a range of q-values around this minimum. For each fold-change
+threshold, the function adjusts the Qvalue matrix and calculates the number
+of significant features for each q-value threshold. The combination yielding
+the highest mean distribution of significant features is considered optimal.
 }
 \examples{
-Qvalue <- matrix(c(0.01, 0.02, 0.03, 0.04, 0.05), nrow = 5, ncol = 3)
-LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
+# Example Qvalue and LogRatios matrices
+Qvalue <- matrix(c(0.01, 0.02, 0.03, 0.04), nrow = 4, ncol = 3)
+LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7,
+                      1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
+# Find optimal thresholds
 thresholds <- FindFCandQlim(Qvalue, LogRatios)
 print(thresholds)
 

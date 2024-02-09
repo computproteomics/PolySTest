@@ -2,28 +2,65 @@
 % Please edit documentation in R/StatTestPaired.R
 \name{PolySTest_paired}
 \alias{PolySTest_paired}
-\title{PolySTest for paired tests}
+\title{PolySTest for Paired Tests}
 \usage{
-PolySTest_paired(fulldata, allComps)
+PolySTest_paired(
+  fulldata,
+  allComps,
+  statTests = c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
+)
 }
 \arguments{
-\item{fulldata}{A SummarizedExperiment or derived object that contains
-the quantitative data as required for PolySTest}
+\item{fulldata}{A \code{SummarizedExperiment} or derived object containing
+the quantitative data required for PolySTest analysis.}
 
-\item{allComps}{A matrix containing the reference matrix specifying the
-pairs of conditions to compare (each comparison given as separate row)}
+\item{allComps}{A matrix specifying pairs of conditions to compare.
+Each row represents a pair for comparison.}
+
+\item{statTests}{A character vector specifying the statistical tests to
+be applied. Available tests include "limma", "Miss_Test",
+"t-test", "rank_products", and "permutation_test". The function
+will perform each specified test and integrate the results.}
 }
 \value{
-SummarizedExperiment with added columns for p-values and q-values
-in rowData
+A \code{SummarizedExperiment} object augmented with p-values and q-values
+in its \code{rowData}, reflecting the outcomes of the specified statistical analyses.
 }
 \description{
-Combining the power of different statistical tests
+Integrates various statistical tests for analyzing paired data within
+a \code{SummarizedExperiment} framework. It compares pairs of conditions
+specified by the user to calculate p-values and q-values for each comparison.
+}
+\details{
+Executes specified statistical tests on the dataset contained in
+\code{fulldata} using the condition pairs outlined in \code{allComps}. Calculates
+p-values and q-values for each genomic feature (e.g., genes, proteins)
+included in the analysis. Results are added to the \code{rowData} of the
+\code{SummarizedExperiment} object, enhancing it with detailed statistics
+from the paired tests.
 }
 \examples{
-# Assuming 'fulldata' is a SummarizedExperiment object
-# and 'allComps' is a matrix containing the reference matrix
-# specifying the pairs of conditions to compare
-PolySTest_paired(fulldata, allComps)
+library(SummarizedExperiment)
+
+# Mock quantitative data and metadata for samples
+quantData <- matrix(rnorm(200), nrow=20, ncol=10)
+colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
+                         paste("Sample", 1:5, "_Condition_B", sep=""))
+rownames(quantData) <- paste("Gene", 1:20)
+sampleMetadata <- (Condition=rep(c("A", "B"), each=5))
+
+# Creating the SummarizedExperiment object
+fulldata <- SummarizedExperiment(assays=list(quant=quantData),
+                                 colData=sampleMetadata)
+metadata(fulldata) <- list(NumReps=5, NumCond=2)
+
+# Specifying pairs of conditions to compare
+allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
+
+# Specify statistical tests to apply
+statTests <- c("limma", "t-test", "rank_products")
+
+# Running PolySTest for paired comparisons
+results <- PolySTest_paired(fulldata, allComps, statTests)
 
 }
