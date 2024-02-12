@@ -45,7 +45,7 @@
 #' @export
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #'
-PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")) {
+PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_Test", "t_test", "rank_products", "permutation_test")) {
 
   # check fulldata
   check_for_polystest(fulldata)
@@ -74,21 +74,21 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   # Prepare output data
   tests <-  statTests
   # Check for the right test names
-  if (any(!tests %in% c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test"))) {
-    stop("Invalid test name(s) specified. They should one or more of: 'limma', 'Miss_Test', 't-test', 'rank_products', 'permutation_test'")
+  if (any(!tests %in% c("limma", "Miss_Test", "t_test", "rank_products", "permutation_test"))) {
+    stop("Invalid test name(s) specified. They should one or more of: 'limma', 'Miss_Test', 't_test', 'rank_products', 'permutation_test'")
   }
   p_values <- q_values <- matrix(NA, nrow=nrow(Data), ncol=length(tests)*NumComps)
   rownames(p_values) <- rownames(q_values) <- rownames(Data)
-  colnames(p_values) <- paste0("p-values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
-  colnames(q_values) <- paste0("q-values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
+  colnames(p_values) <- paste0("p_values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
+  colnames(q_values) <- paste0("q_values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
 
   ## limma
   Sds <- NULL
   if (any("limma" %in% tests)) {
     cat("Running limma tests\n")
     lm_out <- limma_unpaired(Data, NumCond, NumReps, RRCateg)
-    p_values[, grep("p-values_limma", colnames(p_values))] <- lm_out$plvalues
-    q_values[, grep("q-values_limma", colnames(q_values))] <- lm_out$qlvalues
+    p_values[, grep("p_values_limma", colnames(p_values))] <- lm_out$plvalues
+    q_values[, grep("q_values_limma", colnames(q_values))] <- lm_out$qlvalues
     Sds <- lm_out$Sds
     cat("limma completed\n")
   }
@@ -96,8 +96,8 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   if (any("Miss_Test" %in% tests)) {
     cat("Running Miss test\n")
     MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
-    p_values[, grep("p-values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
-    q_values[, grep("q-values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
+    p_values[, grep("p_values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
+    q_values[, grep("q_values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
     cat("Miss test completed\n")
   }
 
@@ -106,7 +106,7 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   if (any("rank_products" %in% tests)) {
     cat("Running rank products ...\n")
   }
-  if (any("t-test" %in% tests)) {
+  if (any("t_test" %in% tests)) {
     cat("Running t-tests ...\n")
   }
   if (any("permutation_test" %in% tests)) {
@@ -122,24 +122,24 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
     trefData <- Data[, Reps == RRCateg[2, vs]]
 
     ## t-test
-    if (any("t-test" %in% tests)) {
+    if (any("t_test" %in% tests)) {
       ttest_out <- ttest_unpaired(tData, trefData)
-      p_values[, grep("p-values_t-test", colnames(p_values))[vs]] <- ttest_out$ptvalues
-      q_values[, grep("q-values_t-test", colnames(q_values))[vs]] <- ttest_out$qtvalues
+      p_values[, grep("p_values_t_test", colnames(p_values))[vs]] <- ttest_out$ptvalues
+      q_values[, grep("q_values_t_test", colnames(q_values))[vs]] <- ttest_out$qtvalues
     }
 
     ## rank products
     if (any("rank_products" %in% tests)) {
       rp_out <- rp_unpaired(tData, trefData)
-      p_values[, grep("p-values_rank_products",  colnames(p_values))[vs]] <- rp_out$pRPvalues
-      q_values[, grep("q-values_rank_products", colnames(q_values))[vs]] <- rp_out$qRPvalues
+      p_values[, grep("p_values_rank_products",  colnames(p_values))[vs]] <- rp_out$pRPvalues
+      q_values[, grep("q_values_rank_products", colnames(q_values))[vs]] <- rp_out$qRPvalues
     }
 
     ## Permutation tests
     if (any("permutation_test" %in% tests)) {
       perm_out <- perm_unpaired(tData, trefData)
-      p_values[, grep("p-values_permutation_test", colnames(p_values))[vs]] <- perm_out$pPermutvalues
-      q_values[, grep("q-values_permutation_test", colnames(q_values))[vs]] <- perm_out$qPermutvalues
+      p_values[, grep("p_values_permutation_test", colnames(p_values))[vs]] <- perm_out$pPermutvalues
+      q_values[, grep("q_values_permutation_test", colnames(q_values))[vs]] <- perm_out$qPermutvalues
     }
 
     lratios <- cbind(lratios, rowMeans(Data[, Reps == RRCateg[1, vs]], na.rm = T) - rowMeans(Data[, Reps == RRCateg[2, vs]], na.rm = T))

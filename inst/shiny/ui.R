@@ -8,21 +8,21 @@ version <- "1.3.4"
 
 shinyUI(dashboardPage(skin="blue",
                       dashboardHeader(title=title,
-                                      dropdownMenu(    
-                      type = "notifications", 
-                        icon = icon("question-circle"),
-                        badgeStatus = NULL,
-                        headerText = paste0("Version: ", version),
-                        
-                        notificationItem("source code and installation instructions", icon = icon("file"),
-                                         href = "http://bitbucket.com/veitveit/polystest"),
-                        notificationItem("paper", icon = icon("scroll"),
-                                         href = "https://doi.org/10.1074/mcp.RA119.001777"),
-                        notificationItem("author", icon = icon("address-card"),
-                                         href = "http://computproteomics.bmb.sdu.dk"),
-                        notificationItem("institution", icon = icon("university"),
-                                         href = "sdu.dk")
-                      )
+                                      dropdownMenu(
+                                        type = "notifications",
+                                        icon = icon("question-circle"),
+                                        badgeStatus = NULL,
+                                        headerText = paste0("Version: ", version),
+
+                                        notificationItem("source code and installation instructions", icon = icon("file"),
+                                                         href = "http://bitbucket.com/veitveit/polystest"),
+                                        notificationItem("paper", icon = icon("scroll"),
+                                                         href = "https://doi.org/10.1074/mcp.RA119.001777"),
+                                        notificationItem("author", icon = icon("address-card"),
+                                                         href = "http://computproteomics.bmb.sdu.dk"),
+                                        notificationItem("institution", icon = icon("university"),
+                                                         href = "sdu.dk")
+                                      )
                       ),
                       dashboardSidebar(width = "300",
                                        tags$style(HTML("
@@ -76,9 +76,30 @@ shinyUI(dashboardPage(skin="blue",
                                                                     bsTooltip("addComp","Add new pair of conditions to be tested for differentially regulated features")
                                                     )))),
                       dashboardBody(
-                        tags$head(tags$script(src="ExchangeData.js")),
+                        tags$head(tags$script(src="ExchangeData.js"),
+                                  tags$script(HTML("
+      function setPlotHeight(height) {
+        $('#plotvolc').height(height + 'px');
+      };
+            function setPlotHeight2(height) {
+        $('#plotpval').height(height + 'px');
+      };
+
+    "))),
                         useShinyjs(),  # Include shinyjs
                         extendShinyjs(script="ExchangeData.js", functions=c("send_results")),
+                        tags$script(HTML("
+  $(document).on('shiny:connected', function(event) {
+    Shiny.addCustomMessageHandler('pval_plot', function(height) {
+    console.log(height);
+      setPlotHeight2(height);
+    });
+        Shiny.addCustomMessageHandler('volc_plot', function(height) {
+      setPlotHeight(height);
+    });
+
+  });
+")),
                         h3(""),
                         box(title="Help (click on the right to see the help page)",width=12, solidHeader = T, status="warning",collapsible = T,collapsed=T,
                             htmlOutput("description"),
@@ -134,27 +155,27 @@ shinyUI(dashboardPage(skin="blue",
                               downloadButton("downloadHeatmapPdf","Download as pdf")
                               ,width=12),
                           box(title="Comparison of tests and conditions (volcano plots)",collapsible = TRUE,status="success",solidHeader = T,
-                              plotOutput("plotvolc",height="auto"),
+                              div(id="volc_plot", plotOutput("plotvolc",height="400px")),
                               downloadButton("downloadVolcanoPdf","Download as pdf")
                               ,width=12),
                           box(title="Feature numbers per test and condition",
                               collapsible = TRUE,status="success",solidHeader = T,
-                              p("This figure compares the number of regulated features for all statistical tests across comparisons. 
+                              p("This figure compares the number of regulated features for all statistical tests across comparisons.
                                 This applies the given thresholds for FDR and log-ratios above. Here, you can compare overlap between
                                 performance and between conditions."),
                               plotOutput("plotregdistr",click="plotregdistr_click",height="auto"),
                               downloadButton("downloadUpSetPdf","Download as pdf")
                               ,width=12),
-                          
+
                           box(title="Number of significant features versus thresholds",collapsible = TRUE,status="success",solidHeader = T,
                               plotOutput("plotreg",height="auto"),
                               downloadButton("downloadRegDistrPdf","Download as pdf")
-                              ,width=12)),
-                        box(title="Distribution of p-values (not corrected for multiple testing)",collapsible = TRUE,status="success",solidHeader = T,
-                            plotOutput("plotpval",height="auto"),
-                            downloadButton("downloadPvalueDistrPdf","Download as pdf")
-                            ,width=12)
-                        
+                              ,width=12),
+                          box(title="Distribution of p-values (not corrected for multiple testing)",collapsible = TRUE,status="success",solidHeader = T,
+                              div(id="pval_plot", plotOutput("plotpval",height="400px")),
+                              downloadButton("downloadPvalueDistrPdf","Download as pdf")
+                              ,width=12))
+
                       )
 )
 )

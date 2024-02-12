@@ -18,6 +18,13 @@ get_numthreads <- function() {
   return(NumThreads)
 }
 
+# Function to select colors for columns
+colSelected = function(col, num, sel, col2) {
+  ttt <- rep(col, num)
+  ttt[sel] <- col2
+  return(ttt)
+}
+
 
 #' Calculate statistics for permutation test
 #'
@@ -325,6 +332,9 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
   BestRegs <- 0
   NumCond <- ncol(LogRatios) + 1
 
+  Qvalue <- as.matrix(Qvalue)
+  LogRatios <- as.matrix(LogRatios)
+
   Qvalue[is.na(Qvalue)] <- 1
 
   smallestq <- signif(min(Qvalue, na.rm = T))
@@ -391,8 +401,9 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
 UnifyQvals <- function(Qvalue, NumComps, NumTests) {
   cat("Calculating PolySTest FDRs ...\n")
   UnifiedQvalue <- matrix(NA, ncol = NumComps, nrow = nrow(Qvalue))
-  colnames(UnifiedQvalue) <- paste("q-values_polystest_fdr_", 1:NumComps)
-  for (i in 1:(NumComps)) {
+  colnames(UnifiedQvalue) <- paste("q_values_polystest_fdr_", 1:NumComps)
+  rownames(UnifiedQvalue) <- rownames(Qvalue)
+  for (i in seq_len(NumComps)) {
     UnifiedQvalue[, i] <- colMins(apply(Qvalue[, seq(i, ncol(Qvalue), NumComps)], 1, p.adjust, "hommel"), na.rm = T)
   }
   UnifiedQvalue
@@ -600,9 +611,9 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
   num_tests2 <- num_tests
 
   # Separate t-test p-values
-  if ("t-test" %in% testNames) {
-    ttestQvalue <- Qvalue[, grep("q-values_t-test", colnames(Qvalue))]
-    Qvalue <- Qvalue[, - grep("q-values_t-test", colnames(Qvalue))]
+  if ("t_test" %in% testNames) {
+    ttestQvalue <- Qvalue[, grep("q_values_t_test", colnames(Qvalue))]
+    Qvalue <- Qvalue[, - grep("q_values_t_test", colnames(Qvalue))]
     num_tests <- num_tests - 1
   }
 
@@ -614,18 +625,18 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
     testNames2 <- c("PolySTest", testNames)
   }
 
-  if ("t-test" %in% testNames) {
+  if ("t_test" %in% testNames) {
     Qvalue <- cbind(Qvalue, ttestQvalue)
-    # move "t-test" to end
-    testNames2 <- c(testNames2[testNames2 != "t-test"], "t-test")
+    # move "t_test" to end
+    testNames2 <- c(testNames2[testNames2 != "t_test"], "t_test")
     num_tests <- num_tests + 1
   }
 
   # Set column names for log-ratios, p-values, and q-values
-  compNames <- apply(allComps, 1, function(x) paste(x[2], "vs", x[1]))
-  colnames(LogRatios) <- paste("log-ratios", compNames)
-  colnames(Pvalue) <- paste("p-values", rep(testNames, each=numComps), rep(compNames, num_tests))
-  colnames(Qvalue) <-  paste("q-values", rep(testNames2, each=numComps), rep(compNames, num_tests2))
+  compNames <- apply(allComps, 1, function(x) paste(x[2], "vs", x[1], sep="_"))
+  colnames(LogRatios) <- paste("log_ratios", compNames,sep="_")
+  colnames(Pvalue) <- paste("p_values", rep(testNames, each=numComps), rep(compNames, num_tests), sep="_")
+  colnames(Qvalue) <-  paste("FDR", rep(testNames2, each=numComps), rep(compNames, num_tests2), sep="_")
 
   # Combine all data into a single data frame
   rowData(fulldata) <- cbind(rowData(fulldata), LogRatios, Qvalue, Pvalue)
@@ -694,4 +705,24 @@ check_for_polystest <- function(se) {
   # Any other checks can be added here
 
   invisible(TRUE)
+}
+
+
+filterFC <- function(fulldata, NumTests, NumComps, fclim=c(0,0)) {
+  rdat <- rowData(fulldata)
+  Qvalue <- as.data.frame(rdat[,grep("^FDR", colnames(rdat))])
+  if (ncol(Qvalue) > 0) {
+    LogRatios <- as.data.frame(rdat[,grep("^log_ratios", colnames(rdat))])
+
+    FCRegs <- Qvalue
+    for (t in 1:NumTests) {
+      tsign <- Qvalue[,(t-1)*(NumComps)+(1:(NumComps)),drop=F]
+      tsign[is.na(tsign)] <- 1
+      tsign[LogRatios>fclim[1] & LogRatios<fclim[2]] <- 1
+      FCRegs[,(t-1)*(NumComps)+(1:(NumComps))] <- tsign
+    }
+    FCRegs
+  } else {
+    NULL
+  }
 }
