@@ -21,10 +21,11 @@ This function iterates over a set of conditions and updates each condition
 with the longest common subsequence of column names associated with that condition.
 }
 \examples{
-se <- SummarizedExperiment(assays = list(counts = matrix(rnorm(200), ncol = 10)))
+library(SummarizedExperiment)
+se <- SummarizedExperiment(assays = list(count = matrix(rnorm(200), ncol = 10)))
 metadata(se) <- list(NumCond = 2, NumReps = 5)
-colnames(assay(se)) <- c(paste("CondA_Rep", 1:5, sep = ""),
-                         paste("CondB_Rep", 1:5, sep = ""))
+rownames(colData(se)) <-  paste0(rep(c("CondA_Rep","CondB_Rep"), 5),
+rep(1:5, each=2))
 default_conditions <- c("Condition_A", "Condition_B")
 updated_conditions <- update_conditions_with_lcs(se, default_conditions)
 print(colData(updated_conditions))

@@ -1,4 +1,12 @@
-# Permutations: min 7 replicates, if not available, then generate from entire data
+# General settings: Permutations: min 7 replicates, if not available, then generate from entire data
+
+#' @import stats
+#' @import grDevices
+#' @import utils
+#' @import graphics
+#' @import SummarizedExperiment
+#' @importFrom S4Vectors metadata
+NULL
 
 #' Set number of threads (default is 4)
 #'
@@ -6,14 +14,19 @@
 #' environment variable SHINY_THREADS is set, the number of threads is set
 #' to the value of SHINY_THREADS.
 #'
+#' @param threads An integer indicating the number of threads to use.
 #'
 #'
-get_numthreads <- function() {
-  NumThreads <- 4
+#'
+get_numthreads <- function(threads=NULL) {
+  NumThreads <- 1
   shiny_threads <- as.numeric(Sys.getenv("SHINY_THREADS"))
   if (!is.na(shiny_threads)) {
     NumThreads <- shiny_threads
-    #    print(paste("Set number of threads to", NumThreads))
+    message(paste("Set number of threads to", NumThreads))
+  }
+  if(!is.null(threads)) {
+    NumThreads <- threads
   }
   return(NumThreads)
 }
@@ -78,7 +91,7 @@ MissValPDistr <- function(NumReps, PercNA) {
       D[i + 1] <- D[i + 1] + binTerms[j + 1] * binTerms[j + i + 1]
     }
   }
-  for (i in 1:d) {
+  for (i in seq_len(d)) {
     D[i + 1] <- 2 * D[i + 1]
   }
   D
@@ -128,7 +141,7 @@ RPStats <- function(tRPMAData, NumReps) {
     if (d > 1 && length(as.matrix(RPMAData)) > ncol(tRPMAData)) {
       RP.own <- 0
       # Calculate the rank of each column in RPMAData and sum the ranks
-      for (r in 1:NumReps) {
+      for (r in seq_len(NumReps)) {
         Rank <- rank(RPMAData[, r], na.last = "keep") / (sum(!is.na(RPMAData[, r])) + 1)
         names(Rank) <- rownames(RPMAData)
         Rank[is.na(Rank)] <- 1
@@ -168,24 +181,25 @@ RPStats <- function(tRPMAData, NumReps) {
 #' @examples
 #' Data <- matrix(rnorm(120), nrow = 10)
 #' # Introduce some missingness
-#' Data[sample(1:120, 40)] <- NA
-#' RR <- matrix(c(1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4), nrow = 2, ncol = 6)
+#' Data[sample(seq_len(120, 40))] <- NA
+#' RRCateg <- matrix(c(1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4), nrow = 2, ncol = 6)
 #' NumCond <- 4
 #' NumReps <- 3
-#' MissingStatsDesign(Data, RR, NumCond, NumReps)
+#' res_misstest <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
+#' head(res_misstest$qNAvalues)
 #'
 #' @export
 MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
-  Reps <- rep(1:NumCond, NumReps)
+  Reps <- rep(seq_len(NumCond), NumReps)
 
   NumComps <- ncol(RRCateg)
-  pNAvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = 1:(NumComps)))
+  pNAvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = seq_len(NumComps)))
   qNAvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = 1:(NumComps)))
 
   cat("Running Miss test ...\n")
   pb <- txtProgressBar(0.9, NumComps)
 
-  for (vs in 1:NumComps) {
+  for (vs in seq_len(NumComps)) {
     tData <- Data[, Reps == RRCateg[2, vs]]
     trefData <- Data[, Reps == RRCateg[1, vs]]
     tCompDat <- cbind(tData, trefData)
@@ -194,7 +208,7 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
     for (q in qs) {
       tCompDat[tCompDat < q] <- NA
       NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDat)) / (nrow(tCompDat) * 2 * NumReps))
-      statis[, which(q == qs)] <- (rowSums(!is.na(tCompDat[, 1:NumReps])) - rowSums(!is.na(tCompDat[, (NumReps + 1):(2 * NumReps)])))
+      statis[, which(q == qs)] <- (rowSums(!is.na(tCompDat[, seq_len(NumReps)])) - rowSums(!is.na(tCompDat[, (NumReps + 1):(2 * NumReps)])))
       pvals[, which(q == qs)] <- NAPDistr[abs(statis[, which(q == qs)]) + 1]
     }
     pNAvalues[, vs] <- rowMins(pvals) * (NumReps + 1)
@@ -223,13 +237,13 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
 #' Data[sample(1:120, 40)] <- NA
 #' NumCond <- 4
 #' NumReps <- 3
-#' MissingStats(Data, NumCond, NumReps)
-#'
+#' res_misstest <- MissingStats(Data, NumCond, NumReps)
+#' head(res_misstest$qNAvalues)
 #' @export
 MissingStats <- function(Data, NumCond, NumReps) {
-  Reps <- rep(1:NumCond, NumReps)
-  pNAvalues <- matrix(NA, ncol = NumCond - 1, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = 1:(NumCond - 1)))
-  qNAvalues <- matrix(NA, ncol = NumCond - 1, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = 1:(NumCond - 1)))
+  Reps <- rep(seq_len(NumCond), NumReps)
+  pNAvalues <- matrix(NA, ncol = NumCond - 1, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = seq_len((NumCond - 1))))
+  qNAvalues <- matrix(NA, ncol = NumCond - 1, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = seq_len((NumCond - 1))))
   for (vs in 2:NumCond) {
     tData <- Data[, Reps == vs]
     trefData <- Data[, Reps == 1]
@@ -239,7 +253,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
     for (q in qs) {
       tCompDat[tCompDat < q] <- NA
       NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDat)) / (nrow(tCompDat) * 2 * NumReps))
-      statis[, which(q == qs)] <- (rowSums(!is.na(tCompDat[, 1:NumReps])) - rowSums(!is.na(tCompDat[, (NumReps + 1):(2 * NumReps)])))
+      statis[, which(q == qs)] <- (rowSums(!is.na(tCompDat[, seq_len(NumReps)])) - rowSums(!is.na(tCompDat[, (NumReps + 1):(2 * NumReps)])))
       pvals[, which(q == qs)] <- NAPDistr[abs(statis[, which(q == qs)]) + 1]
     }
     pNAvalues[, vs - 1] <- rowMins(pvals) * (NumReps + 1)
@@ -261,7 +275,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
 #' @return A vector containing the mean fold-change threshold and mean q-value threshold
 #'
 #' @examples
-#' Pvalue <- matrix(c(0.01, 0.02, 0.03, 0.04, 0.05), nrow = 4, ncol = 3)
+#' Pvalue <- matrix(seq(0.01,0.12,0.01), nrow = 4, ncol = 3)
 #' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8,
 #'                      -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
 #' thresholds <- FindFCandQlimAlternative(Pvalue, LogRatios)
@@ -271,13 +285,22 @@ MissingStats <- function(Data, NumCond, NumReps) {
 #' @importFrom fdrtool hc.thresh
 FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
   BestComb <- c(0, 0)
-  NumCond <- ncol(LogRatios) + 1
+  NumCond <- ncol(LogRatios)
   Pvalue[is.na(Pvalue)] <- 1
+
+  NumTests <- ncol(Pvalue) / (NumCond)
+  if (NumTests %% 1 != 0) {
+    stop("Number of tests is not a multiple of the number of conditions")
+  }
+  if(NumTests != ncol(Pvalue) / (NumCond)) {
+    stop("Number of tests is not a multiple of the number of conditions")
+  }
+
 
   BestHCs <- BestFCs <- vector("numeric", ncol(LogRatios))
 
-  for (i in 1:ncol(LogRatios)) {
-    pvals <- Pvalue[, (i - 1) * 5 + 1]
+  for (i in seq_len(ncol(LogRatios))) {
+    pvals <- Pvalue[, i]
     BestHCs[i] <- hc.thresh(pvals[pvals < 1], plot = F)
     BestFCs[i] <- sd(LogRatios[, i], na.rm = T)
   }
@@ -301,6 +324,9 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
 #'
 #' @param Qvalue A matrix of q-values obtained from statistical tests such as PolySTest, limma,
 #'        rank products, and permutation tests. NA values in the matrix are treated as non-significant.
+#'        The matrix should have the same number of rows as the LogRatios matrix, and the number of
+#'        columns should be a multiple of the number of conditions, given by the number of different
+#'        statistical tests.
 #' @param LogRatios A matrix of log2 fold-change ratios for the same comparisons.
 #'
 #' @return A numeric vector containing two elements: the optimal fold-change threshold
@@ -316,7 +342,7 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
 #'
 #' @examples
 #' # Example Qvalue and LogRatios matrices
-#' Qvalue <- matrix(c(0.01, 0.02, 0.03, 0.04), nrow = 4, ncol = 3)
+#' Qvalue <- matrix(seq(0.01,0.12, 0.01), nrow = 4, ncol = 3)
 #' LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7,
 #'                       1.8, -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
 #' # Find optimal thresholds
@@ -330,60 +356,63 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
 FindFCandQlim <- function(Qvalue, LogRatios) {
   BestComb <- c(0, 0)
   BestRegs <- 0
-  NumCond <- ncol(LogRatios) + 1
-
-  Qvalue <- as.matrix(Qvalue)
-  LogRatios <- as.matrix(LogRatios)
+  NumCond <- ncol(LogRatios)
 
   Qvalue[is.na(Qvalue)] <- 1
 
-  smallestq <- signif(min(Qvalue, na.rm = T))
+  smallestq <- signif(min(Qvalue, na.rm = TRUE))
   qrange <- c(0.1, 0.2, 0.5) * 10^(rep(-10:0, each = 3))
   qrange <- qrange[which.min(abs(smallestq - qrange)):(length(qrange) - 2)]
 
-  # Run over different FC thresholds
-  fcRange <- seq(0, max(abs(range(LogRatios, na.rm = T))), length = 100)
+  fcRange <- seq(0, max(abs(range(LogRatios, na.rm = TRUE))), length = 100)
+  NumTests <- ncol(Qvalue) / (NumCond)
+  if (NumTests %% 1 != 0) {
+    stop("Number of tests is not a multiple of the number of conditions")
+  }
+  if(NumTests != ncol(Qvalue) / (NumCond)) {
+    stop("Number of tests is not a multiple of the number of conditions")
+  }
+
   NumThreads <- get_numthreads()
-  cl <- makeCluster(NumThreads)
-  clusterExport(cl = cl, varlist = c("Qvalue", "NumCond", "LogRatios", "qrange"), envir = environment())
-  clusterEvalQ(cl = cl, library(matrixStats))
+  cl <- parallel::makeCluster(NumThreads)
+  parallel::clusterExport(cl, varlist = c("Qvalue", "NumCond", "LogRatios", "qrange", "NumTests"), envir = environment())
+  parallel::clusterEvalQ(cl, library(matrixStats))
+
   BestVals <- parallel::parLapply(cl, fcRange, function(fc) {
-    # range of tests to consider:
-    for (t in c(1, 2, 4)) {
-      tvals <- Qvalue[, (NumCond - 1) * t + 1:(NumCond - 1)]
+    localBestRegs <- 0
+    localBestComb <- c(0, 0)
+    # Iterate over all tests dynamically
+    for (t in seq_len(NumTests)) {
+      # Modify Qvalue based on FC for current test
+      tvals <- Qvalue[, (t - 1) * NumCond + seq_len(NumCond),drop=F]
       tvals[LogRatios < fc & LogRatios > -fc] <- 1
-      Qvalue[, (NumCond - 1) * t + 1:(NumCond - 1)] <- tvals
-    }
-    # Run over range of q-values
-    for (qlim in qrange) {
-      alldistr <- vector("numeric", NumCond - 1)
-      for (t in 1:(NumCond - 1)) {
-        distr <- table(rowSums(Qvalue[, seq(t, ncol(Qvalue), NumCond - 1)] < qlim, na.rm = T))
-        allregs <- sum(distr[2:length(distr)], na.rm = T)
-        # print(distr)
-        if (length(distr) > 1 & !is.na(distr["4"])) {
-          alldistr[t] <- distr["4"] / allregs
+      #Update Qvalue for current test
+      Qvalue[, (t - 1) * NumCond + seq_len(NumCond)] <- tvals
+
+      # Iterate over q-value range
+      for (qlim in qrange) {
+        # Calculate distribution of significant features for current q-value threshold
+        alldistr <- sapply(seq_len(NumCond), function(cond) {
+          distr <- table(rowSums(Qvalue[, (t - 1) * NumCond + cond,drop=F] < qlim, na.rm = TRUE))
+          sum(distr[-1], na.rm = TRUE) / sum(distr, na.rm = TRUE)
+        })
+
+        if (mean(alldistr, na.rm = TRUE) > localBestRegs) {
+          localBestRegs <- mean(alldistr, na.rm = TRUE)
+          localBestComb <- c(fc, qlim)
         }
       }
-      # print(alldistr)
-      if (mean(alldistr) > BestRegs) {
-        BestRegs <- mean(alldistr)
-        BestComb <- c(fc, qlim)
-        # print(BestRegs)
-      }
     }
-    c(BestRegs, BestComb)
+    c(localBestRegs, localBestComb)
   })
-  stopCluster(cl)
+  parallel::stopCluster(cl)
 
-  BestRegs <- 0
-  for (i in 1:length(BestVals)) {
-    if (BestRegs < BestVals[[i]][1]) {
-      BestComb <- BestVals[[i]][2:3]
-      BestRegs <- BestVals[[i]][1]
-    }
-    # print(BestVals)
-  }
+  # Find the global best combination across all fold-change thresholds
+  globalBest <- do.call(rbind, BestVals) # Convert list to matrix for easier handling
+  bestRow <- which.max(globalBest[, 1])
+  BestComb <- globalBest[bestRow, -1]
+  BestRegs <- globalBest[bestRow, 1]
+
   return(BestComb)
 }
 
@@ -401,7 +430,7 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
 UnifyQvals <- function(Qvalue, NumComps, NumTests) {
   cat("Calculating PolySTest FDRs ...\n")
   UnifiedQvalue <- matrix(NA, ncol = NumComps, nrow = nrow(Qvalue))
-  colnames(UnifiedQvalue) <- paste("q_values_polystest_fdr_", 1:NumComps)
+  colnames(UnifiedQvalue) <- paste("q_values_polystest_fdr_", seq_len(NumComps))
   rownames(UnifiedQvalue) <- rownames(Qvalue)
   for (i in seq_len(NumComps)) {
     UnifiedQvalue[, i] <- colMins(apply(Qvalue[, seq(i, ncol(Qvalue), NumComps)], 1, p.adjust, "hommel"), na.rm = T)
@@ -465,11 +494,13 @@ validate_logical_param <- function(param, name) {
 #'
 #' @return Summariz3dExperiment with updated conditions
 #'
+#' @export
 #' @examples
-#' se <- SummarizedExperiment(assays = list(counts = matrix(rnorm(200), ncol = 10)))
+#' library(SummarizedExperiment)
+#' se <- SummarizedExperiment(assays = list(count = matrix(rnorm(200), ncol = 10)))
 #' metadata(se) <- list(NumCond = 2, NumReps = 5)
-#' colnames(assay(se)) <- c(paste("CondA_Rep", 1:5, sep = ""),
-#'                          paste("CondB_Rep", 1:5, sep = ""))
+#' rownames(colData(se)) <-  paste0(rep(c("CondA_Rep","CondB_Rep"), 5),
+#' rep(seq_len(5), each=2))
 #' default_conditions <- c("Condition_A", "Condition_B")
 #' updated_conditions <- update_conditions_with_lcs(se, default_conditions)
 #' print(colData(updated_conditions))
@@ -481,7 +512,7 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
   numCond <- metadata(fulldata)$NumCond
   numReps <- metadata(fulldata)$NumReps
   if(is.null(default))
-    default <- paste("C", 1:numCond, sep = "_")
+    default <- paste("C", seq_len(numCond), sep = "_")
   conditions <- default
 
   # Function to find the longest common subsequence
@@ -503,7 +534,7 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
   }
 
   # Iterate over each condition
-  for (i in 1:numCond) {
+  for (i in seq_len(numCond)) {
     condNames <- quant_cols[(0:(numReps-1)) * numCond + i]
     lcsName <- condNames[1]
     if (length(condNames) > 1) {
@@ -550,12 +581,12 @@ create_ratio_matrix <- function(fulldata, allComps) {
 
   # Make indices for pairings
   valComps <- matrix(NA, nrow = nrow(allComps), ncol = 2)
-  for (i in 1:nrow(allComps)) {
+  for (i in seq_len(nrow(allComps))) {
     valComps[i, 1] <- as.numeric(which(conditions == allComps[i, 1]))
     valComps[i, 2] <- as.numeric(which(conditions == allComps[i, 2]))
   }
   RR <- matrix(NA, ncol = nrow(allComps) * NumReps, nrow = 2)
-  for (j in 1:nrow(allComps)) {
+  for (j in seq_len(nrow(allComps))) {
     RR[1, seq(j, nrow(allComps) * NumReps, nrow(allComps))] <- seq(valComps[j, 2], NumCond * NumReps, NumCond)
     RR[2, seq(j, nrow(allComps) * NumReps, nrow(allComps))] <- seq(valComps[j, 1], NumCond * NumReps, NumCond)
   }
@@ -601,7 +632,6 @@ create_ratio_matrix <- function(fulldata, allComps) {
 #' # vector of test names, and 'allComps' specifies your condition pairs:
 #' # fulldat <- prepare_output_data(fulldat, Pvalue, Qvalue, LogRatios, testNames, allComps)
 #'
-#' @export
 #' @importFrom SummarizedExperiment rowData
 #' @import knitr
 prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, allComps) {
@@ -665,8 +695,8 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
 #' @return Invisible TRUE if checks pass; otherwise, warnings or errors are thrown.
 #'
 #' @examples
-#' # Assuming 'se' is a properly formatted SummarizedExperiment object
-#' check_for_polystest(se)
+#' data(liver_example)
+#' check_for_polystest(liver_example)
 #'
 #' @export
 check_for_polystest <- function(se) {
@@ -715,11 +745,11 @@ filterFC <- function(fulldata, NumTests, NumComps, fclim=c(0,0)) {
     LogRatios <- as.data.frame(rdat[,grep("^log_ratios", colnames(rdat))])
 
     FCRegs <- Qvalue
-    for (t in 1:NumTests) {
-      tsign <- Qvalue[,(t-1)*(NumComps)+(1:(NumComps)),drop=F]
+    for (t in seq_len(NumTests)) {
+      tsign <- Qvalue[,(t-1)*(NumComps)+(seq_len(NumComps)),drop=F]
       tsign[is.na(tsign)] <- 1
       tsign[LogRatios>fclim[1] & LogRatios<fclim[2]] <- 1
-      FCRegs[,(t-1)*(NumComps)+(1:(NumComps))] <- tsign
+      FCRegs[,(t-1)*(NumComps)+(seq_len(NumComps))] <- tsign
     }
     FCRegs
   } else {

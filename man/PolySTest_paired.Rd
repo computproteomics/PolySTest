@@ -7,7 +7,7 @@
 PolySTest_paired(
   fulldata,
   allComps,
-  statTests = c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
+  statTests = c("limma", "Miss_Test", "t_test", "rank_products", "permutation_test")
 )
 }
 \arguments{
@@ -43,11 +43,11 @@ from the paired tests.
 library(SummarizedExperiment)
 
 # Mock quantitative data and metadata for samples
-quantData <- matrix(rnorm(200), nrow=20, ncol=10)
+quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
 colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
                          paste("Sample", 1:5, "_Condition_B", sep=""))
-rownames(quantData) <- paste("Gene", 1:20)
-sampleMetadata <- (Condition=rep(c("A", "B"), each=5))
+rownames(quantData) <- paste("Gene", 1:200)
+sampleMetadata <- data.frame(Condition=rep(c("A", "B"), each=5))
 
 # Creating the SummarizedExperiment object
 fulldata <- SummarizedExperiment(assays=list(quant=quantData),
@@ -58,7 +58,7 @@ metadata(fulldata) <- list(NumReps=5, NumCond=2)
 allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
 
 # Specify statistical tests to apply
-statTests <- c("limma", "t-test", "rank_products")
+statTests <- c("limma", "t_test", "rank_products")
 
 # Running PolySTest for paired comparisons
 results <- PolySTest_paired(fulldata, allComps, statTests)

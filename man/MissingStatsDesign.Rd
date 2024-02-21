@@ -27,9 +27,10 @@ groups and thus does not have distinction for pairwise testing.
 Data <- matrix(rnorm(120), nrow = 10)
 # Introduce some missingness
 Data[sample(1:120, 40)] <- NA
-RR <- matrix(c(1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4), nrow = 2, ncol = 6)
+RRCateg <- matrix(c(1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4), nrow = 2, ncol = 6)
 NumCond <- 4
 NumReps <- 3
-MissingStatsDesign(Data, RR, NumCond, NumReps)
+res_misstest <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
+head(res_misstest$qNAvalues)
 
 }

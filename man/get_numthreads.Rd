@@ -4,7 +4,10 @@
 \alias{get_numthreads}
 \title{Set number of threads (default is 4)}
 \usage{
-get_numthreads()
+get_numthreads(threads = NULL)
+}
+\arguments{
+\item{threads}{An integer indicating the number of threads to use.}
 }
 \description{
 This function sets the number of threads for parallel processing. If the

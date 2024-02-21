@@ -10,8 +10,6 @@ rp_unpaired(tData, trefData)
 \item{tData}{The data matrix for the test group (features are rows).}
 
 \item{trefData}{The data matrix for the reference group (features are rows).}
-
-\item{NumReps}{The number of replicates.}
 }
 \value{
 A list containing the p-values and q-values.

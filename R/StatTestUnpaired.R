@@ -22,13 +22,12 @@
 #' in rowData
 #'
 #' @examples
-#' library(SummarizedExperiment)
-#'
 #' # Creating mock quantitative data and sample metadata
-#' quantData <- matrix(rnorm(200), nrow=20, ncol=10)
-#' colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
-#'                          paste("Sample", 1:5, "_Condition_B", sep=""))
-#' rownames(quantData) <- paste("Gene", 1:20)
+#' library(SummarizedExperiment)
+#' quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
+#' colnames(quantData) <- c(paste("Sample", seq_len(5), "_Condition_A", sep=""),
+#'                          paste("Sample", seq_len(5), "_Condition_B", sep=""))
+#' rownames(quantData) <- paste("Gene", seq_len(200))
 #' sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each=5))
 #'
 #' # Creating the SummarizedExperiment object
@@ -58,12 +57,12 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   NumCond <- metadata(fulldata)$NumCond
 
   # Extrating contrast details
-  Reps <- rep(1:NumCond, NumReps)
+  Reps <- rep(seq_len(NumCond), NumReps)
   conditions <- unique(colData(fulldata)$Condition)
   NumComps <- nrow(allComps)
   # Make indices for pairings
   RRCateg <- matrix(NA, ncol = nrow(allComps), nrow = 2)
-  for (i in 1:nrow(allComps)) {
+  for (i in seq_len(nrow(allComps))) {
     RRCateg[1, i] <- as.numeric(which(conditions == allComps[i, 1]))
     RRCateg[2, i] <- as.numeric(which(conditions == allComps[i, 2]))
   }
@@ -79,8 +78,8 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   }
   p_values <- q_values <- matrix(NA, nrow=nrow(Data), ncol=length(tests)*NumComps)
   rownames(p_values) <- rownames(q_values) <- rownames(Data)
-  colnames(p_values) <- paste0("p_values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
-  colnames(q_values) <- paste0("q_values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
+  colnames(p_values) <- paste0("p_values_", rep(tests, each=NumComps), "_", rep(seq_len(NumComps), length(tests)))
+  colnames(q_values) <- paste0("q_values_", rep(tests, each=NumComps), "_", rep(seq_len(NumComps), length(tests)))
 
   ## limma
   Sds <- NULL
@@ -114,7 +113,7 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   }
   pb <- txtProgressBar(0.9, NumComps)
 
-  for (vs in 1:NumComps) {
+  for (vs in seq_len(NumComps)) {
     if (!is.null(shiny::getDefaultReactiveDomain())) {
       shiny::setProgress(0.1 + 0.3 / (NumComps) * vs, detail = paste("tests for comparison", vs, "of", NumComps))
     }
@@ -178,26 +177,24 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
 #' @import limma
 #' @import qvalue
 #' @examples
-#'  dataMatrix <- matrix(rnorm(100), nrow = 10)
-#' colData <- data.frame(Condition = rep(c("A", "B"), each = 5))
-#' rowData <- data.frame(Gene = paste("Gene", 1:10))
-#' fulldata <- SummarizedExperiment(assays = list(quant = dataMatrix),
-#'                                  colData = colData, rowData = rowData)
-#' metadata(fulldata) <- list(NumCond = 2, NumReps = 5)
+#'  dataMatrix <- matrix(rnorm(900), ncol = 9)
+#'  NumCond <- 3
+#'  NumReps <- 3
+#' colnames(dataMatrix) <- rep(c("A", "B","C"), each = 3)
 #' #  Specifying comparisons
-#' allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
+#' RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
 #' # Run function
-#' results <- PolySTest_unpaired(fulldata, allComps)
-#' # found differentially regulated features
+#' results <- limma_unpaired(dataMatrix, NumCond, NumReps, RRCateg)
+#' print(results$plvalues)
 #'
 limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
-  Reps <- rep(1:NumCond, NumReps)
+  Reps <- rep(seq_len(NumCond), NumReps)
   NumComps <- ncol(RRCateg)
   design <- model.matrix(~ 0 + factor(Reps - 1))
-  colnames(design) <- paste("i", c(1:NumCond), sep = "")
+  colnames(design) <- paste("i", c(seq_len(NumCond)), sep = "")
   contrasts <- NULL
   First <- 1
-  for (i in (1:NumComps)) {
+  for (i in seq_len(NumComps)) {
     contrasts <- append(contrasts, paste(colnames(design)[RRCateg[2, i]], "-", colnames(design)[RRCateg[1, i]], sep = ""))
   }
   contrast.matrix <- limma::makeContrasts(contrasts = contrasts, levels = design)
@@ -209,7 +206,7 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
   plvalues <- lm.bayes$p.value
   qlvalues <- matrix(NA, nrow = nrow(plvalues), ncol = ncol(plvalues), dimnames = dimnames(plvalues))
   # qvalue correction
-  for (i in 1:ncol(plvalues)) {
+  for (i in seq_len(ncol(plvalues))) {
     tqs <- qvalue::qvalue(na.omit(plvalues[, i]))$qvalues
     qlvalues[names(tqs), i] <- tqs
   }
@@ -234,8 +231,8 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
 #' @return A list containing the p-values and q-values for each row
 #'
 #' @examples
-#' tData <- matrix(rnorm(100), nrow = 10)
-#' trefData <- matrix(rnorm(100), nrow = 10)
+#' tData <- matrix(rnorm(1000), nrow = 100)
+#' trefData <- matrix(rnorm(1000), nrow = 100)
 #' result <- ttest_unpaired(tData, trefData)
 #' print(result$ptvalues)
 #' print(result$qtvalues)
@@ -249,7 +246,7 @@ ttest_unpaired <- function(tData, trefData) {
   }
 
   ## t-tests
-  tptvalues <- sapply(1:nrow(tData), function(pep) {
+  tptvalues <- sapply(seq_len(nrow(tData)), function(pep) {
     ifelse(sum(!is.na(tData[pep, ])) > 1 & sum(!is.na(trefData[pep, ])) > 1,
            t.test(unlist(tData[pep, ]), unlist(trefData[pep, ]))$p.value,
            NA
@@ -275,7 +272,6 @@ ttest_unpaired <- function(tData, trefData) {
 #'
 #' @param tData The data matrix for the test group (features are rows).
 #' @param trefData The data matrix for the reference group (features are rows).
-#' @param NumReps The number of replicates.
 #'
 #' @return A list containing the p-values and q-values.
 #'
@@ -305,15 +301,15 @@ rp_unpaired <- function(tData, trefData) {
   NumReps <- ncol(tData)
   tpRPvalues <- matrix(NA,
                        ncol = NumRPPairs, nrow = nrow(tData),
-                       dimnames = list(rows = rownames(tData), cols = 1:NumRPPairs)
+                       dimnames = list(rows = rownames(tData), cols = seq_len(NumRPPairs))
   )
   NumThreads <- get_numthreads()
   cl <- parallel::makeCluster(NumThreads)
   parallel::clusterExport(cl = cl, varlist = c("NumReps", "tData", "trefData", "RPStats"), envir = environment())
   parallel::clusterEvalQ(cl = cl, library(matrixStats))
 
-  RPparOut <- parallel::parLapply(cl, 1:NumRPPairs, function(x) {
-    tRPMAData <- tData[, sample(1:NumReps)] - trefData[, sample(1:NumReps)]
+  RPparOut <- parallel::parLapply(cl, seq_len(NumRPPairs), function(x) {
+    tRPMAData <- tData[, sample(seq_len(NumReps))] - trefData[, sample(seq_len(NumReps))]
     # Up
     RPMAUp_pvalues <- RPStats(tRPMAData, NumReps)
     # Down
@@ -325,7 +321,7 @@ rp_unpaired <- function(tData, trefData) {
   })
   stopCluster(cl)
 
-  for (p in 1:NumRPPairs) {
+  for (p in seq_len(NumRPPairs)) {
     # print(RPparOut[[p]])
     tpRPvalues[names(RPparOut[[p]]), p] <- RPparOut[[p]]
   }
@@ -408,7 +404,7 @@ perm_unpaired <- function(tData, trefData) {
   cl <- makeCluster(NumThreads)
   clusterExport(cl = cl, varlist = c("NumReps", "PermFullData", "RPStats", "StatsForPermutTest"), envir = environment())
   clusterEvalQ(cl = cl, library(matrixStats))
-  PermutOut <- parallel::parLapply(cl, 1:NTests, function(x) {
+  PermutOut <- parallel::parLapply(cl, seq_len(NTests), function(x) {
     indat <- apply(PermFullData, 1, function(y) sample(y, NumReps * 2) * sample(c(1, -1), NumReps * 2, replace = T))
     StatsForPermutTest(t(indat), F)
   })

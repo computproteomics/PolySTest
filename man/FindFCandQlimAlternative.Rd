@@ -22,7 +22,7 @@ a higher criticism method and an FC threshold based on a standard deviation
 of one
 }
 \examples{
-Pvalue <- matrix(c(0.01, 0.02, 0.03, 0.04, 0.05), nrow = 4, ncol = 3)
+Pvalue <- matrix(seq(0.01,0.12,0.01), nrow = 4, ncol = 3)
 LogRatios <- matrix(c(1.2, 0.8, 1.5, -0.5, 0.2, 0.9, -1.1, 0.7, 1.8,
                      -0.9, 0.3, 1.1), nrow = 4, ncol = 3)
 thresholds <- FindFCandQlimAlternative(Pvalue, LogRatios)

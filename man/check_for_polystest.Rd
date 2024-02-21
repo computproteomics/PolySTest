@@ -18,7 +18,7 @@ formatted for PolySTest analysis. It checks for specific metadata properties,
 the number of assays, and the distribution of conditions and replicates.
 }
 \examples{
-# Assuming 'se' is a properly formatted SummarizedExperiment object
-check_for_polystest(se)
+data(liver_example)
+check_for_polystest(liver_example)
 
 }

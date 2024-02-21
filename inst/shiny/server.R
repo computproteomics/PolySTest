@@ -478,7 +478,8 @@ shinyServer(function(input, output, clientData, session) {
 
               # Calculate best fc and qlim combination for all tests but the t-test
               setProgress(0.7, detail = paste("Calculating favorable FDR and fc thresholds"))
-              tcomb <- FindFCandQlim(Qvalue, LogRatios)
+              tcomb <- FindFCandQlim(Qvalue[, grep("(^FDR_PolySTest_)|(^FDR_limma_)|(^FDR_Miss_Test_)",names(Qvalue))],
+                                     LogRatios)
               setProgress(0.9, detail = paste("Creating figures"))
 
 
@@ -619,14 +620,14 @@ shinyServer(function(input, output, clientData, session) {
       sel_prots <- triggerUpdate()[[1]]
       qlim <- input$qval
       fclim <- c(input$fcval1, input$fcval2)
-      plotVolcano(fulldata, testNames2, compNames, sel_prots, qlim, fclim)
+      plotVolcano(fulldata, compNames, testNames2, sel_prots, qlim, fclim)
       output$downloadVolcanoPdf <- downloadHandler(
         filename = function() {
           paste("VolcanoPlots", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
           pdf(file,height=12,width=20)
-          plotVolcano(fulldata, testNames2, compNames, sel_prots, qlim, fclim)
+          plotVolcano(fulldata, compNames, testNames2, sel_prots, qlim, fclim)
           dev.off()
         }
       )
@@ -651,7 +652,7 @@ shinyServer(function(input, output, clientData, session) {
           setProgress(0.5)
 
           # par(mfrow=c(1,3))
-          plotExpression(fulldata, sel_prots, testNames, compNames, input$profiles_scale, qlim, fclim)
+          plotExpression(fulldata, compNames, testNames2, sel_prots, input$profiles_scale, qlim, fclim)
 
           output$downloadExprPdf <- downloadHandler(
             filename = function() {
@@ -659,7 +660,7 @@ shinyServer(function(input, output, clientData, session) {
             },
             content = function(file) {
               pdf(file,height=8,width=25)
-              plotExpression(fulldata, selProts, testNames, compNames, input$profiles_scale, qlim, fclim)
+              plotExpression(fulldata, compNames, testNames2, selProts, input$profiles_scale, qlim, fclim)
               dev.off()
 
             })
@@ -683,14 +684,14 @@ shinyServer(function(input, output, clientData, session) {
       qlim <- input$qval
       fclim <- c(input$fcval, input$fcval2)
       isolate({
-        p <- plotHeatmaply(fulldata, sel_prots, NumComps, input$heatmap_scale)
+        p <- plotHeatmaply(fulldata, NumComps, sel_prots, input$heatmap_scale)
       })
       output$downloadHeatmapPdf <- downloadHandler(
         filename = function() {
           paste("Heatmap", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
-          plotHeatmaply(fulldata, sel_prots, NumComps, input$heatmap_scale, file=file)
+          plotHeatmaply(fulldata, NumComps, sel_prots, input$heatmap_scale, file=file)
         })
       p
     }
@@ -735,14 +736,14 @@ shinyServer(function(input, output, clientData, session) {
       qlim <- input$qval
       fclim <- c(input$fcval1, input$fcval2)
       input$button
-      plotRegDistr(fulldata, testNames2, NumComps, qlim, fclim)
+      plotRegNumber(fulldata, NumComps, testNames2, qlim, fclim)
       output$downloadRegDistrPdf <- downloadHandler(
         filename = function() {
           paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
           pdf(file,height=8,width=8)
-          plotRegDistr(fulldata, testNames2, NumComps, qlim, fclim)
+          plotRegNumber(fulldata, NumComps, testNames2, qlim, fclim)
           dev.off()
         })
     }
@@ -793,11 +794,11 @@ shinyServer(function(input, output, clientData, session) {
         },
         content = function(file) {
           pdf(file,height=12,width=20)
-          plotPvalueDistr(fulldata, testNames, compNames)
+          plotPvalueDistr(fulldata, compNames, testNames)
           dev.off()
         }
       )
-      plotPvalueDistr(fulldata, testNames, compNames)
+      plotPvalueDistr(fulldata, compNames, testNames)
     }
   })
 

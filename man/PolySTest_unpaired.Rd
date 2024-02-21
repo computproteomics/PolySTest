@@ -7,7 +7,7 @@
 PolySTest_unpaired(
   fulldata,
   allComps,
-  statTests = c("limma", "Miss_Test", "t-test", "rank_products", "permutation_test")
+  statTests = c("limma", "Miss_Test", "t_test", "rank_products", "permutation_test")
 )
 }
 \arguments{
@@ -38,13 +38,12 @@ SummarizedExperiment object with added columns for p-values and q-values in
 rowData.
 }
 \examples{
-library(SummarizedExperiment)
-
 # Creating mock quantitative data and sample metadata
-quantData <- matrix(rnorm(200), nrow=20, ncol=10)
+library(SummarizedExperiment)
+quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
 colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
                          paste("Sample", 1:5, "_Condition_B", sep=""))
-rownames(quantData) <- paste("Gene", 1:20)
+rownames(quantData) <- paste("Gene", 1:200)
 sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each=5))
 
 # Creating the SummarizedExperiment object

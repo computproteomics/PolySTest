@@ -27,6 +27,6 @@ Data <- matrix(rnorm(120), nrow = 10)
 Data[sample(1:120, 40)] <- NA
 NumCond <- 4
 NumReps <- 3
-MissingStats(Data, NumCond, NumReps)
-
+res_misstest <- MissingStats(Data, NumCond, NumReps)
+head(res_misstest$qNAvalues)
 }

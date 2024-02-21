@@ -20,6 +20,14 @@ A list containing the p-values and q-values.
 \description{
 This function performs paired limma analysis on MAData.
 }
+\examples{
+MAData <- matrix(rnorm(600), nrow = 100)
+NumCond <- 3
+NumReps <- 2
+limma_res <- limma_paired(MAData, NumCond, NumReps)
+head(limma_res$qlvalues)
+
+}
 \keyword{analysis}
 \keyword{limma}
 \keyword{paired}

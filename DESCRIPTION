@@ -1,7 +1,7 @@
 Package: PolySTest
 Title: PolySTest: Detection of differentially regulated features. Combined 
       statistical testing for data with few replicates and missing values
-Version: 1.5.2
+Version: 1.5.1
 Authors@R: 
     person("Veit", "Schwämmle", , "veits@bmb.sdu.dk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9708-6722"))
@@ -11,8 +11,9 @@ Description: Statistical tests The complexity of high-throughput mass
              consider missing values and quantitative changes, which we combined
              with well-performing statistical tests for high confidence
              detection of differentially regulated features.
-License: use_gpl3_license()
+License: use_gpl3_license() + file LICENSE
 Encoding: UTF-8
+biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.0
 Imports:
@@ -22,7 +23,15 @@ Imports:
     qvalue (>= 2.22.0),
     shiny (>= 1.5.0),
     SummarizedExperiment (>= 1.20.0),
-    knitr (>= 1.33)
+    knitr (>= 1.33),
+    plotly (>= 4.9.4),
+    heatmaply (>= 1.1.1),
+    circlize (>= 0.4.12),
+    UpSetR (>= 1.4.0),
+    gplots (>= 3.1.1),
+    S4Vectors (>= 0.30.0)
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Depends: 
+    R (>= 4.3.0)

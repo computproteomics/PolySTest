@@ -27,8 +27,8 @@ significance of the difference between the two datasets. We require
 providing the same number of samples (columns) per group.
 }
 \examples{
-tData <- matrix(rnorm(100), nrow = 10)
-trefData <- matrix(rnorm(100), nrow = 10)
+tData <- matrix(rnorm(1000), nrow = 100)
+trefData <- matrix(rnorm(1000), nrow = 100)
 result <- ttest_unpaired(tData, trefData)
 print(result$ptvalues)
 print(result$qtvalues)

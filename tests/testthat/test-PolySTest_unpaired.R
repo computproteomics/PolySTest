@@ -17,18 +17,18 @@ test_that("PolySTest_unpaired", {
   results <- PolySTest_unpaired(fulldata, allComps)
 
   # Check for added columns in rowData
-  expect_true(any(grepl("p-values", colnames(rowData(results)))))
-  expect_true(any(grepl("q-values", colnames(rowData(results)))))
-  expect_equal(sum(rowData(results)$'q-values PolySTest B vs A' < 0.01), 0 )
+  expect_true(any(grepl("p_values", colnames(rowData(results)))))
+  expect_true(any(grepl("FDR", colnames(rowData(results)))))
+  expect_equal(sum(rowData(results)$'FDR_PolySTest_B_vs_A' < 0.01), 0 )
 
   # Run with different setupt
-  results <- PolySTest_unpaired(fulldata, allComps, statTests = c("t-test", "limma"))
-  expect_true(any(grepl("q-values", colnames(rowData(results)))))
-  expect_equal(sum(rowData(results)$'q-values limma B vs A' < 0.01, na.rm=T), 0 )
+  results <- PolySTest_unpaired(fulldata, allComps, statTests = c("t_test", "limma"))
+  expect_true(any(grepl("FDR", colnames(rowData(results)))))
+  expect_equal(sum(rowData(results)$'FDR_limma_B_vs_A' < 0.01, na.rm=T), 0 )
 
   # Run with different setupt
-  results <- PolySTest_unpaired(fulldata, allComps, statTests = c("t-test", "limma", "rank_products"))
-  expect_true(any(grepl("q-values", colnames(rowData(results)))))
-  expect_equal(sum(rowData(results)$'q-values PolySTest B vs A' < 0.01), 0 )
+  results <- PolySTest_unpaired(fulldata, allComps, statTests = c("t_test", "limma", "rank_products"))
+  expect_true(any(grepl("FDR", colnames(rowData(results)))))
+  expect_equal(sum(rowData(results)$'FDR_PolySTest_B_vs_A' < 0.01), 0 )
 
   })

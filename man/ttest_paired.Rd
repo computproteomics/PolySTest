@@ -17,7 +17,7 @@ This function performs row-wise paired t-tests on a data frame containing
 log-fold changes
 }
 \examples{
-tMAData <- matrix(rnorm(100), nrow = 10)
+tMAData <- matrix(rnorm(1000), nrow = 100)
 tout <- ttest_paired(tMAData)
 head(tout$qtvalues)
 }

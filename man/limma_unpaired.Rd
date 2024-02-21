@@ -36,17 +36,15 @@ deviations of the Bayesian linear model.
 This function performs unpaired limma analysis on Data.
 }
 \examples{
- dataMatrix <- matrix(rnorm(100), nrow = 10)
-colData <- data.frame(Condition = rep(c("A", "B"), each = 5))
-rowData <- data.frame(Gene = paste("Gene", 1:10))
-fulldata <- SummarizedExperiment(assays = list(quant = dataMatrix),
-                                 colData = colData, rowData = rowData)
-metadata(fulldata) <- list(NumCond = 2, NumReps = 5)
+ dataMatrix <- matrix(rnorm(900), ncol = 9)
+ NumCond <- 3
+ NumReps <- 3
+colnames(dataMatrix) <- rep(c("A", "B","C"), each = 3)
 #  Specifying comparisons
-allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
+RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
 # Run function
-results <- PolySTest_unpaired(fulldata, allComps)
-# found differentially regulated features
+results <- limma_unpaired(dataMatrix, NumCond, NumReps, RRCateg)
+print(results$plvalues)
 
 }
 \keyword{analysis}

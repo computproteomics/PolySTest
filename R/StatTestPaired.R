@@ -27,11 +27,11 @@
 #' library(SummarizedExperiment)
 #'
 #' # Mock quantitative data and metadata for samples
-#' quantData <- matrix(rnorm(200), nrow=20, ncol=10)
+#' quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
 #' colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
 #'                          paste("Sample", 1:5, "_Condition_B", sep=""))
-#' rownames(quantData) <- paste("Gene", 1:20)
-#' sampleMetadata <- (Condition=rep(c("A", "B"), each=5))
+#' rownames(quantData) <- paste("Gene", 1:200)
+#' sampleMetadata <- data.frame(Condition=rep(c("A", "B"), each=5))
 #'
 #' # Creating the SummarizedExperiment object
 #' fulldata <- SummarizedExperiment(assays=list(quant=quantData),
@@ -42,7 +42,7 @@
 #' allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
 #'
 #' # Specify statistical tests to apply
-#' statTests <- c("limma", "t-test", "rank_products")
+#' statTests <- c("limma", "t_test", "rank_products")
 #'
 #' # Running PolySTest for paired comparisons
 #' results <- PolySTest_paired(fulldata, allComps, statTests)
@@ -71,15 +71,15 @@ PolySTest_paired <- function(fulldata, allComps, statTests = c("limma", "Miss_Te
 
   # Create the ratios matrix
   MAData <- create_ratio_matrix(fulldata, allComps)
-  MAReps <- rep(1:nrow(allComps), NumReps)
+  MAReps <- rep(seq_len(nrow(allComps)), NumReps)
 
   # Extrating contrast details
-  Reps <- rep(1:NumCond, NumReps)
+  Reps <- rep(seq_len(NumCond), NumReps)
   conditions <- unique(colData(fulldata)$Condition)
   NumComps <- nrow(allComps)
   # Make indices for pairings
   RRCateg <- matrix(NA, ncol = nrow(allComps), nrow = 2)
-  for (i in 1:nrow(allComps)) {
+  for (i in seq_len(nrow(allComps))) {
     RRCateg[1, i] <- as.numeric(which(conditions == allComps[i, 1]))
     RRCateg[2, i] <- as.numeric(which(conditions == allComps[i, 2]))
   }
@@ -87,8 +87,8 @@ PolySTest_paired <- function(fulldata, allComps, statTests = c("limma", "Miss_Te
   # Prepare output data
   p_values <- q_values <- matrix(NA, nrow=nrow(MAData), ncol=length(tests)*NumComps)
   rownames(p_values) <- rownames(q_values) <- rownames(MAData)
-  colnames(p_values) <- paste0("p_values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
-  colnames(q_values) <- paste0("q_values_", rep(tests, each=NumComps), "_", rep(1:NumComps, length(tests)))
+  colnames(p_values) <- paste0("p_values_", rep(tests, each=NumComps), "_", rep(seq_len(NumComps), length(tests)))
+  colnames(q_values) <- paste0("q_values_", rep(tests, each=NumComps), "_", rep(seq_len(NumComps), length(tests)))
 
   Sds <- NULL
   if (any("limma" %in% tests)) {
@@ -121,7 +121,7 @@ PolySTest_paired <- function(fulldata, allComps, statTests = c("limma", "Miss_Te
     cat("Running permutation tests ...\n")
   }
   pb <- txtProgressBar(0.9, NumCond)
-  for (vs in 1:NumComps) {
+  for (vs in seq_len(NumComps)) {
     if (!is.null(shiny::getDefaultReactiveDomain())) {
       shiny::setProgress(0.1 + 0.3 / NumComps * vs, detail = paste("tests for comparison", vs, "of", NumComps))
     }
@@ -178,15 +178,23 @@ PolySTest_paired <- function(fulldata, allComps, statTests = c("limma", "Miss_Te
 #' @param NumReps The number of replicates per condition.
 #'
 #' @return A list containing the p-values and q-values.
+#'
+#' @examples
+#' MAData <- matrix(rnorm(600), nrow = 100)
+#' NumCond <- 3
+#' NumReps <- 2
+#' limma_res <- limma_paired(MAData, NumCond, NumReps)
+#' head(limma_res$qlvalues)
+#'
 #' @keywords limma paired analysis
 #' @import limma
 #' @import qvalue
 #' @export
 limma_paired <- function(MAData, NumCond, NumReps) {
-  MAReps <- rep(1:NumCond, NumReps)
+  MAReps <- rep(seq_len(NumCond), NumReps)
   ## limma with ratios
   design <- plvalues <- NULL
-  for (c in (1:(NumCond))) {
+  for (c in (seq_len(NumCond))) {
     design <- cbind(design, as.numeric(MAReps == c))
   }
   lm.fittedMA <- limma::lmFit(MAData, design)
@@ -195,7 +203,7 @@ limma_paired <- function(MAData, NumCond, NumReps) {
   plvalues <- lm.bayesMA$p.value
   qlvalues <- matrix(NA, nrow = nrow(plvalues), ncol = ncol(plvalues), dimnames = dimnames(plvalues))
   # qvalue correction
-  for (i in 1:ncol(plvalues)) {
+  for (i in seq_len(ncol(plvalues))) {
     tqs <- qvalue::qvalue(na.omit(plvalues[, i]))$qvalues
     qlvalues[names(tqs), i] <- tqs
   }
@@ -214,12 +222,12 @@ limma_paired <- function(MAData, NumCond, NumReps) {
 #' @export
 #' @import qvalue
 #' @examples
-#' tMAData <- matrix(rnorm(100), nrow = 10)
+#' tMAData <- matrix(rnorm(1000), nrow = 100)
 #' tout <- ttest_paired(tMAData)
 #' head(tout$qtvalues)
 ttest_paired <- function(tMAData) {
   ## t-tests
-  ptvalues <- sapply(1:nrow(tMAData), function(pep) {
+  ptvalues <- sapply(seq_len(nrow(tMAData)), function(pep) {
     ifelse(sum(!is.na(tMAData[pep, ])) > 1,
            t.test(tMAData[pep, ])$p.value,
            NA
