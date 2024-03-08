@@ -7,20 +7,19 @@ LABEL description="Docker image of PolySTest implementation on top of shiny-serv
 #RUN rm -rf /var/cache/apt/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
 #RUN apt-get clean && apt-get update && apt-get install -y apt-utils
 
-RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update && apt-get install -y libssl-dev liblzma-dev libbz2-dev libicu-dev && apt-get clean 
+RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update && apt-get install -y libssl-dev liblzma-dev libbz2-dev libicu-dev && apt-get clean
 
 
-RUN R -e "install.packages('BiocManager', repos='http://cran.us.r-project.org'); \
+RUN R -e "install.packages('BiocManager',ask=F); \
   update.packages(ask=F); \
   BiocManager::install(c('dplyr','plotly'),ask=F)"
 RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','parallel','qvalue','circlize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard','limma','shinyjs'\
 ),ask=F)"
 
 
-RUN rm -rf /srv/shiny-server
-RUN mkdir /srv/shiny-server
-RUN mkdir /srv/shiny-server/www
-COPY www/* /srv/shiny-server/www/
-COPY *R  /srv/shiny-server/
-COPY *csv  /srv/shiny-server/
+RUN rm -rf /srv/shiny-server/*
+RUN mkdir /tmp/polystest
+COPY inst/shiny /srv/shiny-server
+COPY .  /tmp/polystest/
+RUN cd /tmp/polystest && R -e "devtools::install()"
 #COPY *pdf  /srv/shiny-server/

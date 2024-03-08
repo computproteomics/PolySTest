@@ -12,16 +12,16 @@ pipelines:
           - docker login --username $DOCKER_HUB_USERNAME --password $dockerpasswd
 
           # build the Docker image (this will use the Dockerfile in the root of the repo)
-          - docker build -t $IMAGE_NAME .
+          - docker build -t $IMAGE_NAME inst/shiny
           # authenticate with the Docker Hub registry
           # push the new Docker image to the Docker registry
           - docker push $IMAGE_NAME
-  tags: 
+  tags:
     release-*:
     - step:
         services:
           - docker
-        script: 
+        script:
           - export DOCKER_HUB_USERNAME=veitveit
           - export DOCKER_HUB_PASSWORD=$dockerpasswd
           - export IMAGE_NAME=veitveit/polystest:$BITBUCKET_TAG
