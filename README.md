@@ -1,4 +1,5 @@
-[![Anaconda-Server Badge](https://anaconda.org/bioconda/polystest/badges/installer/conda.svg)](https://conda.anaconda.org/bioconda)
+[![Conda Version](https://img.shields.io/conda/v/conda-forge/polystest.svg?style=flat-square)](https://anaconda.org/conda-forge/polystest)
+
 
 **Welcome to the repository of PolySTest**
 developed at the [Protein Research Group](http://www.sdu.dk/en/Om_SDU/Institutter_centre/Bmb_biokemi_og_molekylaer_biologi/Forskning/Forskningsgrupper/Protein.aspx)  
@@ -7,7 +8,7 @@ Department of Biochemistry and Molecular Biology
 
 ## Citation
 When using PolySTest, please cite our paper:  
-Veit Schw‰mmle, Christina E Hagensen, Adelina Rogowska-Wrzesinska, and Ole N. Jensen, doi: https://doi.org/10.1074/mcp.RA119.001777
+Veit Schw√§mmle, Christina E Hagensen, Adelina Rogowska-Wrzesinska, and Ole N. Jensen, doi: https://doi.org/10.1074/mcp.RA119.001777
 
 PolySTest can be run as shiny app on our server or using the docker version of the tool to avoid installation issues and computational bottlenecks.
 
