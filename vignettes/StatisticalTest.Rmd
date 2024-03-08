@@ -16,50 +16,64 @@ knitr::opts_chunk$set(
 )
 ```
 
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+Welcome to the vignette of the PolySTest package. We will run statistical tests for differential abundances in a proteomics data set. 
 
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
 
-## Vignette Info
+```{r, include=FALSE}
+  # package raw data file
+  filename <- system.file("extdata", "LiverAllProteins.csv", package = "PolySTest")
+  NumReps <- 3
+  NumCond <- 4
+  isPaired <- TRUE
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+  ## Read file
+  dat <- read.csv(filename, row.names=1, stringsAsFactors = F)
 
-## Styles
+  ## Reduce to first 200
+  dat <- dat[1:200,]
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+  sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:NumCond), NumReps),
+                               Replicate = rep(1:NumReps, each=NumCond))
 
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
+  # Create the SummarizedExperiment object
+  fulldata <- SummarizedExperiment(assays = list(quant = dat),
+                                   colData = sampleMetadata)
+  # Adding metadata
+  metadata(fulldata) <- list(
+    NumReps = NumReps,
+    NumCond = NumCond
+  )
 
-## Figures
+  # Access the assay data
+  dat <- assay(fulldata, "quant")
 
-The figure sizes have been customised so that you can easily put two images side-by-side. 
+  # Normalize
+  dat <- t(t(dat) -
+             colMedians(as.matrix(dat), na.rm = TRUE))
 
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+  # Update the assay data in 'fulldata'
+  assay(fulldata, "quant") <- dat
+
+  ####### Defining conditions from names
+  fulldata <- update_conditions_with_lcs(fulldata)
+  conditions <- unique(colData(fulldata)$Condition)
+
+  ####### Defining comparison for statistical tests
+  FullReg <- allComps <- NULL
+
+  allComps <- create_pairwise_comparisons(conditions, 2)
+
+  # Run paired tests
+  fulldata <- PolySTest_paired(fulldata, allComps)
+
+  DRFs <- rowData(fulldata)[,"FDR_PolySTest_HF.Rep._vs_TTA.Rep."] < 0.01
+  expect_equal(sum(DRFs), 21)
+  expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
+
+  # Run unpaired tests
+  fulldata <- PolySTest_unpaired(fulldata, allComps)
+  DRFs <- rowData(fulldata)[,"FDR_PolySTest_HF.Rep._vs_TTA.Rep."] < 0.01
+  expect_equal(sum(DRFs), 21)
+  expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
+
 ```
-
-You can enable figure captions by `fig_caption: yes` in YAML:
-
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
-
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
-```
-
-Also a quote using `>`:
-
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
