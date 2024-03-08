@@ -9,7 +9,7 @@ test_that("overall test of full workflow", {
   dat <- read.csv(filename, row.names=1, stringsAsFactors = F)
 
   ## Reduce to first 200
-  dat <- dat[1:500,]
+  dat <- dat[1:200,]
 
   sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:NumCond), NumReps),
                                Replicate = rep(1:NumReps, each=NumCond))
