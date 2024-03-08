@@ -12,14 +12,14 @@ RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngrad
 
 RUN R -e "install.packages('BiocManager',ask=F); \
   update.packages(ask=F); \
-  BiocManager::install(c('dplyr','plotly'),ask=F)"
+  BiocManager::install(c('dplyr','plotly','devtools'),ask=F)"
 RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','parallel','qvalue','circlize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard','limma','shinyjs'\
 ),ask=F)"
 
 
 RUN rm -rf /srv/shiny-server/*
 RUN mkdir /tmp/polystest
-COPY inst/shiny /srv/shiny-server
 COPY .  /tmp/polystest/
+COPY inst/shiny/ /srv/shiny-server
 RUN cd /tmp/polystest && R -e "devtools::install()"
 #COPY *pdf  /srv/shiny-server/
