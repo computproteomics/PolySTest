@@ -18,62 +18,90 @@ knitr::opts_chunk$set(
 
 Welcome to the vignette of the PolySTest package. We will run statistical tests for differential abundances in a proteomics data set. 
 
+## Installation
 
-```{r, include=FALSE}
-  # package raw data file
-  filename <- system.file("extdata", "LiverAllProteins.csv", package = "PolySTest")
-  NumReps <- 3
-  NumCond <- 4
-  isPaired <- TRUE
+To install PolySTest, you can use Bioconductor's BiocManager:
 
-  ## Read file
-  dat <- read.csv(filename, row.names=1, stringsAsFactors = F)
+```{r, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
 
-  ## Reduce to first 200
-  dat <- dat[1:200,]
+BiocManager::install("PolySTest")
+```
 
-  sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:NumCond), NumReps),
-                               Replicate = rep(1:NumReps, each=NumCond))
+## Loading data
+First, we load the necessary package and example data and reduce it to 200
+lines. The data set consists of protein abundances in liver samples from mice
+fed with four different diets. The data contains 3 replicates per diet.
 
-  # Create the SummarizedExperiment object
-  fulldata <- SummarizedExperiment(assays = list(quant = dat),
-                                   colData = sampleMetadata)
-  # Adding metadata
-  metadata(fulldata) <- list(
-    NumReps = NumReps,
-    NumCond = NumCond
-  )
+```{r}
+library(PolySTest)
 
-  # Access the assay data
-  dat <- assay(fulldata, "quant")
+# Load the data file "LiverAllProteins.csv" from the PolySTest package
+filename <- system.file("extdata", "LiverAllProteins.csv", package = "PolySTest")
 
-  # Normalize
-  dat <- t(t(dat) -
-             colMedians(as.matrix(dat), na.rm = TRUE))
+dat <- read.csv(filename, row.names=1, stringsAsFactors = FALSE)
+dat <- dat[1:200,] # Use a subset of the data for this example
+```
 
-  # Update the assay data in 'fulldata'
-  assay(fulldata, "quant") <- dat
+## Creating a SummarizedExperiment object
+We now create a `SummarizedExperiment` object from the data. This object will
+contain the protein abundances and the sample metadata.
 
-  ####### Defining conditions from names
-  fulldata <- update_conditions_with_lcs(fulldata)
-  conditions <- unique(colData(fulldata)$Condition)
+In addition, we normalize by the median of the columns to adjust for differences
+in the sample amounts loaded into the instrument.
 
-  ####### Defining comparison for statistical tests
-  FullReg <- allComps <- NULL
+```{r}
 
-  allComps <- create_pairwise_comparisons(conditions, 2)
 
-  # Run paired tests
-  fulldata <- PolySTest_paired(fulldata, allComps)
+sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:4), each=3),
+                             Replicate = rep(1:3, each=4))
 
-  DRFs <- rowData(fulldata)[,"FDR_PolySTest_HF.Rep._vs_TTA.Rep."] < 0.01
-  expect_equal(sum(DRFs), 21)
-  expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
+fulldata <- SummarizedExperiment(assays = list(quant = dat), colData = sampleMetadata)
+metadata(fulldata) <- list(NumReps = 3, NumCond = 4)
 
-  # Run unpaired tests
-  fulldata <- PolySTest_unpaired(fulldata, allComps)
-  DRFs <- rowData(fulldata)[,"FDR_PolySTest_HF.Rep._vs_TTA.Rep."] < 0.01
-  expect_equal(sum(DRFs), 21)
-  expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
+# Normalization (example)
+dat <- t(t(dat) - colMedians(as.matrix(dat), na.rm = TRUE))
+assay(fulldata, "quant") <- dat
+
+fulldata <- update_conditions_with_lcs(fulldata)
+```
+
+## Defining comparisons
+We define the comparisons we want to test. In this case, we want to compare
+each condition with each other condition. We use the `create_pairwise_comparisons`
+function to create a matrix of all pairwise comparisons.
+
+```{r}
+conditions <- unique(colData(fulldata)$Condition)
+allComps <- create_pairwise_comparisons(conditions, 2)
+
+allComps
+```
+
+## Running the statistical tests
+We can now run the statistical tests. We will use the `PolySTest_paired` function
+to run paired tests. The function will add columns to the `rowData` of the
+`SummarizedExperiment` object containing the p-values and FDRs for each comparison.
+
+```{r}
+fulldata <- PolySTest_paired(fulldata, allComps)
+rowData(fulldata)
+
+```
+
+## Running unpaired tests
+We can also run unpaired tests using the `PolySTest_unpaired` function. The 
+experimental design dictated whether to use paired or unpaired tests.
+
+```{r}
+fulldata <- PolySTest_unpaired(fulldata, allComps)
+rowData(fulldata)
+
+```
+
+## Session info
+```{r}
+sessionInfo()
 
 ```

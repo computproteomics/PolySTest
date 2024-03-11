@@ -196,7 +196,7 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
   pNAvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = seq_len(NumComps)))
   qNAvalues <- matrix(NA, ncol = NumComps, nrow = nrow(Data), dimnames = list(rows = rownames(Data), cols = 1:(NumComps)))
 
-  cat("Running Miss test ...\n")
+  message("Running Miss test ...")
   pb <- txtProgressBar(0.9, NumComps)
 
   for (vs in seq_len(NumComps)) {
@@ -428,7 +428,7 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
 # Returns:
 #   A matrix of unified q-values calculated using the Hommel method
 UnifyQvals <- function(Qvalue, NumComps, NumTests) {
-  cat("Calculating PolySTest FDRs ...\n")
+  message("Calculating PolySTest FDRs ...")
   UnifiedQvalue <- matrix(NA, ncol = NumComps, nrow = nrow(Qvalue))
   colnames(UnifiedQvalue) <- paste("q_values_polystest_fdr_", seq_len(NumComps))
   rownames(UnifiedQvalue) <- rownames(Qvalue)
@@ -564,7 +564,7 @@ create_pairwise_comparisons <- function(conditions, refCond) {
     allComps <- t(combn(conditions, 2))
   }
   colnames(allComps) <- c("Condition A", "Condition B")
-  cat("\nAll pairwise comparison between conditions:\n")
+  message("All pairwise comparison between conditions:")
   print(knitr::kable(allComps))
   return(allComps)
 }
@@ -649,7 +649,7 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
 
   # Unify q-values if needed (assuming UnifyQvals is a function to unify q-values)
   if (num_tests > 1) {
-    cat("Unifying q-values across tests ...\n")
+    message("Unifying q-values across tests ...")
     Qvalue <- cbind(UnifyQvals(Qvalue, numComps, num_tests), Qvalue)
     num_tests2 <- num_tests + 1
     testNames2 <- c("PolySTest", testNames)
@@ -672,8 +672,8 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
   rowData(fulldata) <- cbind(rowData(fulldata), LogRatios, Qvalue, Pvalue)
 
   # Assuming FullReg contains q-values and you are interested in features with FDR < 0.01
-  cat("------- Summary of Results --------\n")
-  cat("Number of differentially regulated features with FDR < 0.01:\n")
+  message("------- Summary of Results --------")
+  message("Number of differentially regulated features with FDR < 0.01:")
 
   # Calculate the number of features with FDR < 0.01
   significantFeatures <- apply(Qvalue, 2, function(x) sum(x < 0.01, na.rm = TRUE))

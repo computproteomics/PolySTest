@@ -5,12 +5,13 @@ Version: 1.5.1
 Authors@R: 
     person("Veit", "Schwämmle", , "veits@bmb.sdu.dk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9708-6722"))
-Description: Statistical tests The complexity of high-throughput mass
-             spectrometry experiments often leads to low replicates numbers and 
+Description: The complexity of high-throughput quantitative omics
+             experiments often leads to low replicates numbers and 
              many missing values. We implemented a new test to simultaneously 
              consider missing values and quantitative changes, which we combined
              with well-performing statistical tests for high confidence
-             detection of differentially regulated features.
+             detection of differentially regulated features. The package contains
+             functions to run the test and to visualize the results.
 License: use_gpl3_license() + file LICENSE
 Encoding: UTF-8
 biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
@@ -29,9 +30,12 @@ Imports:
     circlize (>= 0.4.12),
     UpSetR (>= 1.4.0),
     gplots (>= 3.1.1),
-    S4Vectors (>= 0.30.0)
+    S4Vectors (>= 0.30.0),
+    parallel (>= 4.1.0)
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    knitr (>= 1.33)
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.3.0)

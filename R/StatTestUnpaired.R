@@ -84,32 +84,32 @@ PolySTest_unpaired <- function(fulldata, allComps, statTests = c("limma", "Miss_
   ## limma
   Sds <- NULL
   if (any("limma" %in% tests)) {
-    cat("Running limma tests\n")
+    message("Running limma tests")
     lm_out <- limma_unpaired(Data, NumCond, NumReps, RRCateg)
     p_values[, grep("p_values_limma", colnames(p_values))] <- lm_out$plvalues
     q_values[, grep("q_values_limma", colnames(q_values))] <- lm_out$qlvalues
     Sds <- lm_out$Sds
-    cat("limma completed\n")
+    message("limma completed")
   }
 
   if (any("Miss_Test" %in% tests)) {
-    cat("Running Miss test\n")
+    message("Running Miss test")
     MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
     p_values[, grep("p_values_Miss_Test", colnames(p_values))] <- MissingStats$pNAvalues
     q_values[, grep("q_values_Miss_Test", colnames(q_values))] <- MissingStats$qNAvalues
-    cat("Miss test completed\n")
+    message("Miss test completed")
   }
 
   ## rank products + t-test
   lratios <- NULL
   if (any("rank_products" %in% tests)) {
-    cat("Running rank products ...\n")
+    message("Running rank products ...")
   }
   if (any("t_test" %in% tests)) {
-    cat("Running t-tests ...\n")
+    message("Running t-tests ...")
   }
   if (any("permutation_test" %in% tests)) {
-    cat("Running permutation tests ...\n")
+    message("Running permutation tests ...")
   }
   pb <- txtProgressBar(0.9, NumComps)
 
