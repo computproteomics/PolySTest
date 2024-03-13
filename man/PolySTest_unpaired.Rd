@@ -41,9 +41,9 @@ rowData.
 # Creating mock quantitative data and sample metadata
 library(SummarizedExperiment)
 quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
-colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
-                         paste("Sample", 1:5, "_Condition_B", sep=""))
-rownames(quantData) <- paste("Gene", 1:200)
+colnames(quantData) <- c(paste("Sample", seq_len(5), "_Condition_A", sep=""),
+                         paste("Sample", seq_len(5), "_Condition_B", sep=""))
+rownames(quantData) <- paste("Gene", seq_len(200))
 sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each=5))
 
 # Creating the SummarizedExperiment object

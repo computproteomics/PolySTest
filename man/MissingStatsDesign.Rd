@@ -26,7 +26,7 @@ groups and thus does not have distinction for pairwise testing.
 \examples{
 Data <- matrix(rnorm(120), nrow = 10)
 # Introduce some missingness
-Data[sample(1:120, 40)] <- NA
+Data[sample(seq_len(120, 40))] <- NA
 RRCateg <- matrix(c(1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4), nrow = 2, ncol = 6)
 NumCond <- 4
 NumReps <- 3

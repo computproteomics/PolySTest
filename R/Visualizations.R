@@ -133,7 +133,8 @@ plotVolcano <- function(fulldata, compNames,
 #' @param testNames A character vector of test names used in the analysis. Default
 #'   values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
 #'   and "t-test".
-#' @param sel_prots A numeric vector with the indices of the selected features. Default is "all".
+#' @param sel_prots A numeric vector with the indices of the selected features.
+#'  Default is "all". These will still be filterd
 #' @param profiles_scale Logical indicating if profiles should be scaled. Default is TRUE.
 #' @param qlim A numeric value indicating the q-value limit for significance.
 #' @param fclim A numeric vector of length 2 indicating fold-change limits.
@@ -143,7 +144,7 @@ plotVolcano <- function(fulldata, compNames,
 #' data(liver_example)
 #' compNames <- c("TTA.Rep._vs_HF.Rep.", "TTA.FO.Rep._vs_HF.Rep.")
 #' plotExpression(liver_example, compNames)
-#' }
+#'
 #' @export
 #'
 #' @importFrom SummarizedExperiment rowData

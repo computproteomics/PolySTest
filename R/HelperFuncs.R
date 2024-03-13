@@ -305,8 +305,8 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
     BestFCs[i] <- sd(LogRatios[, i], na.rm = T)
   }
 
-  print(BestHCs)
-  print(BestFCs)
+  BestHCs
+  BestFCs
 
   # Calculate mean of all estimated thresholds
 
@@ -555,7 +555,34 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
   return(fulldata)
 }
 
-# Function to create all pairwise comparisons
+#' Create All Pairwise Comparisons
+#'
+#' This function generates a matrix of all pairwise comparisons between the provided conditions.
+#' Optionally, a reference condition can be specified, and comparisons will be made between
+#' the reference condition and all other conditions.
+#'
+#' @param conditions A character vector of condition names.
+#' @param refCond An integer indicating the index of the reference condition within the
+#' `conditions` vector. If `refCond` is greater than 0, comparisons are made between the
+#' reference condition and all other conditions. If `refCond` is 0, all possible pairwise
+#' comparisons are made. Default is 0.
+#'
+#' @return A matrix with two columns, representing all possible pairwise comparisons
+#' between the specified conditions. If a reference condition is specified, it appears
+#' in the first column of every row.
+#'
+#' @examples
+#' conditions <- c("Cond1", "Cond2", "Cond3")
+#' # Generate all pairwise comparisons
+#' allComps <- create_pairwise_comparisons(conditions)
+#' allComps
+#'
+#' # Generate comparisons with a specific condition as reference
+#' refComps <- create_pairwise_comparisons(conditions, refCond = 1)
+#' refComps
+#'
+#' @importFrom knitr kable
+#' @export
 create_pairwise_comparisons <- function(conditions, refCond) {
 
   if (refCond > 0) {
@@ -565,7 +592,7 @@ create_pairwise_comparisons <- function(conditions, refCond) {
   }
   colnames(allComps) <- c("Condition A", "Condition B")
   message("All pairwise comparison between conditions:")
-  print(knitr::kable(allComps))
+  cat(knitr::kable(allComps),sep="\n")
   return(allComps)
 }
 
@@ -634,11 +661,16 @@ create_ratio_matrix <- function(fulldata, allComps) {
 #'
 #' @importFrom SummarizedExperiment rowData
 #' @import knitr
+#' @export
 prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, allComps) {
   num_tests <- length(testNames)
   numComps <- nrow(allComps)
   testNames2 <- testNames
   num_tests2 <- num_tests
+
+  print(head(Pvalue))
+  print(head(Qvalue))
+  print(head(LogRatios))
 
   # Separate t-test p-values
   if ("t_test" %in% testNames) {
@@ -679,7 +711,12 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
   significantFeatures <- apply(Qvalue, 2, function(x) sum(x < 0.01, na.rm = TRUE))
 
   # Print the summary
-  print(knitr::kable(matrix(significantFeatures, nrow=length(compNames), dimnames=list(rows=compNames, cols=testNames2))))
+  cat(knitr::kable(matrix(significantFeatures, nrow=length(compNames), dimnames=list(rows=compNames, cols=testNames2))),
+      sep="\n")
+
+  # Adding test details to metadata
+  metadata(fulldata)$testNames <- testNames
+  metadata(fulldata)$allComps <- allComps
 
   return(fulldata)
 }

@@ -4,7 +4,7 @@ author: "Veit Schwämmle"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{PolySTest}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -36,6 +36,7 @@ fed with four different diets. The data contains 3 replicates per diet.
 
 ```{r}
 library(PolySTest)
+library(SummarizedExperiment)
 
 # Load the data file "LiverAllProteins.csv" from the PolySTest package
 filename <- system.file("extdata", "LiverAllProteins.csv", package = "PolySTest")
@@ -58,6 +59,7 @@ sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:4), each=3),
                              Replicate = rep(1:3, each=4))
 
 fulldata <- SummarizedExperiment(assays = list(quant = dat), colData = sampleMetadata)
+rowData(fulldata) <- rownames(dat)
 metadata(fulldata) <- list(NumReps = 3, NumCond = 4)
 
 # Normalization (example)
@@ -69,14 +71,17 @@ fulldata <- update_conditions_with_lcs(fulldata)
 
 ## Defining comparisons
 We define the comparisons we want to test. In this case, we want to compare
-each condition with each other condition. We use the `create_pairwise_comparisons`
-function to create a matrix of all pairwise comparisons.
+each condition with the first one. For that, we create a matrix with the
+comparisons, where the first columnn contains the reference condition and the
+second column contains the condition to be compared.
+
+We can use the function `create_pairwise_comparisons` for this:
+
 
 ```{r}
 conditions <- unique(colData(fulldata)$Condition)
-allComps <- create_pairwise_comparisons(conditions, 2)
 
-allComps
+allComps <- create_pairwise_comparisons(conditions, 1)
 ```
 
 ## Running the statistical tests
@@ -85,8 +90,7 @@ to run paired tests. The function will add columns to the `rowData` of the
 `SummarizedExperiment` object containing the p-values and FDRs for each comparison.
 
 ```{r}
-fulldata <- PolySTest_paired(fulldata, allComps)
-rowData(fulldata)
+fulldata_paired <- PolySTest_paired(fulldata, allComps)
 
 ```
 
@@ -95,10 +99,52 @@ We can also run unpaired tests using the `PolySTest_unpaired` function. The
 experimental design dictated whether to use paired or unpaired tests.
 
 ```{r}
-fulldata <- PolySTest_unpaired(fulldata, allComps)
-rowData(fulldata)
+fulldata_unpaired <- PolySTest_unpaired(fulldata, allComps)
 
 ```
+
+## Visualization of test results
+PolySTest provides several visualizations to compare the tests, the pairings, and 
+number of significant hits for different FDR threshold.
+
+# Plotting the results
+
+While p-values need to be corrected for multiple testing to control the false
+discovery rate (FDR), their distribution can provide insight into the 
+test performances and the underlying data.
+
+Here, select few comparison and tests as the number of panels will become quite
+large, and the lead to the plot error "figure margins too large".
+
+```{r}
+# Define comparisons to visualize
+comps <- allComps[1:2,]
+# create _vs_ strings
+comps <- paste0(comps[,2], "_vs_", comps[,1])
+
+# Plotting the results
+plotPvalueDistr(fulldata_unpaired,  comps, c("PolySTest", "limma", "Miss test"))
+```
+
+More common are volcano plots, here given for the same tests as above. We furthermore 
+select the indicex of the proteins most significantly changing in the first comparison.
+
+```{r}
+# Select proteins with FDR < 0.01
+
+sigProts <- which(rowData(fulldata_unpaired)[, paste0("FDR_PolySTest_", comps[1])] < 0.01)
+
+# Volcano plot
+plotVolcano(fulldata_unpaired, comps, sel_prots = sigProts, c("PolySTest", "limma", "Miss test"))
+```
+
+Now let's look into the overlap between the different tests. An upset plot
+provides this information 
+
+```{r}
+
+```
+
 
 ## Session info
 ```{r}

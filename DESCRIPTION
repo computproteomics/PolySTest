@@ -16,7 +16,7 @@ License: use_gpl3_license() + file LICENSE
 Encoding: UTF-8
 biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.0
+RoxygenNote: 7.3.1
 Imports:
     fdrtool (>= 1.2.15),
     limma (>= 3.44.3),

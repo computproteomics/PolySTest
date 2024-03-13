@@ -40,3 +40,9 @@ This function plots expression profiles for selected features across different
 conditions and comparisons. It supports both scaling and unscaled profiles.
 It adds a circular plot to compare the different statistical tests
 }
+\examples{
+data(liver_example)
+compNames <- c("TTA.Rep._vs_HF.Rep.", "TTA.FO.Rep._vs_HF.Rep.")
+plotExpression(liver_example, compNames)
+
+}
