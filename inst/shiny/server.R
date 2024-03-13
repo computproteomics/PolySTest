@@ -599,7 +599,8 @@ shinyServer(function(input, output, clientData, session) {
       selCols <- paste("FDR",apply(expand.grid(input$selTests, input$selComps), 1, paste, collapse="_"), sep="_")
       fclim <- c(input$fcval1, input$fcval2)
       NumComps <- Comps$num
-      FCRegs <- filterFC(fulldata, NumTests, NumComps, fclim)
+      rdat <- rowData(fulldata)
+      FCRegs <- filterFC(rdat, NumTests, NumComps, fclim)
       selFeat <- which(rowSums(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F]<input$qval)>0)
       proxy %>% DT::selectRows(NULL)
       if (length(selFeat) > 0)
@@ -710,14 +711,14 @@ shinyServer(function(input, output, clientData, session) {
       fclim <- c(input$fcval1, input$fcval2)
       input$button
       isolate({
-        print(plotUpset(fulldata, NumTests, NumComps, qlim, fclim))
+        print(plotUpset(fulldata, compNames, testNames2, qlim, fclim))
         output$downloadUpSetPdf <- downloadHandler(
           filename = function() {
             paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
           },
           content = function(file) {
             pdf(file,height=8,width=8)
-            print(plotUpset(fulldata, NumTests, NumComps, qlim, fclim))
+            print(plotUpset(fulldata, compNames, testNames2, qlim, fclim))
             dev.off()
           })
       })

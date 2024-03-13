@@ -775,8 +775,7 @@ check_for_polystest <- function(se) {
 }
 
 
-filterFC <- function(fulldata, NumTests, NumComps, fclim=c(0,0)) {
-  rdat <- rowData(fulldata)
+filterFC <- function(rdat, NumTests, NumComps, fclim=c(0,0)) {
   Qvalue <- as.data.frame(rdat[,grep("^FDR", colnames(rdat))])
   if (ncol(Qvalue) > 0) {
     LogRatios <- as.data.frame(rdat[,grep("^log_ratios", colnames(rdat))])
@@ -792,4 +791,55 @@ filterFC <- function(fulldata, NumTests, NumComps, fclim=c(0,0)) {
   } else {
     NULL
   }
+}
+
+#' Check Statistical Test and Comparison Names
+#'
+#' Verifies if the provided test names and comparison names are correct
+#' and have been executed within the given `SummarizedExperiment` object.
+#' It checks for the presence of specific metadata related to the tests
+#' and comparisons to ensure that the requested analyses have been carried out.
+#'
+#' @param fulldata A `SummarizedExperiment` object containing the dataset
+#' and metadata for statistical analyses.
+#' @param compNames A character vector of comparison names to be verified
+#' against the `SummarizedExperiment` metadata. If set to "all",
+#' the function checks for the presence of any comparison names in the metadata.
+#' @param testNames A character vector of statistical test names to be verified
+#' against the `SummarizedExperiment` metadata.
+#'
+#' @details This function is used to ensure that the requested statistical tests
+#' and comparisons have been correctly named and executed prior to further analysis.
+#' It verifies that the names provided match those stored within the metadata of
+#' the `SummarizedExperiment` object. If the names do not match or the necessary
+#' metadata is missing, the function stops execution and returns an error message
+#' indicating the issue.
+#'
+#' @return The function return the updated comparison names if the checks pass.
+#'
+#' @examples
+#' # Assuming `fulldata` is a `SummarizedExperiment` object
+#' compNames <- c("ConditionA_vs_ConditionB", "ConditionC_vs_ConditionD")
+#' testNames <- c("limma", "t-test")
+#' check_stat_names(fulldata, compNames, testNames)
+#' #'
+#' @export
+check_stat_names <- function(fulldata, compNames, testNames) {
+  # Check for correct test and column names
+  if (is.null(metadata(fulldata)$testNames) || !all(testNames2 %in% metadata(fulldata)$testNames)) {
+    stop("The test names are not correct or the tests have not been carried out.")
+  }
+
+  # Check for correct comparison names
+  if (is.null(metadata(fulldata)$compNames)) {
+    stop("The comparison names are not correct or the comparisons have not been carried out.")
+  }
+  if (compNames == "all")
+    compNames <- metadata(fulldata)$compNames
+  if (!all(compNames %in% metadata(fulldata)$compNames)) {
+    stop("The comparison names are not correct or the comparisons have not been carried out.")
+  }
+
+  return(compNames)
+
 }

@@ -21,14 +21,17 @@ set_mfrow <- function(num_total, max_col) {
   }
 }
 
+
 #' Plot P-Value Distributions
 #'
 #' Generates histograms of p-value distributions for each test and comparison.
 #'
 #' @param fulldata A `SummarizedExperiment` object containing the dataset and
 #' FDR/q-values from PolySTest.
-#' @param compNames A character vector of comparison names.
-#' @param testNames A character vector of test names. Defaults to c("limma", "Miss test", "rank products", "permutation test", "t-test").
+#' @param compNames A character vector of comparison names. "all" selects all comparisons.
+#' @param testNames A character vector of test names used in the analysis. Default
+#'   values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
+#'   and "t-test".
 #' @param testCols A character vector of colors for each test. Defaults to c("#33AAAA", "#33AA33", "#AA3333", "#AA33AA", "#AAAA33", "#3333AA").
 #' @param ... Additional arguments passed to `hist()`.
 #'
@@ -38,15 +41,25 @@ set_mfrow <- function(num_total, max_col) {
 #' plotPvalueDistr(liver_example, compNames = c("TTA.Rep._vs_HF.Rep.", "TTA.FO.Rep._vs_HF.Rep."),
 #'                 testCols = rainbow(5))
 #'@export
-plotPvalueDistr <- function(fulldata, compNames,
+plotPvalueDistr <- function(fulldata, compNames="all",
                             testNames=c("limma","Miss test","rank products",
                                         "permutation test","t-test"),
                             testCols=c("#33AAAA","#33AA33","#AA3333","#AA33AA",
                                        "#AAAA33","#3333AA"), ...) {
   check_for_polystest(fulldata)
+
+  # check compnames and testnames with metadata
+  testNames2 <- make.names(testNames)
+  compNames <- check_stat_names(fulldata, compNames, testNames2)
+
+  # Get the p-values from the right columns
   message("Plotting p-values")
   rdat <- SummarizedExperiment::rowData(fulldata)
-  PValue <- as.matrix(rdat[,grep("^p_value", colnames(rdat)),drop=F])
+  PValue <- as.matrix(rdat[,grep("^p_value_", colnames(rdat)),drop=F])
+  # get only the p-values for the tests and comparisons
+  PValue <- PValue[, grep(paste(paste0("^p_value", compNames), collapse = "|"), colnames(PValue))]
+  PValue <- PValue[, grep(paste(paste0(testNames2, "$"), collapse = "|"), colnames(PValue))]
+
   NumTests <- length(testNames)
   NumComps <- length(compNames)
   set_mfrow((NumTests)*NumComps, NumTests)
@@ -86,7 +99,7 @@ plotPvalueDistr <- function(fulldata, compNames,
 #' plotVolcano(liver_example, compNames)
 #'
 #' @export
-plotVolcano <- function(fulldata, compNames,
+plotVolcano <- function(fulldata, compNames = "all",
                         testNames=c("PolySTest", "limma","Miss test",
                                     "rank products", "permutation test","t-test"),
                         sel_prots="all", qlim=0.05, fclim=c(0,0),
@@ -94,10 +107,20 @@ plotVolcano <- function(fulldata, compNames,
                                    "#AAAA33","#3333AA"), ...) {
   check_for_polystest(fulldata)
   rdat <- SummarizedExperiment::rowData(fulldata)
-  Qvalue <- as.matrix(rdat[,grep("^FDR", colnames(rdat)),drop=F])
+
+  # check compnames and testnames with metadata
+  testNames2 <- make.names(testNames)
+  compNames <- check_stat_names(fulldata, compNames, testNames2)
+
+  QValue <- as.matrix(rdat[,grep("^FDR_", colnames(rdat)),drop=F])
+  LogRatios <- as.matrix(rdat[,grep("^log_ratios", colnames(rdat))])
+  # get only the p-values for the tests and comparisons
+  QValue <- QValue[, grep(paste(paste0("^FDR", compNames), collapse = "|"), colnames(QValue))]
+  LogRatios <- LogRatios[, grep(paste(paste0("^log_ratios", compNames), collapse = "|"), colnames(LogRatios))]
+  QValue <- QValue[, grep(paste(paste0(testNames2, "$"), collapse = "|"), colnames(QValue))]
+
   if (ncol(Qvalue) > 0) {
     message("Plotting volcano plots")
-    LogRatios <- as.matrix(rdat[,grep("^log_ratios", colnames(rdat))])
     NumTests <- length(testNames)
     NumComps <- length(compNames)
     set_mfrow(NumTests*NumComps, NumTests)
@@ -129,7 +152,7 @@ plotVolcano <- function(fulldata, compNames,
 #' It adds a circular plot to compare the different statistical tests
 #'
 #' @param fulldata A `SummarizedExperiment` object containing the data.
-#' @param compNames A character vector of comparison names.
+#' @param compNames A character vector of comparison names. "all" selects all comparisons.
 #' @param testNames A character vector of test names used in the analysis. Default
 #'   values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
 #'   and "t-test".
@@ -151,16 +174,27 @@ plotVolcano <- function(fulldata, compNames,
 #' @importFrom gplots plotCI redblue
 #' @import circlize
 #'
-plotExpression <- function(fulldata, compNames,
+plotExpression <- function(fulldata, compNames = "all",
                            testNames=c("PolySTest", "limma","Miss test",
                                        "rank products", "permutation test","t-test"),
                            sel_prots="all", profiles_scale=TRUE, qlim=0.05, fclim=c(0,0)) {
   check_for_polystest(fulldata)
+  rdat <- SummarizedExperiment::rowData(fulldata)
+
+  # check compnames and testnames with metadata
+  testNames2 <- make.names(testNames)
+  compNames <- check_stat_names(fulldata, compNames, testNames2)
+
   NumComps <- length(compNames)
   NumTests <- length(testNames)
-  rdat <- SummarizedExperiment::rowData(fulldata)
-  LogRatios <- as.matrix(rdat[,grep("^log_ratios", colnames(rdat)),drop=F])
-  Qvalue <- as.matrix(rdat[,grep("^FDR", colnames(rdat)),drop=F])
+
+  QValue <- as.matrix(rdat[,grep("^FDR_", colnames(rdat)),drop=F])
+  LogRatios <- as.matrix(rdat[,grep("^log_ratios", colnames(rdat))])
+  # get only the p-values for the tests and comparisons
+  QValue <- QValue[, grep(paste(paste0("^FDR", compNames), collapse = "|"), colnames(QValue))]
+  LogRatios <- LogRatios[, grep(paste(paste0("^log_ratios", compNames), collapse = "|"), colnames(LogRatios))]
+  QValue <- QValue[, grep(paste(paste0(testNames2, "$"), collapse = "|"), colnames(QValue))]
+
   dat <- SummarizedExperiment::assay(fulldata)
   rownames(Qvalue) <- rownames(LogRatios) <-  rownames(rdat)
   if (all(sel_prots == "all"))
@@ -168,9 +202,10 @@ plotExpression <- function(fulldata, compNames,
 
   if (ncol(Qvalue) > 0 & length(sel_prots) > 1) {
     message("plotting expression profiles")
-    FCRegs <- filterFC(fulldata, NumTests, NumComps, fclim)
+    rdat <- rowData(fulldata)
     NumCond <- metadata(fulldata)$NumCond
     NumReps <- metadata(fulldata)$NumReps
+    FCRegs <- filterFC(rdat, NumTests, NumComps, fclim)
 
     # CI plots of max 30 features
     SubSetQval <- Qvalue[sel_prots,,drop=F]
@@ -278,11 +313,9 @@ plotExpression <- function(fulldata, compNames,
 #' Plot UpSet
 #'
 #' Visualizes the intersections of significant features across multiple comparisons
-#' using an UpSet plot.
+#' using an UpSet plot. Summarizes all comparisons from all tests
 #'
 #' @param fulldata A `SummarizedExperiment` object containing the data.
-#' @param NumTests Integer, the number of tests conducted.
-#' @param NumComps Integer, the number of comparisons made.
 #' @param qlim A numeric value, the q-value threshold for significance.
 #' @param fclim A numeric vector, specifying fold change limits for filtering.
 #'
@@ -290,15 +323,25 @@ plotExpression <- function(fulldata, compNames,
 #' @examples
 #' data(liver_example)
 #'
-#' plotUpset(liver_example, 6, 3, qlim = 0.05)
+#' plotUpset(liver_example, qlim = 0.05)
 #'
 #' @export
 #'
 #' @importFrom SummarizedExperiment rowData
 #' @importFrom UpSetR upset
-plotUpset <- function (fulldata, NumTests, NumComps, qlim=0.05, fclim=c(0,0)) {
+plotUpset <- function (fulldata, qlim=0.05, fclim=c(0,0)) {
   check_for_polystest(fulldata)
-  FCRegs <- filterFC(fulldata,  NumTests, NumComps, fclim)
+
+  # check compnames and testnames with metadata
+  if (is.null(metadata(fulldata)$compNames) | is.null(metadata(fulldata)$testNames)) {
+stop("No metadata for statistical testing  found in the SummarizedExperiment object. Please run the
+     statistical tests")
+  }
+
+  NumComps <- length(metadata(fulldata)$compNames)
+  NumTests <- length(metadata(fulldata)$testNames)
+  rdat <- rowData(fulldata)
+  FCRegs <- filterFC(rdat,  NumTests, NumComps, fclim)
 
   if (!is.null(FCRegs)) {
 
@@ -318,9 +361,9 @@ plotUpset <- function (fulldata, NumTests, NumComps, qlim=0.05, fclim=c(0,0)) {
     if(length(WhereRegs)>0) {
       message("Plotting upset plots")
       UpSetR::upset(as.data.frame(WhereRegs),nsets=ncol(WhereRegs),mainbar.y.label = "Significant features",
-            nintersects = NA,keep.order=F,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
-            set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=seq_len(ncol(WhereRegs))),
-                                plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
+                    nintersects = NA,keep.order=F,sets=colnames(WhereRegs),text.scale=1.5, mb.ratio = c(0.55, 0.45),
+                    set.metadata = list(data = data.frame(set=colnames(WhereRegs),cols=tcolnames,crab=seq_len(ncol(WhereRegs))),
+                                        plots = list(list(type = "matrix_rows",column = "cols", colors=tcols,alpha=0.5))))
       message("Plotting upset plots finished")
     } else {
       NULL
@@ -353,16 +396,30 @@ plotUpset <- function (fulldata, NumTests, NumComps, qlim=0.05, fclim=c(0,0)) {
 #'
 #' @importFrom SummarizedExperiment rowData
 #'
-plotRegNumber <- function( fulldata, NumComps,
+plotRegNumber <- function( fulldata, compNames = "all",
                            testNames=c("PolySTest", "limma","Miss test",
                                        "rank products", "permutation test","t-test"),
                            qlim=0.05, fclim=c(0,0),
                            TestCols=c("#33AAAA","#33AA33","#AA3333","#AA33AA",
                                       "#AAAA33","#3333AA"), ...) {
   check_for_polystest(fulldata)
+  rdat <- SummarizedExperiment::rowData(fulldata)
+
+  # check compnames and testnames with metadata
+  testNames2 <- make.names(testNames)
+  compNames <- check_stat_names(fulldata, compNames, testNames2)
+
+  QValue <- as.matrix(rdat[,grep("^FDR_", colnames(rdat)),drop=F])
+  LogRatios <- as.matrix(rdat[,grep("^log_ratios", colnames(rdat))])
+  # get only the p-values for the tests and comparisons
+  QValue <- QValue[, grep(paste(paste0("^FDR", compNames), collapse = "|"), colnames(QValue))]
+  LogRatios <- LogRatios[, grep(paste(paste0("^log_ratios", compNames), collapse = "|"), colnames(LogRatios))]
+  QValue <- QValue[, grep(paste(paste0(testNames2, "$"), collapse = "|"), colnames(QValue))]
 
   NumTests <- length(testNames)
-  FCRegs <- filterFC(fulldata, NumTests, NumComps, fclim)
+  NumComps <- length(compNames)
+
+  FCRegs <- filterFC(cbind(LogRatios, QValue), NumTests, NumComps, fclim)
 
   if (!is.null(FCRegs)) {
 
@@ -370,7 +427,6 @@ plotRegNumber <- function( fulldata, NumComps,
     set_mfrow(NumComps, 5
     )
 
-    rdat <- SummarizedExperiment::rowData(fulldata)
     Qvalue <- as.matrix(rdat[,grep("^FDR", colnames(rdat)),drop=F])
     tmpX <- 10^seq(log10(min(Qvalue,na.rm=T)),0.1,0.01)
     tmpX[tmpX == 0] <- NA
@@ -474,7 +530,7 @@ plotHeatmaply <- function( fulldata, NumComps, sel_prots="all", heatmap_scale="n
         scaling <- heatmap_scale
         tqvals <- tqvals[order(rownames(tdat)),]
         p <- heatmaply::heatmaply(tdat[order(rownames(tdat)),,drop=F],Colv=F,scale =scaling,trace="none",cexRow=0.7,plot_method="plotly",
-                       RowSideColors = tqvals, row_side_palette = grey.colors, file=file, ...)
+                                  RowSideColors = tqvals, row_side_palette = grey.colors, file=file, ...)
         message("Plotting heatmap finished")
       }
 
