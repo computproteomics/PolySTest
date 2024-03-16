@@ -668,10 +668,6 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
   testNames2 <- testNames
   num_tests2 <- num_tests
 
-  print(head(Pvalue))
-  print(head(Qvalue))
-  print(head(LogRatios))
-
   # Separate t-test p-values
   if ("t_test" %in% testNames) {
     ttestQvalue <- Qvalue[, grep("q_values_t_test", colnames(Qvalue))]
@@ -715,8 +711,9 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios, testNames, 
       sep="\n")
 
   # Adding test details to metadata
-  metadata(fulldata)$testNames <- testNames
+  metadata(fulldata)$testNames <- testNames2
   metadata(fulldata)$allComps <- allComps
+  metadata(fulldata)$compNames <- paste0(allComps[,2], "_vs_", allComps[,1])
 
   return(fulldata)
 }
@@ -826,7 +823,7 @@ filterFC <- function(rdat, NumTests, NumComps, fclim=c(0,0)) {
 #' @export
 check_stat_names <- function(fulldata, compNames, testNames) {
   # Check for correct test and column names
-  if (is.null(metadata(fulldata)$testNames) || !all(testNames2 %in% metadata(fulldata)$testNames)) {
+  if (is.null(metadata(fulldata)$testNames) || !all(testNames %in% metadata(fulldata)$testNames)) {
     stop("The test names are not correct or the tests have not been carried out.")
   }
 
@@ -834,7 +831,7 @@ check_stat_names <- function(fulldata, compNames, testNames) {
   if (is.null(metadata(fulldata)$compNames)) {
     stop("The comparison names are not correct or the comparisons have not been carried out.")
   }
-  if (compNames == "all")
+  if (compNames[1] == "all")
     compNames <- metadata(fulldata)$compNames
   if (!all(compNames %in% metadata(fulldata)$compNames)) {
     stop("The comparison names are not correct or the comparisons have not been carried out.")

@@ -685,14 +685,14 @@ shinyServer(function(input, output, clientData, session) {
       qlim <- input$qval
       fclim <- c(input$fcval, input$fcval2)
       isolate({
-        p <- plotHeatmaply(fulldata, NumComps, sel_prots, input$heatmap_scale)
+        p <- plotHeatmaply(fulldata, sel_prots, input$heatmap_scale)
       })
       output$downloadHeatmapPdf <- downloadHandler(
         filename = function() {
           paste("Heatmap", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
-          plotHeatmaply(fulldata, NumComps, sel_prots, input$heatmap_scale, file=file)
+          plotHeatmaply(fulldata, sel_prots, input$heatmap_scale, file=file)
         })
       p
     }
@@ -731,20 +731,19 @@ shinyServer(function(input, output, clientData, session) {
     triggerUpdate()
 
     if(!is.null(fulldata) & !is.null(FullReg())) {
-      NumComps <- length(Comps$compNames)
 
       print("Plot q-value number")
       qlim <- input$qval
       fclim <- c(input$fcval1, input$fcval2)
       input$button
-      plotRegNumber(fulldata, NumComps, testNames2, qlim, fclim)
+      plotRegNumber(fulldata, Comps$compNames, testNames2, qlim, fclim)
       output$downloadRegDistrPdf <- downloadHandler(
         filename = function() {
           paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
           pdf(file,height=8,width=8)
-          plotRegNumber(fulldata, NumComps, testNames2, qlim, fclim)
+          plotRegNumber(fulldata, Comps$compNames, testNames2, qlim, fclim)
           dev.off()
         })
     }

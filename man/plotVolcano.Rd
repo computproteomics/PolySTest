@@ -6,7 +6,7 @@
 \usage{
 plotVolcano(
   fulldata,
-  compNames,
+  compNames = "all",
   testNames = c("PolySTest", "limma", "Miss test", "rank products", "permutation test",
     "t-test"),
   sel_prots = "all",

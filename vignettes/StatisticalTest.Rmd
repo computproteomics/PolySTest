@@ -16,11 +16,26 @@ knitr::opts_chunk$set(
 )
 ```
 
-Welcome to the vignette of the PolySTest package. We will run statistical tests for differential abundances in a proteomics data set. 
+Welcome to the PolySTest vignette. 
+
+PolySTest is a comprehensive R package designed for the statistical testing of
+quantitative omics data, including genomics, proteomics, and metabolomics 
+datasets. By integrating advanced statistical methods, PolySTest addresses the 
+challenges of missing features and high-dimensionality with multiple comparisons
+normal in omics data. 
+
+This package facilitates the identification of differentially abundant features
+across different conditions or treatments, making it an essential tool for 
+biomarker discovery and biological insight. Additionally, its robust 
+visualization functions enable users with multiple views for further 
+biological interpretations and comparison of the different statistical 
+tests. 
 
 ## Installation
 
-To install PolySTest, you can use Bioconductor's BiocManager:
+
+To install PolySTest and its dependencies, you can use Bioconductor's 
+BiocManager.
 
 ```{r, eval=FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -29,12 +44,36 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("PolySTest")
 ```
 
-## Loading data
-First, we load the necessary package and example data and reduce it to 200
-lines. The data set consists of protein abundances in liver samples from mice
-fed with four different diets. The data contains 3 replicates per diet.
+## Data Preparation
 
-```{r}
+
+PolySTest requires quantitative omics data to be formatted as a 
+`SummarizedExperiment` object, which integrates the experimental data with its 
+corresponding metadata. Here’s how to prepare your data:
+
+1. **Data Format**: Your quantitative data should be in a matrix format, 
+with features (e.g., genes, proteins) as rows and samples as columns. 
+Missing values can be present, but they should be represented as NA. In case of 
+high missingness, it can be worth to remove features with only minimal 
+non-missing values.
+
+2. **Sample Metadata**: Accompany your data with metadata that describes each
+sample, including conditions, replicates, and possible other experimental 
+factors. This metadata will be crucial for defining comparisons in your 
+statistical tests.
+
+3. **Normalization**: To correct for technical variability and make your data 
+comparable across samples, apply normalization methods suitable for your data 
+type. For example, median normalization can adjust for differences in loading
+amounts or sequencing depth:
+
+
+First, we load the necessary package and example data and reduce it to 200
+lines to increase processing speed. The data set consists of protein abundances
+in liver samples from mice fed with four different diets. The data contains 
+three replicates per diet.
+
+```{r warning=F,message=F}
 library(PolySTest)
 library(SummarizedExperiment)
 
@@ -45,16 +84,20 @@ dat <- read.csv(filename, row.names=1, stringsAsFactors = FALSE)
 dat <- dat[1:200,] # Use a subset of the data for this example
 ```
 
-## Creating a SummarizedExperiment object
-We now create a `SummarizedExperiment` object from the data. This object will
-contain the protein abundances and the sample metadata.
-
-In addition, we normalize by the median of the columns to adjust for differences
-in the sample amounts loaded into the instrument.
+The following line of code normalizes the data by subtracting the median of each
+column from the data. This is a simple example of normalization, and you should
+use the appropriate method for your data type.
 
 ```{r}
+# Normalization (example)
+dat <- t(t(dat) - colMedians(as.matrix(dat), na.rm = TRUE))
+```
 
+Now, create a SummarizedExperiment Object. Integrate your normalized data and 
+metadata into a SummarizedExperiment object. This structured format ensures 
+that PolySTest can efficiently process your data:
 
+```{r}
 sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:4), each=3),
                              Replicate = rep(1:3, each=4))
 
@@ -62,21 +105,26 @@ fulldata <- SummarizedExperiment(assays = list(quant = dat), colData = sampleMet
 rowData(fulldata) <- rownames(dat)
 metadata(fulldata) <- list(NumReps = 3, NumCond = 4)
 
-# Normalization (example)
-dat <- t(t(dat) - colMedians(as.matrix(dat), na.rm = TRUE))
 assay(fulldata, "quant") <- dat
 
 fulldata <- update_conditions_with_lcs(fulldata)
 ```
 
-## Defining comparisons
-We define the comparisons we want to test. In this case, we want to compare
-each condition with the first one. For that, we create a matrix with the
-comparisons, where the first columnn contains the reference condition and the
-second column contains the condition to be compared.
 
-We can use the function `create_pairwise_comparisons` for this:
 
+## Defining comparisons for statistical testing
+
+Before running statistical tests, it's essential to define the comparisons 
+between conditions or treatments of interest. 
+
+When selecting comparisons, consider the scientific questions you aim to answer.
+For instance, if you're exploring the effect of a specific treatment, compare 
+treated samples against controls. The choice of reference condition can 
+impact the interpretation of your results.
+
+PolySTest facilitates the creation of pairwise comparisons through the 
+`create_pairwise_comparisons` function. Here's how to define comparisons between
+each condition and a reference condition:
 
 ```{r}
 conditions <- unique(colData(fulldata)$Condition)
@@ -84,66 +132,146 @@ conditions <- unique(colData(fulldata)$Condition)
 allComps <- create_pairwise_comparisons(conditions, 1)
 ```
 
-## Running the statistical tests
-We can now run the statistical tests. We will use the `PolySTest_paired` function
-to run paired tests. The function will add columns to the `rowData` of the
-`SummarizedExperiment` object containing the p-values and FDRs for each comparison.
+## Running Statistical Tests with PolySTest
 
-```{r}
-fulldata_paired <- PolySTest_paired(fulldata, allComps)
+PolySTest offers to conduct both paired and unpaired 
+statistical tests:
 
-```
+- **Paired Tests**: Use `PolySTest_paired` when your data involves matched 
+samples, such as before-and-after treatments on the same subjects. Paired 
+tests account for the inherent correlations between matched samples, offering 
+more sensitivity in detecting differences.
 
-## Running unpaired tests
-We can also run unpaired tests using the `PolySTest_unpaired` function. The 
-experimental design dictated whether to use paired or unpaired tests.
+- **Unpaired Tests**: Use `PolySTest_unpaired` for independent groups of 
+samples, such as comparing different treatment groups without matching.
+
+PolySTest automatically performs false discovery rate (FDR) correction on 
+p-values from the statistical tests limma, rank products, Miss Test, permutation
+test and t-test, and all tests but the t-test combined to the PolySTest FDR
+
 
 ```{r}
 fulldata_unpaired <- PolySTest_unpaired(fulldata, allComps)
 
 ```
 
-## Visualization of test results
-PolySTest provides several visualizations to compare the tests, the pairings, and 
-number of significant hits for different FDR threshold.
+
+## Visualization and interpretation of results
+
+PolySTest includes several visualizations to help interpret the results of your 
+statistical tests. These visualizations not only highlight significant features
+but also provide insights into the overall distribution of the data and the 
+relationships between different tests:
+
+- **P-value Distributions**: Understanding the distribution of p-values can 
+help assess the tests' sensitivity and the presence of potential biological 
+signals in your data.
+
+- **Volcano Plots**: Volcano plots are a powerful way to visualize the trade-off
+between magnitude of change (fold change) and statistical significance (FDR),
+highlighting features of potential interest.
+
+- **UpSet Plots**: These plots offer a comprehensive view of the overlap between
+significant features identified by different statistical tests.
+
+- **Expression Profiles and Heatmaps**: These visualizations allow for the 
+detailed examination of the expression patterns of significant features, 
+facilitating the identification of potential biological pathways affected by 
+the conditions under study.
+
+We now plot the pvalue distributions of limma and Miss Test for the first
+comparison.
+
+```{r fig.width=7, fig.height=4}
+# Define comparisons to visualize from available ones
+compNames <- metadata(fulldata_unpaired)$compNames
+print(compNames)
+comps <- compNames[1]
 
 # Plotting the results
-
-While p-values need to be corrected for multiple testing to control the false
-discovery rate (FDR), their distribution can provide insight into the 
-test performances and the underlying data.
-
-Here, select few comparison and tests as the number of panels will become quite
-large, and the lead to the plot error "figure margins too large".
-
-```{r}
-# Define comparisons to visualize
-comps <- allComps[1:2,]
-# create _vs_ strings
-comps <- paste0(comps[,2], "_vs_", comps[,1])
-
-# Plotting the results
-plotPvalueDistr(fulldata_unpaired,  comps, c("PolySTest", "limma", "Miss test"))
+plotPvalueDistr(fulldata_unpaired,  comps, c("limma", "Miss Test"))
 ```
 
-More common are volcano plots, here given for the same tests as above. We furthermore 
-select the indicex of the proteins most significantly changing in the first comparison.
+Here's an example of generating a volcano plot, marking proteins that are have 
+significant changes in the first comparison with an FDR smaller than 1\%
 
-```{r}
+```{r fig.width=7, fig.height=4}
 # Select proteins with FDR < 0.01
 
 sigProts <- which(rowData(fulldata_unpaired)[, paste0("FDR_PolySTest_", comps[1])] < 0.01)
 
 # Volcano plot
-plotVolcano(fulldata_unpaired, comps, sel_prots = sigProts, c("PolySTest", "limma", "Miss test"))
+plotVolcano(fulldata_unpaired, compNames = comps, sel_prots = sigProts, testNames = c("PolySTest", "limma", "Miss Test"))
 ```
 
-Now let's look into the overlap between the different tests. An upset plot
+Now let's look into the overlap between the different statistical tests. An upset plot
 provides this information 
 
-```{r}
-
+```{r fig.width=7, fig.height=4}
+plotUpset(fulldata_unpaired, qlim=0.01)
 ```
+
+PolySTest also provides a combined plot of expression changes and overlap 
+between different tests. Reduce the number of features to maximally 20 to 
+avoid overloaded plots.
+
+```{r fig.width=8, fig.height=6}
+plotExpression(fulldata_unpaired, sel_prots = sigProts)
+```
+
+A further comparison between tests shows how many features they provide for 
+different cutoffs for the false discovery rate.
+
+```{r fig.width=7, fig.height=4}
+plotRegNumber(fulldata_unpaired)
+```
+
+For the last visualization, we create a hierarchical map (heatmap) for the 
+differentially regulated proteins from the `sigProts`object.
+
+```{r fig.width=6, fig.height=6}
+plotHeatmaply(fulldata_unpaired, sel_prots = sigProts, heatmap_scale = "row")
+```
+
+## References and Further Reading
+
+For more information on PolySTest, please refer to the PolySTest paper:  
+Schwämmle V, Hagensen CE, Rogowska-Wrzesinska A, Jensen ON. PolySTest: 
+Robust Statistical Testing of Proteomics Data with Missing Values Improves 
+Detection of Biologically Relevant Features. Mol Cell Proteomics. 
+2020;19(8):1396-1408. doi:10.1074/mcp.RA119.001777
+
+For more tools and information, please visit https://computproteomics.bmb.sdu.dk
+
+## Next Steps in Omics Data Analysis
+
+With the significant features identified and visualized, the next steps usually
+involve further biological interpretation and validation of the findings. Here:
+
+1. **Pathway Enrichment Analysis**: Investigate whether the significant features
+are enriched in specific biological pathways or processes.
+2. **Clustering**: Group features into clusters based on their
+expression patterns, which can provide insights into potential biological 
+functions. We recommend using the Bioconductor package [VSClust](https://bioconductor.org/packages/release/bioc/html/vsclust.html) 
+or its [Shiny web application](https://computproteomics.bmb.sdu.dk/app_direct/VSClust/) from your lab.  
+3. **Validation**: Confirm the findings from your statistical tests using
+independent experimental methods and datasets.  
+4. **Integration with Other Omics Layers**: Combine your findings with data from
+other omics levels (e.g., transcriptomics, metabolomics) for a multi-omics analysis.  
+5. **Protein Complexes**: Investigate whether the significant proteins are part
+of known protein complexes and whether there are protein complex showing
+strong alteration of their expression. We recommend using
+our web applications [ComplexBrowser](https://computproteomics.bmb.sdu.dk/app_direct/ComplexBrowser) and [CoExpresso](https://computproteomics.bmb.sdu.dk/app_direct/CoExpresso).
+
+## Contributing and Feedback
+
+If you have suggestions for improvements, encounter any issues, or would like to
+contribute code or documentation, please visit our GitHub repository:
+
+GitHub: https://github.com/computproteomics/PolySTest
+
+Your input helps make PolySTest a more robust and user-friendly tool for the omics community."
+
 
 
 ## Session info

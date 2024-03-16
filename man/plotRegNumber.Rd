@@ -6,7 +6,7 @@
 \usage{
 plotRegNumber(
   fulldata,
-  NumComps,
+  compNames = "all",
   testNames = c("PolySTest", "limma", "Miss test", "rank products", "permutation test",
     "t-test"),
   qlim = 0.05,
@@ -18,9 +18,11 @@ plotRegNumber(
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the dataset.}
 
-\item{NumComps}{Integer, number of comparisons.}
+\item{compNames}{A character vector of comparison names. "all" selects all comparisons.}
 
-\item{testNames}{Character vector, names of the statistical tests used.}
+\item{testNames}{A character vector of test names used in the analysis. Default
+values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
+and "t-test".}
 
 \item{qlim}{Numeric, q-value (FDR) threshold.}
 

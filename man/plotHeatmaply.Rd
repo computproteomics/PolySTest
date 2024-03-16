@@ -6,7 +6,6 @@
 \usage{
 plotHeatmaply(
   fulldata,
-  NumComps,
   sel_prots = "all",
   heatmap_scale = "none",
   file = NULL,
@@ -15,8 +14,6 @@ plotHeatmaply(
 }
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the dataset.}
-
-\item{NumComps}{Integer, number of comparisons.}
 
 \item{sel_prots}{Character vector specifying selected features to include in the heatmap or "all" to include all proteins.}
 
