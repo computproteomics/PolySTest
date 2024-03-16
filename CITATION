@@ -1,0 +1,21 @@
+citHeader("To cite PolySTest in publications, please use:")
+
+citEntry(entry="Article",
+         title="PolySTest: Robust Statistical Testing of Proteomics Data with Missing Values Improves Detection of Biologically Relevant Features",
+         author="Veit Schwämmle, Christian E. Hagensen, Adelina Rogowska-Wrzesinska, Ole N. Jensen",
+         journal="Molecular & Cellular Proteomics",
+         volume="19",
+         number="8",
+         pages="1396-1408",
+         year="2020",
+         doi="10.1074/mcp.RA119.001777",
+         textVersion="Schwämmle V, Hagensen CE, Rogowska-Wrzesinska A, Jensen ON. (2020). PolySTest: Robust Statistical Testing of Proteomics Data with Missing Values Improves Detection of Biologically Relevant Features. Molecular & Cellular Proteomics, 19(8), 1396-1408. doi:10.1074/mcp.RA119.001777")
+
+citEntry(entry="Manual",
+         title="PolySTest: Comprehensive Statistical Analysis of Omics Data",
+         author="Veit Schwämmle",
+         year="2020",
+         textVersion="Veit Schwämmle (2020). PolySTest: Comprehensive Statistical Analysis of Omics Data. R package version X.X.X.",
+         url="https://bioconductor.org/packages/PolySTest")
+
+citFooter("Please note that the PolySTest R package version may be updated and is not specifically mentioned in the paper. Make sure to use the correct version in your analysis.")
