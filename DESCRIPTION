@@ -1,7 +1,7 @@
 Package: PolySTest
 Title: PolySTest: Detection of differentially regulated features. Combined 
       statistical testing for data with few replicates and missing values
-Version: 1.5.2
+Version: 1.6.1
 Authors@R: 
     person("Veit", "Schwämmle", , "veits@bmb.sdu.dk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9708-6722"))
@@ -12,7 +12,7 @@ Description: The complexity of high-throughput quantitative omics
              with well-performing statistical tests for high confidence
              detection of differentially regulated features. The package contains
              functions to run the test and to visualize the results.
-License: use_gpl3_license() + file LICENSE
+License: GPL-2
 Encoding: UTF-8
 biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
 Roxygen: list(markdown = TRUE)
@@ -31,11 +31,15 @@ Imports:
     UpSetR (>= 1.4.0),
     gplots (>= 3.1.1),
     S4Vectors (>= 0.30.0),
-    parallel (>= 4.1.0)
+    parallel (>= 4.1.0),
+    grDevices (>= 4.1.0),
+    graphics (>= 4.1.0),
+    stats (>= 4.1.0),
+    utils (>= 4.1.0)
 Suggests: 
-    testthat (>= 3.0.0),
-    knitr (>= 1.33)
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.3.0)
+LazyData: true

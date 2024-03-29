@@ -14,8 +14,8 @@ A list containing the p-values and q-values (Benjamini-Hochberg)
 }
 \description{
 This function performs permutation tests on the given tMAData
-The permutation tests determine an empirical null distribution of t-values for
-the p-value calculation
+The permutation tests determine an empirical null distribution of t-values
+for the p-value calculation
 }
 \examples{
 tMAData <- matrix(rnorm(100), nrow = 10)

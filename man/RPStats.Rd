@@ -7,7 +7,8 @@
 RPStats(tRPMAData, NumReps)
 }
 \arguments{
-\item{tRPMAData}{A matrix containing the expression data with rows as features and columns as replicates.}
+\item{tRPMAData}{A matrix containing the expression data with rows as
+features and columns as replicates.}
 
 \item{NumReps}{The number of replicates for each feature.}
 }

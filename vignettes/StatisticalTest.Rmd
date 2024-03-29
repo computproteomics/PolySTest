@@ -78,7 +78,8 @@ library(PolySTest)
 library(SummarizedExperiment)
 
 # Load the data file "LiverAllProteins.csv" from the PolySTest package
-filename <- system.file("extdata", "LiverAllProteins.csv", package = "PolySTest")
+filename <- system.file("extdata", "LiverAllProteins.csv", 
+                        package = "PolySTest")
 
 dat <- read.csv(filename, row.names=1, stringsAsFactors = FALSE)
 dat <- dat[1:200,] # Use a subset of the data for this example
@@ -101,7 +102,8 @@ that PolySTest can efficiently process your data:
 sampleMetadata <- data.frame(Condition = rep(paste("Condition", 1:4), each=3),
                              Replicate = rep(1:3, each=4))
 
-fulldata <- SummarizedExperiment(assays = list(quant = dat), colData = sampleMetadata)
+fulldata <- SummarizedExperiment(assays = list(quant = dat), 
+                                 colData = sampleMetadata)
 rowData(fulldata) <- rownames(dat)
 metadata(fulldata) <- list(NumReps = 3, NumCond = 4)
 
@@ -198,14 +200,16 @@ significant changes in the first comparison with an FDR smaller than 1\%
 ```{r fig.width=7, fig.height=4}
 # Select proteins with FDR < 0.01
 
-sigProts <- which(rowData(fulldata_unpaired)[, paste0("FDR_PolySTest_", comps[1])] < 0.01)
+sigProts <- which(rowData(fulldata_unpaired)[, paste0("FDR_PolySTest_", 
+                                                      comps[1])] < 0.01)
 
 # Volcano plot
-plotVolcano(fulldata_unpaired, compNames = comps, sel_prots = sigProts, testNames = c("PolySTest", "limma", "Miss Test"))
+plotVolcano(fulldata_unpaired, compNames = comps, sel_prots = sigProts, 
+            testNames = c("PolySTest", "limma", "Miss Test"))
 ```
 
-Now let's look into the overlap between the different statistical tests. An upset plot
-provides this information 
+Now let's look into the overlap between the different statistical tests. 
+An upset plot provides this information 
 
 ```{r fig.width=7, fig.height=4}
 plotUpset(fulldata_unpaired, qlim=0.01)
@@ -252,8 +256,11 @@ involve further biological interpretation and validation of the findings. Here:
 are enriched in specific biological pathways or processes.
 2. **Clustering**: Group features into clusters based on their
 expression patterns, which can provide insights into potential biological 
-functions. We recommend using the Bioconductor package [VSClust](https://bioconductor.org/packages/release/bioc/html/vsclust.html) 
-or its [Shiny web application](https://computproteomics.bmb.sdu.dk/app_direct/VSClust/) from your lab.  
+functions. We recommend using the Bioconductor package 
+[VSClust](https://bioconductor.org/packages/release/bioc/html/vsclust.html) 
+or its 
+[Shiny web application](https://computproteomics.bmb.sdu.dk/app_direct/VSClust/)
+from your lab.  
 3. **Validation**: Confirm the findings from your statistical tests using
 independent experimental methods and datasets.  
 4. **Integration with Other Omics Layers**: Combine your findings with data from
@@ -261,7 +268,9 @@ other omics levels (e.g., transcriptomics, metabolomics) for a multi-omics analy
 5. **Protein Complexes**: Investigate whether the significant proteins are part
 of known protein complexes and whether there are protein complex showing
 strong alteration of their expression. We recommend using
-our web applications [ComplexBrowser](https://computproteomics.bmb.sdu.dk/app_direct/ComplexBrowser) and [CoExpresso](https://computproteomics.bmb.sdu.dk/app_direct/CoExpresso).
+our web applications 
+[ComplexBrowser](https://computproteomics.bmb.sdu.dk/app_direct/ComplexBrowser)
+and [CoExpresso](https://computproteomics.bmb.sdu.dk/app_direct/CoExpresso).
 
 ## Contributing and Feedback
 
@@ -270,7 +279,8 @@ contribute code or documentation, please visit our GitHub repository:
 
 GitHub: https://github.com/computproteomics/PolySTest
 
-Your input helps make PolySTest a more robust and user-friendly tool for the omics community."
+Your input helps make PolySTest a more robust and user-friendly tool for the 
+omics community."
 
 
 

@@ -18,8 +18,8 @@ the quantitative data as required for PolySTest}
 pairs of conditions to compare (each comparison given as separate row)}
 
 \item{statTests}{A character vector specifying the statistical tests to be
-used. The available tests are: "limma", "Miss_Test", "t-test", "rank_products",
-and "permutation_test"}
+used. The available tests are: "limma", "Miss_Test", "t-test",
+"rank_products", and "permutation_test"}
 }
 \value{
 SummarizedExperiment with added columns for p-values and q-values
@@ -32,27 +32,31 @@ Combining the power of different statistical tests
 This function performs unpaired statistical tests on the data in
 'fulldata' using the pairs of conditions specified in 'allComps'. It
 calculates the p-values and q-values for each row for the statistical tests
-used. The statistical tests available are: LIMMA, Miss_Test, t-test, Rank Products,
-and a permutation test based on t values. The function returns a
-SummarizedExperiment object with added columns for p-values and q-values in
+used. The statistical tests available are: limma, Miss_Test, t-test,
+rank_products, and a permutation_test based on t values. The function returns
+a SummarizedExperiment object with added columns for p-values and q-values in
 rowData.
 }
 \examples{
 # Creating mock quantitative data and sample metadata
 library(SummarizedExperiment)
-quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
-colnames(quantData) <- c(paste("Sample", seq_len(5), "_Condition_A", sep=""),
-                         paste("Sample", seq_len(5), "_Condition_B", sep=""))
+quantData <- matrix(rnorm(2000), nrow = 200, ncol = 10)
+colnames(quantData) <- c(
+    paste("Sample", seq_len(5), "_Condition_A", sep = ""),
+    paste("Sample", seq_len(5), "_Condition_B", sep = "")
+)
 rownames(quantData) <- paste("Gene", seq_len(200))
-sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each=5))
+sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each = 5))
 
 # Creating the SummarizedExperiment object
-fulldata <- SummarizedExperiment(assays=list(quant=quantData),
-                                 colData=sampleMetadata)
+fulldata <- SummarizedExperiment(
+    assays = list(quant = quantData),
+    colData = sampleMetadata
+)
 metadata(fulldata) <- list(NumReps = 5, NumCond = 2)
 
 # Specifying pairs of conditions to compare
-allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
+allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
 
 # Running the PolySTest_unpaired function
 results <- PolySTest_unpaired(fulldata, allComps)

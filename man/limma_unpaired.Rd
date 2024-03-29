@@ -36,10 +36,10 @@ deviations of the Bayesian linear model.
 This function performs unpaired limma analysis on Data.
 }
 \examples{
- dataMatrix <- matrix(rnorm(900), ncol = 9)
- NumCond <- 3
- NumReps <- 3
-colnames(dataMatrix) <- rep(c("A", "B","C"), each = 3)
+dataMatrix <- matrix(rnorm(900), ncol = 9)
+NumCond <- 3
+NumReps <- 3
+colnames(dataMatrix) <- rep(c("A", "B", "C"), each = 3)
 #  Specifying comparisons
 RRCateg <- matrix(c(1, 2, 2, 3), nrow = 2, ncol = 2)
 # Run function

@@ -15,7 +15,8 @@ prepare_output_data(fulldata, Pvalue, Qvalue, LogRatios, testNames, allComps)
 
 \item{LogRatios}{A matrix of log-ratio values for the comparisons.}
 
-\item{testNames}{A vector of names for each of the statistical tests performed.}
+\item{testNames}{A vector of names for each of the statistical tests
+performed.}
 
 \item{allComps}{A matrix specifying the pairs of conditions compared,
 each row represents a pair.}
@@ -25,10 +26,11 @@ The updated SummarizedExperiment object with additional columns in
 rowData for log-ratios, p-values, and q-values.
 }
 \description{
-This function processes the results of PolySTest, including log-ratios, p-values,
-and q-values for each statistical test applied, and integrates them into the
-rowData of the provided SummarizedExperiment object. It optionally handles
-separate t-test q-values and unifies q-values across multiple tests.
+This function processes the results of PolySTest, including log-ratios,
+p-values, and q-values for each statistical test applied, and integrates
+them into the rowData of the provided SummarizedExperiment object. It
+optionally handles separate t-test q-values and unifies q-values across
+multiple tests.
 }
 \details{
 This function first checks for the presence of t-test results within
@@ -44,6 +46,7 @@ number of features with FDR < 0.01 for each test and comparison.
 # Assuming 'fulldat' is your SummarizedExperiment object, 'Pvalue', 'Qvalue',
 # and 'LogRatios' are matrices of your test results, 'testNames' is your
 # vector of test names, and 'allComps' specifies your condition pairs:
-# fulldat <- prepare_output_data(fulldat, Pvalue, Qvalue, LogRatios, testNames, allComps)
+# fulldat <- prepare_output_data(fulldat, Pvalue, Qvalue, LogRatios,
+#                                testNames, allComps)
 
 }

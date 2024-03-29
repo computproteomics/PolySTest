@@ -9,8 +9,15 @@ get_numthreads(threads = NULL)
 \arguments{
 \item{threads}{An integer indicating the number of threads to use.}
 }
+\value{
+An integer indicating the number of threads to use.
+}
 \description{
 This function sets the number of threads for parallel processing. If the
 environment variable SHINY_THREADS is set, the number of threads is set
 to the value of SHINY_THREADS.
+}
+\examples{
+get_numthreads(threads = 4)
+get_numthreads()
 }

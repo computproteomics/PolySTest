@@ -15,7 +15,8 @@ MissValPDistr(NumReps, PercNA)
 A numeric vector containing the distribution of missing values.
 }
 \description{
-This function calculates the distribution of missing values for a given number of repetitions and percentage of missing values.
+This function calculates the distribution of missing values for a given
+number of repetitions and percentage of missing values.
 }
 \examples{
 MissValPDistr(10, 0.2)
