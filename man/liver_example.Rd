@@ -10,6 +10,9 @@ A SummarizedExperiment object
 Protein expressions from the livers of mice fed with different diets: high fat,
 TTA component, Fish oil and TTA + fish oil
 }
+\value{
+A SummarizedExperiment object
+}
 \description{
 This data set is a SummarizedExperiment object containing liver proteomics
 of mice fed with four different diets. The data contains 3 replicates per
