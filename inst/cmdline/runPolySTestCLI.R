@@ -2,6 +2,7 @@
 
 # load libraries
 library(PolySTest)
+library(SummarizedExperiment)
 library(yaml)
 
 ## reading helper functions
@@ -32,7 +33,7 @@ if(file.exists(parfile)) {
 }
 pars <- yaml.load_file(parfile)
 
-validate_parameters(pars)
+PolySTest:::validate_parameters(pars)
 
 NumReps <- pars$numreps
 NumCond <- pars$numcond
