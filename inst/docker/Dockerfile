@@ -19,8 +19,8 @@ RUN R -e "library(BiocManager); BiocManager::install(c('matrixStats','fdrtool','
 
 RUN rm -rf /srv/shiny-server/*
 RUN mkdir /tmp/polystest
-COPY .  /tmp/polystest/
-COPY ../shiny/ /srv/shiny-server
+COPY ../../  /tmp/polystest/
+RUN cp /tmp/polystest/inst/shiny/* /srv/shiny-server
 RUN cd /tmp/polystest && R -e "devtools::install()"
 RUN chmod a+x /tmp/polystest/inst/cmdline/*
 RUN cp /tmp/polystest/inst/cmdline/* /usr/bin/
