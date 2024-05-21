@@ -1,7 +1,7 @@
 Package: PolySTest
 Title: PolySTest: Detection of differentially regulated features. Combined 
       statistical testing for data with few replicates and missing values
-Version: 0.99.0
+Version: 1.99.0
 Authors@R: 
     person("Veit", "Schwämmle", , "veits@bmb.sdu.dk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9708-6722"))
