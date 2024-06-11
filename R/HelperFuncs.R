@@ -1,10 +1,6 @@
 # General settings: Permutations: min 7 replicates, if not available, then
 # generate from entire data
 
-#' @import stats
-#' @import grDevices
-#' @import utils
-#' @import graphics
 #' @importFrom S4Vectors metadata
 NULL
 
@@ -28,7 +24,7 @@ get_numthreads <- function(threads = NULL) {
     shiny_threads <- as.numeric(Sys.getenv("SHINY_THREADS"))
     if (!is.na(shiny_threads)) {
         NumThreads <- shiny_threads
-        message(paste("Set number of threads to", NumThreads))
+        message("Set number of threads to", NumThreads)
     }
     if (!is.null(threads)) {
         NumThreads <- threads
@@ -55,6 +51,7 @@ colSelected <- function(col, num, sel, col2) {
 #' @examples
 #' Data <- matrix(rnorm(100), ncol = 10)
 #' StatsForPermutTest(Data, Paired = FALSE)
+#' @importFrom matrixStats rowSds rowVars
 #' @export
 StatsForPermutTest <- function(Data, Paired) {
     if (Paired) {
@@ -64,19 +61,19 @@ StatsForPermutTest <- function(Data, Paired) {
     } else {
         NumReps <- ncol(Data) * 0.5
         NumRealReps <- rowSums(!is.na(Data)) * 0.5
-        Stats <- rowMeans(Data[, seq_len(NumReps)], na.rm = TRUE) -
-            rowMeans(Data[, seq(NumReps + 1, length.out = NumReps)],
-                na.rm = TRUE
+        Stats <- rowMeans(Data[, seq_len(NumReps), drop=FALSE], na.rm = TRUE) -
+            rowMeans(Data[, seq(NumReps + 1, length.out = NumReps), drop=FALSE],
+                     na.rm = TRUE
             ) /
-                (sqrt(matrixStats::rowVars(Data[, seq_len(NumReps)],
+            (sqrt(matrixStats::rowVars(Data[, seq_len(NumReps), drop=FALSE],
+                                       na.rm = TRUE
+            ) +
+                matrixStats::rowVars(
+                    Data[, seq(NumReps + 1,
+                               length.out = NumReps
+                    ), drop=FALSE],
                     na.rm = TRUE
-                ) +
-                    matrixStats::rowVars(
-                        Data[, seq(NumReps + 1,
-                            length.out = NumReps
-                        )],
-                        na.rm = TRUE
-                    )))
+                )))
         Stats <- abs(Stats) * NumRealReps
     }
     return(Stats)
@@ -97,20 +94,16 @@ StatsForPermutTest <- function(Data, Paired) {
 MissValPDistr <- function(NumReps, PercNA) {
     p <- PercNA
     d <- NumReps
-    D <- rep(0, d + 1)
-    # terms of binomial distribution
-    binTerms <- NULL
-    for (i in 0:d) {
-        binTerms <- append(binTerms, choose(d, i) * p^i * (1 - p)^(d - i))
-    }
-    for (i in 0:d) {
-        for (j in 0:(d - i)) {
-            D[i + 1] <- D[i + 1] + binTerms[j + 1] * binTerms[j + i + 1]
-        }
-    }
-    for (i in seq_len(d)) {
-        D[i + 1] <- 2 * D[i + 1]
-    }
+    
+    # Calculate binomial terms
+    binTerms <- choose(d, 0:d) * p^(0:d) * (1 - p)^(d:0)
+    
+    # Compute D using vectorized operations
+    D <- sapply(0:d, function(i) sum(binTerms[1:(d-i+1)] * binTerms[(i+1):(d+1)]))
+    
+    # Double the non-zero elements
+    D[-1] <- 2 * D[-1]
+    
     D
 }
 
@@ -137,18 +130,18 @@ RPStats <- function(tRPMAData, NumReps) {
     NumElements <- rowSums(!is.na(tRPMAData))
     Rank <- NULL
     RP.own <- 0
-
+    
     # Restrict to >0 replicated values
     iterNumEl <- unique(NumElements)
     iterNumEl <- iterNumEl[iterNumEl > 0]
-
+    
     ## avoiding sets that are practically empty
     if (length(iterNumEl) == 0) {
         na_out <- as.numeric(rep(NA, nrow(tRPMAData)))
         names(na_out) <- rownames(tRPMAData)
         return(na_out)
     }
-
+    
     # This code calculates p-values for RPMADown analysis based on the number of
     # elements (d).
     # It returns a list of p-values for each iteration of d.
@@ -159,15 +152,19 @@ RPStats <- function(tRPMAData, NumReps) {
         # If d is greater than 1 and the number of columns in RPMAData is
         # greater than the number of columns in tRPMAData
         if (d > 1 && length(as.matrix(RPMAData)) > ncol(tRPMAData)) {
-            RP.own <- 0
-            # Calculate the rank of each column in RPMAData and sum the ranks
-            for (r in seq_len(NumReps)) {
-                Rank <- rank(RPMAData[, r], na.last = "keep") /
-                    (sum(!is.na(RPMAData[, r])) + 1)
-                names(Rank) <- rownames(RPMAData)
-                Rank[is.na(Rank)] <- 1
-                RP.own <- RP.own + log(Rank)
-            }
+            
+            RP.own <- rep(0, nrow(RPMAData))
+            names(RP.own) <- rownames(RPMAData)
+            
+            # Calculate ranks and normalize
+            ranks <- apply(RPMAData, 2, rank, na.last = "keep")
+            norm_ranks <- apply(ranks, 2, function(x) x / (sum(!is.na(x)) + 1))
+            norm_ranks[is.na(norm_ranks)] <- 1
+            
+            
+            # Sum the log of the ranks across columns
+            RP.own <- rowSums(log(norm_ranks))
+            
             # Calculate RP.own values and p-values
             RP.own <- exp(RP.own)
             tNumFeat <- length(RP.own)
@@ -185,7 +182,10 @@ RPStats <- function(tRPMAData, NumReps) {
             return(na_out)
         }
     })
-    return(unlist(RPMADown_pvalues))
+    # reorder to original order
+    res <- unlist(RPMADown_pvalues)
+    res <- res[match(rownames(tRPMAData), names(res))]
+    return(res)
 }
 
 
@@ -217,50 +217,52 @@ RPStats <- function(tRPMAData, NumReps) {
 #' @export
 MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
     Reps <- rep(seq_len(NumCond), NumReps)
-
+    
     NumComps <- ncol(RRCateg)
     pNAvalues <- matrix(NA,
-        ncol = NumComps,
-        nrow = nrow(Data),
-        dimnames = list(
-            rows = rownames(Data),
-            cols = seq_len(NumComps)
-        )
+                        ncol = NumComps,
+                        nrow = nrow(Data),
+                        dimnames = list(
+                            rows = rownames(Data),
+                            cols = seq_len(NumComps)
+                        )
     )
     qNAvalues <- matrix(NA,
-        ncol = NumComps, nrow = nrow(Data),
-        dimnames = list(
-            rows = rownames(Data),
-            cols = seq_len(NumComps)
-        )
+                        ncol = NumComps, nrow = nrow(Data),
+                        dimnames = list(
+                            rows = rownames(Data),
+                            cols = seq_len(NumComps)
+                        )
     )
-
+    
     message("Running Miss test ...")
     pb <- txtProgressBar(0.9, NumComps)
-
+    
     for (vs in seq_len(NumComps)) {
-        tData <- Data[, Reps == RRCateg[2, vs]]
-        trefData <- Data[, Reps == RRCateg[1, vs]]
+        tData <- Data[, Reps == RRCateg[2, vs], drop=FALSE]
+        trefData <- Data[, Reps == RRCateg[1, vs], drop=FALSE]
         tCompDat <- cbind(tData, trefData)
         qs <- quantile(tCompDat, probs = seq(0, 1, 0.01), na.rm = TRUE)
-        pvals <- statis <- matrix(NA, nrow(tCompDat), ncol = length(qs))
-        for (q in qs) {
-            tCompDat[tCompDat < q] <- NA
-            NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDat)) /
-                (nrow(tCompDat) * 2 * NumReps))
-            statis[, which(q == qs)] <-
-                (rowSums(!is.na(tCompDat[, seq_len(NumReps)])) -
-                    rowSums(!is.na(tCompDat[, (NumReps + 1):(2 * NumReps)])))
-            pvals[, which(q == qs)] <-
-                NAPDistr[abs(statis[, which(q == qs)]) + 1]
-        }
+        
+        pvals <- sapply(qs, function(q) {
+            tCompDatQ <- tCompDat
+            tCompDatQ[tCompDatQ < q] <- NA
+            NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDatQ)) /
+                                          (nrow(tCompDatQ) * 2 * NumReps))
+            statis <- rowSums(!is.na(tCompDatQ[, seq_len(NumReps)])) -
+                rowSums(!is.na(tCompDatQ[, (NumReps + 1):(2 * NumReps)]))
+            pvals_q <- NAPDistr[abs(statis) + 1]
+            return(pvals_q)
+        })
+        
+        
         pNAvalues[, vs] <- rowMins(pvals) * (NumReps + 1)
         qNAvalues[, vs] <- p.adjust(pNAvalues[, vs], method = "BH")
         setTxtProgressBar(pb, vs)
     }
     close(pb)
     pNAvalues[pNAvalues > 1] <- 1
-
+    
     return(list(pNAvalues = pNAvalues, qNAvalues = qNAvalues))
 }
 
@@ -285,45 +287,46 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
 #' NumReps <- 3
 #' res_misstest <- MissingStats(Data, NumCond, NumReps)
 #' head(res_misstest$qNAvalues)
+#' @importFrom matrixStats rowMins
 #' @export
 MissingStats <- function(Data, NumCond, NumReps) {
     Reps <- rep(seq_len(NumCond), NumReps)
     pNAvalues <- matrix(NA,
-        ncol = NumCond - 1, nrow = nrow(Data),
-        dimnames = list(
-            rows = rownames(Data),
-            cols = seq_len((NumCond - 1))
-        )
+                        ncol = NumCond - 1, nrow = nrow(Data),
+                        dimnames = list(
+                            rows = rownames(Data),
+                            cols = seq_len((NumCond - 1))
+                        )
     )
     qNAvalues <- matrix(NA,
-        ncol = NumCond - 1, nrow = nrow(Data),
-        dimnames = list(
-            rows = rownames(Data),
-            cols = seq_len((NumCond - 1))
-        )
+                        ncol = NumCond - 1, nrow = nrow(Data),
+                        dimnames = list(
+                            rows = rownames(Data),
+                            cols = seq_len((NumCond - 1))
+                        )
     )
     for (vs in 2:NumCond) {
-        tData <- Data[, Reps == vs]
-        trefData <- Data[, Reps == 1]
+        tData <- Data[, Reps == vs, drop=FALSE]
+        trefData <- Data[, Reps == 1, drop=FALSE]
         tCompDat <- cbind(tData, trefData)
         qs <- quantile(tCompDat, probs = seq(0, 1, 0.01), na.rm = TRUE)
-        pvals <- statis <- matrix(NA, nrow(tCompDat), ncol = length(qs))
-        for (q in qs) {
-            tCompDat[tCompDat < q] <- NA
-            NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDat)) /
-                (nrow(tCompDat) * 2 * NumReps))
-            statis[, which(q == qs)] <-
-                (rowSums(!is.na(tCompDat[, seq_len(NumReps)])) -
-                    rowSums(!is.na(tCompDat[, (NumReps + 1):(2 * NumReps)])))
-            pvals[, which(q == qs)] <-
-                NAPDistr[abs(statis[, which(q == qs)]) + 1]
-        }
+        
+        sapply(qs, function(q) {
+            tCompDatQ <- tCompDat
+            tCompDatQ[tCompDatQ < q] <- NA
+            NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDatQ)) /
+                                          (nrow(tCompDatQ) * 2 * NumReps))
+            statis <- rowSums(!is.na(tCompDatQ[, seq_len(NumReps)])) -
+                rowSums(!is.na(tCompDatQ[, (NumReps + 1):(2 * NumReps)]))
+            pvals_q <- NAPDistr[abs(statis) + 1]
+            return(pvals_q)
+        })
         pNAvalues[, vs - 1] <- rowMins(pvals) * (NumReps + 1)
         qNAvalues[, vs - 1] <- p.adjust(pNAvalues[, vs - 1], method = "BH")
     }
-
+    
     pNAvalues[pNAvalues > 1] <- 1
-
+    
     return(list(pNAvalues = pNAvalues, qNAvalues = qNAvalues))
 }
 
@@ -352,7 +355,7 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
     BestComb <- c(0, 0)
     NumCond <- ncol(LogRatios)
     Pvalue[is.na(Pvalue)] <- 1
-
+    
     NumTests <- ncol(Pvalue) / (NumCond)
     if (NumTests %% 1 != 0) {
         stop("Number of tests is not a multiple of the number of conditions")
@@ -360,23 +363,24 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
     if (NumTests != ncol(Pvalue) / (NumCond)) {
         stop("Number of tests is not a multiple of the number of conditions")
     }
-
-
-    BestHCs <- BestFCs <- vector("numeric", ncol(LogRatios))
-
-    for (i in seq_len(ncol(LogRatios))) {
-        pvals <- Pvalue[, i]
-        BestHCs[i] <- hc.thresh(pvals[pvals < 1], plot = FALSE)
-        BestFCs[i] <- sd(LogRatios[, i], na.rm = TRUE)
-    }
-
+    
+    
+    # Apply hc.thresh function to p-values for each column
+    BestHCs <- apply(Pvalue, 2, function(pvals) {
+        hc.thresh(pvals[pvals < 1], plot = FALSE)
+    })
+    
+    # Calculate the standard deviation of LogRatios for each column
+    BestFCs <- apply(LogRatios, 2, sd, na.rm = TRUE)
+    
     BestHCs
     BestFCs
-
+    
     # Calculate mean of all estimated thresholds
-
+    
     return(c(mean(BestFCs), mean(BestHCs[i])))
 }
+
 
 
 #' Find Optimal Fold-Change and Q-Value Thresholds
@@ -429,13 +433,13 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
     BestComb <- c(0, 0)
     BestRegs <- 0
     NumCond <- ncol(LogRatios)
-
+    
     Qvalue[is.na(Qvalue)] <- 1
-
+    
     smallestq <- signif(min(Qvalue, na.rm = TRUE))
     qrange <- c(0.1, 0.2, 0.5) * 10^(rep(-10:0, each = 3))
     qrange <- qrange[which.min(abs(smallestq - qrange)):(length(qrange) - 2)]
-
+    
     fcRange <- seq(0, max(abs(range(LogRatios, na.rm = TRUE))), length = 100)
     NumTests <- ncol(Qvalue) / (NumCond)
     if (NumTests %% 1 != 0) {
@@ -444,57 +448,75 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
     if (NumTests != ncol(Qvalue) / (NumCond)) {
         stop("Number of tests is not a multiple of the number of conditions")
     }
-
+    
     NumThreads <- get_numthreads()
     cl <- parallel::makeCluster(NumThreads)
     parallel::clusterExport(cl,
-        varlist = c(
-            "Qvalue", "NumCond", "LogRatios",
-            "qrange", "NumTests"
-        ),
-        envir = environment()
+                            varlist = c(
+                                "Qvalue", "NumCond", "LogRatios",
+                                "qrange", "NumTests"
+                            ),
+                            envir = environment()
     )
-    #parallel::clusterEvalQ(cl)
 
+    
     BestVals <- parallel::parLapply(cl, fcRange, function(fc) {
+        # Initialize variables to track the best regulatory value and combination
         localBestRegs <- 0
         localBestComb <- c(0, 0)
-        # Iterate over all tests dynamically
-        for (t in seq_len(NumTests)) {
-            # Modify Qvalue based on FC for current test
+        
+        # Function to update Qvalue based on fold change (FC) 
+        update_qvalue <- function(t) {
+            # Extract the relevant columns for the current test
             tvals <- Qvalue[, (t - 1) * NumCond + seq_len(NumCond), drop = FALSE]
+            # Set Qvalue to 1 where LogRatios are within the range -fc to fc
             tvals[LogRatios < fc & LogRatios > -fc] <- 1
-            # Update Qvalue for current test
-            Qvalue[, (t - 1) * NumCond + seq_len(NumCond)] <- tvals
-
-            # Iterate over q-value range
-            for (qlim in qrange) {
-                # Calculate distribution of significant features for current
-                # q-value threshold
-                alldistr <- vapply(seq_len(NumCond), function(cond) {
-                    distr <- table(rowSums(Qvalue[, (t - 1) * NumCond + cond,
-                        drop = FALSE
-                    ] < qlim, na.rm = TRUE))
-                    sum(distr[-1], na.rm = TRUE) / sum(distr, na.rm = TRUE)
-                }, numeric(1))
-
-                if (mean(alldistr, na.rm = TRUE) > localBestRegs) {
-                    localBestRegs <- mean(alldistr, na.rm = TRUE)
-                    localBestComb <- c(fc, qlim)
-                }
-            }
+            # Update Qvalue for the current test
+            Qvalue[, (t - 1) * NumCond + seq_len(NumCond)] <<- tvals
         }
+        
+        # Function to calculate the distribution of significant features for the current q-value threshold
+        calc_distr <- function(l, qlim) {
+            # Calculate the proportion of significant features for each condition
+            alldistr <- vapply(seq_len(NumCond), function(cond) {
+                # Calculate the distribution of significant features
+                distr <- table(rowSums(Qvalue[, (l - 1) * NumCond + cond, drop = FALSE] < qlim, na.rm = TRUE))
+                # Calculate the proportion of significant features
+                sum(distr[-1], na.rm = TRUE) / sum(distr, na.rm = TRUE)
+            }, numeric(1))
+            # Return the mean proportion of significant features
+            mean(alldistr, na.rm = TRUE)
+        }   
+        
+        # Iterate over all tests dynamically
+        lapply(seq_len(NumTests), function(t) {
+            # Update Qvalue for the current test
+            update_qvalue(t)
+            
+            # Iterate over the q-value range
+            lapply(qrange, function(qlim) {
+                # Calculate the mean proportion of significant features for the current q-value threshold
+                distr_mean <- calc_distr(t, qlim)
+                
+                # Update the best regulatory value and combination if the current mean is higher
+                if (distr_mean > localBestRegs) {
+                    localBestRegs <<- distr_mean
+                    localBestComb <<- c(fc, qlim)
+                }
+            })
+        })
+        
         c(localBestRegs, localBestComb)
     })
     parallel::stopCluster(cl)
-
+    
     # Find the global best combination across all fold-change thresholds
     # Convert list to matrix for easier handling
     globalBest <- do.call(rbind, BestVals)
     bestRow <- which.max(globalBest[, 1])
     BestComb <- globalBest[bestRow, -1]
     BestRegs <- globalBest[bestRow, 1]
-
+    
     return(BestComb)
 }
 
@@ -533,21 +555,21 @@ UnifyQvals <- function(Qvalue, NumComps, NumTests) {
 ## Parameter checks
 validate_parameters <- function(pars) {
     validate_numeric_param(pars$numreps, "Number of replicates",
-        larger_than = 0, integer = TRUE
+                           larger_than = 0, integer = TRUE
     )
     validate_numeric_param(pars$numcond, "Number of conditions",
-        larger_than = 0, integer = TRUE
+                           larger_than = 0, integer = TRUE
     )
     validate_numeric_param(pars$refcond, "Reference condition",
-        larger_than = -1, integer = TRUE
+                           larger_than = -1, integer = TRUE
     )
     validate_numeric_param(pars$firstquantcol, "First quant column",
-        larger_than = 0, integer = TRUE
+                           larger_than = 0, integer = TRUE
     )
     validate_numeric_param(pars$threads, "Number of threads",
-        larger_than = 0, integer = TRUE
+                           larger_than = 0, integer = TRUE
     )
-
+    
     validate_choice_param(
         pars$normalization,
         "Normalization",
@@ -570,7 +592,7 @@ validate_numeric_param <- function(param, name, larger_than = 0,
     }
     if (param <= larger_than) {
         stop(sprintf("%s must be a number > %d.", name, larger_than),
-            call. = FALSE
+             call. = FALSE
         )
     }
 }
@@ -589,7 +611,7 @@ validate_choice_param <- function(param, name, choices) {
 validate_logical_param <- function(param, name) {
     if (!is.logical(param)) {
         stop(sprintf("%s parameter should be 'true' or 'false'", name),
-            call. = FALSE
+             call. = FALSE
         )
     }
 }
@@ -628,6 +650,7 @@ validate_logical_param <- function(param, name) {
 update_conditions_with_lcs <- function(fulldata, default = NULL) {
     # check for consistency
     check_for_polystest(fulldata)
+    
     # extract data from SummarizedExperiement
     quant_cols <- colnames(SummarizedExperiment::assay(fulldata))
     numCond <- metadata(fulldata)$NumCond
@@ -636,7 +659,7 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
         default <- paste("C", seq_len(numCond), sep = "_")
     }
     conditions <- default
-
+    
     # Function to find the longest common subsequence
     lcs <- function(a, b) {
         A <- strsplit(a, "")[[1]]
@@ -651,7 +674,7 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
             }
             return(paste0(
                 A[(-max(L) + 1):0 + which(L == max(L),
-                    arr.ind = TRUE
+                                          arr.ind = TRUE
                 )[1]],
                 collapse = ""
             ))
@@ -659,12 +682,14 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
             return(NA)
         }
     }
-
+    
+    
     # Iterate over each condition
     for (i in seq_len(numCond)) {
         condNames <- quant_cols[(0:(numReps - 1)) * numCond + i]
         lcsName <- condNames[1]
         if (length(condNames) > 1) {
+            
             for (j in 2:length(condNames)) {
                 if (!is.na(lcsName)) {
                     lcsName <- lcs(lcsName, condNames[j])
@@ -675,10 +700,10 @@ update_conditions_with_lcs <- function(fulldata, default = NULL) {
             conditions[i] <- lcsName
         }
     }
-
+    
     # Update colData of fulldata
     SummarizedExperiment::colData(fulldata)$Condition <- rep(conditions, numReps)
-
+    
     return(fulldata)
 }
 
@@ -737,13 +762,12 @@ create_ratio_matrix <- function(fulldata, allComps) {
     NumCond <- metadata(fulldata)$NumCond
     NumReps <- metadata(fulldata)$NumReps
     dat <- SummarizedExperiment::assay(fulldata)
-
+    
     # Make indices for pairings
     valComps <- matrix(NA, nrow = nrow(allComps), ncol = 2)
-    for (i in seq_len(nrow(allComps))) {
-        valComps[i, 1] <- as.numeric(which(conditions == allComps[i, 1]))
-        valComps[i, 2] <- as.numeric(which(conditions == allComps[i, 2]))
-    }
+    valComps[, 1] <- match(allComps[, 1], conditions)
+    valComps[, 2] <- match(allComps[, 2], conditions)    
+    
     RR <- matrix(NA, ncol = nrow(allComps) * NumReps, nrow = 2)
     for (j in seq_len(nrow(allComps))) {
         RR[1, seq(j, nrow(allComps) * NumReps, nrow(allComps))] <-
@@ -752,12 +776,34 @@ create_ratio_matrix <- function(fulldata, allComps) {
             seq(valComps[j, 1], NumCond * NumReps, NumCond)
     }
     # Create ratio matrix
-    MAData <- NULL
-    for (i in seq_len(ncol(RR))) {
-        MAData <- cbind(MAData, dat[, RR[1, i]] - dat[, RR[2, i]])
-    }
+    
+    MAData <- dat[, RR[1, ]] - dat[, RR[2, ]]
+    
     rownames(MAData) <- rownames(dat)
     return(MAData)
+}
+
+
+# reducing repetition in limma test calls
+fit_and_getvals <- function(lm.fitted) {
+    
+    lm.bayes <- limma::eBayes(lm.fitted)
+    topTable(lm.bayes)
+    plvalues <- lm.bayes$p.value
+    qlvalues <- matrix(NA,
+                       nrow = nrow(plvalues), ncol = ncol(plvalues),
+                       dimnames = dimnames(plvalues)
+    )
+    # qvalue correction
+    for (i in seq_len(ncol(plvalues))) {
+        tqs <- qvalue::qvalue(na.omit(plvalues[,i]))$qvalues
+        qlvalues[names(tqs), i] <- tqs
+    }
+    
+    return(list(
+        plvalues = plvalues, qlvalues = qlvalues,
+        Sds = sqrt(lm.bayes$s2.post)
+    ))
 }
 
 #' Prepare Output Data for PolySTest Results
@@ -798,7 +844,7 @@ create_ratio_matrix <- function(fulldata, allComps) {
 #'
 #' @importFrom SummarizedExperiment rowData
 #' 
-#' @import knitr
+#' @importFrom knitr kable
 #' @export
 prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios,
                                 testNames, allComps) {
@@ -806,14 +852,14 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios,
     numComps <- nrow(allComps)
     testNames2 <- testNames
     num_tests2 <- num_tests
-
+    
     # Separate t-test p-values
     if ("t_test" %in% testNames) {
         ttestQvalue <- Qvalue[, grep("q_values_t_test", colnames(Qvalue))]
         Qvalue <- Qvalue[, -grep("q_values_t_test", colnames(Qvalue))]
         num_tests <- num_tests - 1
     }
-
+    
     # Unify q-values if needed (assuming UnifyQvals is a function to unify
     # q-values)
     if (num_tests > 1) {
@@ -822,59 +868,59 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios,
         num_tests2 <- num_tests + 1
         testNames2 <- c("PolySTest", testNames)
     }
-
+    
     if ("t_test" %in% testNames) {
         Qvalue <- cbind(Qvalue, ttestQvalue)
         # move "t_test" to end
         testNames2 <- c(testNames2[testNames2 != "t_test"], "t_test")
         num_tests <- num_tests + 1
     }
-
+    
     # Set column names for log-ratios, p-values, and q-values
     compNames <- apply(allComps, 1, function(x) {
         paste(x[2], "vs", x[1],
-            sep = "_"
+              sep = "_"
         )
     })
     colnames(LogRatios) <- paste("log_ratios", compNames, sep = "_")
     colnames(Pvalue) <- paste("p_values", rep(testNames, each = numComps),
-        rep(compNames, num_tests),
-        sep = "_"
+                              rep(compNames, num_tests),
+                              sep = "_"
     )
     colnames(Qvalue) <- paste("FDR", rep(testNames2, each = numComps),
-        rep(compNames, num_tests2),
-        sep = "_"
+                              rep(compNames, num_tests2),
+                              sep = "_"
     )
-
+    
     # Combine all data into a single data frame
     SummarizedExperiment::rowData(fulldata) <- cbind(SummarizedExperiment::rowData(fulldata), LogRatios, Qvalue, Pvalue)
-
+    
     # Assuming FullReg contains q-values and you are interested in features with
     # FDR < 0.01
     message("------- Summary of Results --------")
     message("Number of differentially regulated features with FDR < 0.01:")
-
+    
     # Calculate the number of features with FDR < 0.01
     significantFeatures <- apply(Qvalue, 2, function(x) {
         sum(x < 0.01,
             na.rm = TRUE
         )
     })
-
+    
     # Print the summary
     cat(
         knitr::kable(matrix(significantFeatures,
-            nrow = length(compNames),
-            dimnames = list(rows = compNames, cols = testNames2)
+                            nrow = length(compNames),
+                            dimnames = list(rows = compNames, cols = testNames2)
         )),
         sep = "\n"
     )
-
+    
     # Adding test details to metadata
     metadata(fulldata)$testNames <- testNames2
     metadata(fulldata)$allComps <- allComps
     metadata(fulldata)$compNames <- paste0(allComps[, 2], "_vs_", allComps[, 1])
-
+    
     return(fulldata)
 }
 
@@ -904,7 +950,7 @@ check_for_polystest <- function(se) {
         stop("Metadata must contain 'NumReps' (number of replicates) and
         'NumCond' (number of experimental conditions).")
     }
-
+    
     # Check values of NumReps and NumCond
     if (metadata(se)$NumReps <= 1) {
         warning("NumReps is 1, which may not be suitable for analysis.")
@@ -912,27 +958,27 @@ check_for_polystest <- function(se) {
     if (metadata(se)$NumCond <= 1) {
         warning("NumCond is 1, which may not be suitable for analysis.")
     }
-
+    
     # Check for only one assay
     if (length(SummarizedExperiment::assays(se)) != 1) {
         stop("SummarizedExperiment should contain only one assay.")
     }
-
+    
     # Check if the number of columns in the assay is NumReps * NumCond
     expectedCols <- metadata(se)$NumReps * metadata(se)$NumCond
     if (ncol(assay(se)) != expectedCols) {
         stop("The number of columns in the assay does not match NumReps *
              NumCond.")
     }
-
+    
     # Check if each condition has the same number of replicates
     condReps <- table(SummarizedExperiment::colData(se)$Condition)
     if (any(condReps != metadata(se)$NumReps)) {
         warning("Not all conditions have the same number of replicates.")
     }
-
+    
     # Any other checks can be added here
-
+    
     invisible(TRUE)
 }
 
@@ -941,11 +987,12 @@ filterFC <- function(rdat, NumTests, NumComps, fclim = c(0, 0)) {
     Qvalue <- as.data.frame(rdat[, grep("^FDR", colnames(rdat))])
     if (ncol(Qvalue) > 0) {
         LogRatios <- as.data.frame(rdat[, grep("^log_ratios", colnames(rdat))])
-
+        
         FCRegs <- Qvalue
+        
         for (t in seq_len(NumTests)) {
             tsign <- Qvalue[, (t - 1) * (NumComps) + (seq_len(NumComps)),
-                drop = FALSE
+                            drop = FALSE
             ]
             tsign[is.na(tsign)] <- 1
             tsign[LogRatios > fclim[1] & LogRatios < fclim[2]] <- 1
@@ -995,7 +1042,7 @@ check_stat_names <- function(fulldata, compNames, testNames) {
         stop("The test names are not correct or the tests have not been carried
          out.")
     }
-
+    
     # Check for correct comparison names
     if (is.null(metadata(fulldata)$compNames)) {
         stop("The comparison names are not correct or the comparisons have not
@@ -1008,6 +1055,6 @@ check_stat_names <- function(fulldata, compNames, testNames) {
         stop("The comparison names are not correct or the comparisons have not
         been carried out.")
     }
-
+    
     return(compNames)
 }

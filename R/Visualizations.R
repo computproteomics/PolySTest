@@ -224,7 +224,9 @@ plotVolcano <- function(fulldata, compNames = "all",
 #'
 #' @importFrom SummarizedExperiment rowData
 #' @importFrom gplots plotCI redblue
-#' @import circlize
+#' @importFrom circlize circos.rect circos.clear circos.text 
+#' @importFrom circlize circos.axis circos.initialize circos.trackPlotRegion
+#' @importFrom circlize circos.par get.cell.meta.data
 #'
 plotExpression <- function(fulldata, compNames = "all",
                            testNames = c(
@@ -341,7 +343,7 @@ plotExpression <- function(fulldata, compNames = "all",
         )
         title(main = "Feature expression over conditions")
         axis(1, at = seq_len(NumCond), labels = colnames(MeanSet))
-        # abline(h=fclim)
+        
         if (nrow(MeanSet) > 1) {
             for (i in 2:nrow(MeanSet)) {
                 plotCI(seq_len(NumCond) + runif(1, -0.1, 0.1),
@@ -357,36 +359,35 @@ plotExpression <- function(fulldata, compNames = "all",
             message("Making circos plot")
             par(mar = rep(0, 4))
             circos.clear()
-            circos.par(
+            circlize::circos.par(
                 cell.padding = c(0, 0, 0, 0), canvas.xlim = c(-1.5, 1.5),
                 canvas.ylim = c(-1.5, 1.5),
                 track.margin = c(0, 0.02), start.degree = 90, gap.degree = 4
             )
-            circos.initialize(seq_len(NumComps), xlim = c(0, 1))
+            circlize::circos.initialize(seq_len(NumComps), xlim = c(0, 1))
             for (t in seq_len(NumTests)) {
-                # print(tsign)
                 nfeat <- min(nrow(SubSet), 30)
                 cols <- rainbow(nfeat, alpha = 0.8, s = 0.7)
                 tsign <- FCRegs[indices, (t - 1) * (NumComps) +
                     (seq_len(NumComps)),
                 drop = FALSE
                 ] < qlim
-                circos.trackPlotRegion(
+                circlize::circos.trackPlotRegion(
                     ylim = c(-3, 2), track.height = 1 / 12,
                     bg.border = "#777777",
                     panel.fun = function(x, y) {
-                        name <- get.cell.meta.data("sector.index")
-                        i <- get.cell.meta.data("sector.numeric.index")
-                        xlim <- get.cell.meta.data("xlim")
-                        ylim <- get.cell.meta.data("ylim")
+                        name <- circlize::get.cell.meta.data("sector.index")
+                        i <- circlize::get.cell.meta.data("sector.numeric.index")
+                        xlim <- circlize::get.cell.meta.data("xlim")
+                        ylim <- circlize::get.cell.meta.data("ylim")
                         xdiff <- (xlim[2] - xlim[1]) / nfeat
                         if (t == 1) {
-                            circos.text(mean(xlim), max(ylim) + 30,
+                            circlize::circos.text(mean(xlim), max(ylim) + 30,
                                 compNames[i],
                                 facing = "inside",
                                 niceFacing = TRUE, cex = 1, font = 2
                             )
-                            circos.axis("top",
+                            circlize::circos.axis("top",
                                 labels = strtrim(rownames(SubSetLR), 20),
                                 major.at = seq(1 / (nfeat * 2), 1 - 1 /
                                     (nfeat * 2),
@@ -396,33 +397,30 @@ plotExpression <- function(fulldata, compNames = "all",
                                 labels.facing = "reverse.clockwise",
                             )
                         }
-                        for (j in which(tsign[, i])) {
-                            circos.rect(
+                        
+                        sapply(which(tsign[, i]), function(j) {
+                            circlize::circos.rect(
                                 xleft = xlim[1] + (j - 1) * xdiff,
                                 ybottom = ylim[1],
                                 xright = xlim[2] - (nfeat - j) * xdiff,
                                 ytop = ylim[2],
                                 col = cols[j], border = NA
                             )
-                        }
+                        })
                     }
                 )
             }
             fccols <- redblue(1001)
-            # print(SubSet)
-            circos.trackPlotRegion(
+            circlize::circos.trackPlotRegion(
                 ylim = c(-3, 2), track.height = 1 / 4,
                 bg.border = NA, panel.fun = function(x, y) {
-                    name <- get.cell.meta.data("sector.index")
-                    i <- get.cell.meta.data("sector.numeric.index")
-                    xlim <- get.cell.meta.data("xlim")
-                    ylim <- get.cell.meta.data("ylim")
-                    # circos.text(x=mean(xlim), y=1.7,
-                    #            labels=name, facing = dd, cex=0.6,  adj = aa),
+                    name <- circlize::get.cell.meta.data("sector.index")
+                    i <- circlize::get.cell.meta.data("sector.numeric.index")
+                    xlim <- circlize::get.cell.meta.data("xlim")
+                    ylim <- circlize::get.cell.meta.data("ylim")
                     xdiff <- (xlim[2] - xlim[1]) / nfeat
                     for (j in seq_len(nfeat)) {
-                        # print((SubSetLR[j,i]/max(LogRatios,na.rm=T))*500+500)
-                        circos.rect(
+                      circlize::circos.rect(
                             xleft = xlim[1] + (j - 1) * xdiff,
                             ybottom = ylim[1],
                             xright = xlim[2] - (nfeat - j) * xdiff,
@@ -499,7 +497,6 @@ plotUpset <- function(fulldata, qlim = 0.05, fclim = c(0, 0)) {
         ] < qlim
         WhereRegs[WhereRegs] <- 1
         deleted_cols <- which(colSums(WhereRegs, na.rm = TRUE) == 0)
-        # print(deleted_cols)
 
         tcolnames <- paste("A", rep(seq_len(NumComps), each = NumTests - 1))
         if (length(deleted_cols) > 0) {
