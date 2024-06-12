@@ -362,10 +362,11 @@ rp_unpaired <- function(tData, trefData) {
     stopCluster(cl)
 
      save(RPparOut, tData, trefData, file="/tmp/t.csv")
-    sapply(seq_len(NumRPPairs), function(p) {
+    vapply(seq_len(NumRPPairs), function(p) {
         names(RPparOut[[p]]) <- rownames(tData)
         tpRPvalues[names(RPparOut[[p]]), p] <<- RPparOut[[p]]
-    })
+        return(TRUE)
+    }, logical(1))
     
     tpRPvalues[!is.finite(tpRPvalues)] <- NA
     pRPvalues <- rowMeans(tpRPvalues, na.rm = TRUE)

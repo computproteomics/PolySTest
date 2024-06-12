@@ -99,7 +99,7 @@ MissValPDistr <- function(NumReps, PercNA) {
     binTerms <- choose(d, 0:d) * p^(0:d) * (1 - p)^(d:0)
     
     # Compute D using vectorized operations
-    D <- sapply(0:d, function(i) sum(binTerms[1:(d-i+1)] * binTerms[(i+1):(d+1)]))
+    D <- vapply(0:d, function(i) sum(binTerms[1:(d-i+1)] * binTerms[(i+1):(d+1)]), numeric(1))
     
     # Double the non-zero elements
     D[-1] <- 2 * D[-1]
@@ -246,7 +246,7 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
         tCompDat <- cbind(tData, trefData)
         qs <- quantile(tCompDat, probs = seq(0, 1, 0.01), na.rm = TRUE)
         
-        pvals <- sapply(qs, function(q) {
+        pvals <- vapply(qs, function(q) {
             tCompDatQ <- tCompDat
             tCompDatQ[tCompDatQ < q] <- NA
             NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDatQ)) /
@@ -255,7 +255,7 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
                 rowSums(!is.na(tCompDatQ[, (NumReps + 1):(2 * NumReps)]))
             pvals_q <- NAPDistr[abs(statis) + 1]
             return(pvals_q)
-        })
+        }, numeric(nrow(tData)))
         
         
         pNAvalues[, vs] <- rowMins(pvals) * (NumReps + 1)
@@ -313,7 +313,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
         tCompDat <- cbind(tData, trefData)
         qs <- quantile(tCompDat, probs = seq(0, 1, 0.01), na.rm = TRUE)
         
-        pvals <- sapply(qs, function(q) {
+        pvals <- vapply(qs, function(q) {
             tCompDatQ <- tCompDat
             tCompDatQ[tCompDatQ < q] <- NA
             NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDatQ)) /
@@ -322,7 +322,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
                 rowSums(!is.na(tCompDatQ[, (NumReps + 1):(2 * NumReps)]))
             pvals_q <- NAPDistr[abs(statis) + 1]
             return(pvals_q)
-        })
+        }, numeric(nrow(tCompDat)))
         pNAvalues[, vs - 1] <- rowMins(pvals) * (NumReps + 1)
         qNAvalues[, vs - 1] <- p.adjust(pNAvalues[, vs - 1], method = "BH")
     }

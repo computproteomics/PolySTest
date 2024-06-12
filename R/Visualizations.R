@@ -398,7 +398,7 @@ plotExpression <- function(fulldata, compNames = "all",
                             )
                         }
                         
-                        sapply(which(tsign[, i]), function(j) {
+                        vapply(which(tsign[, i]), function(j) {
                             circlize::circos.rect(
                                 xleft = xlim[1] + (j - 1) * xdiff,
                                 ybottom = ylim[1],
@@ -406,7 +406,8 @@ plotExpression <- function(fulldata, compNames = "all",
                                 ytop = ylim[2],
                                 col = cols[j], border = NA
                             )
-                        })
+                            return(TRUE)
+                        }, logical(1))
                     }
                 )
             }

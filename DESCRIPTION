@@ -42,8 +42,7 @@ Suggests:
     testthat (>= 3.0.0),
     BiocStyle
 VignetteBuilder: 
-    knitr,
-    BiocStyle
+    knitr
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.4.0)
