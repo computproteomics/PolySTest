@@ -162,7 +162,6 @@ PolySTest_unpaired <- function(fulldata, allComps,
         lapply(statTests[statTests %in% 
                              c("t_test", "rank_products", "permutation_test")], 
                function(test) {
-            message(paste("Running", test, "tests for comparison", vs))                   
             res <- test_funcs[[test]](tData, trefData)
             p_values[, grep(paste0("p_values_", test), 
                             colnames(p_values))[vs]] <<- res$pvals
@@ -349,7 +348,6 @@ rp_unpaired <- function(tData, trefData) {
             "RPStats", "rowMins"
         ), envir = environment()
     )
-    
     RPparOut <- parallel::parLapply(cl, seq_len(NumRPPairs), function(x) {
         tRPMAData <- tData[, sample(seq_len(NumReps)), drop=FALSE] -
             trefData[, sample(seq_len(NumReps)), drop=FALSE]
@@ -359,11 +357,13 @@ rp_unpaired <- function(tData, trefData) {
         ttt <- matrixStats::rowMins(cbind(RPMAUp_pvalues, RPMADown_pvalues), na.rm = TRUE) * 2
         ttt[ttt > 1] <- 1
         names(ttt) <- names(RPMAUp_pvalues)
-        ttt
+        return(ttt)
     })
     stopCluster(cl)
-    
+
+     save(RPparOut, tData, trefData, file="/tmp/t.csv")
     sapply(seq_len(NumRPPairs), function(p) {
+        names(RPparOut[[p]]) <- rownames(tData)
         tpRPvalues[names(RPparOut[[p]]), p] <<- RPparOut[[p]]
     })
     

@@ -179,7 +179,6 @@ PolySTest_paired <- function(fulldata,
         lapply(statTests[statTests %in% 
                              c("t_test", "rank_products", "permutation_test")], 
                function(test) {
-                   message(paste("Running", test, "tests for comparison", vs))                   
                    res <- test_funcs[[test]](tMAData)
                    p_values[, grep(paste0("p_values_", test), 
                                    colnames(p_values))[vs]] <<- res$pvals

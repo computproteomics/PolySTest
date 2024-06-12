@@ -183,8 +183,10 @@ RPStats <- function(tRPMAData, NumReps) {
         }
     })
     # reorder to original order
-    res <- unlist(RPMADown_pvalues)
-    res <- res[match(rownames(tRPMAData), names(res))]
+    all_ps <- unlist(RPMADown_pvalues)
+    res <- rep(NA, nrow(tRPMAData))
+    names(res) <- rownames(tRPMAData)
+    res[names(all_ps)] <- all_ps 
     return(res)
 }
 
@@ -311,7 +313,7 @@ MissingStats <- function(Data, NumCond, NumReps) {
         tCompDat <- cbind(tData, trefData)
         qs <- quantile(tCompDat, probs = seq(0, 1, 0.01), na.rm = TRUE)
         
-        sapply(qs, function(q) {
+        pvals <- sapply(qs, function(q) {
             tCompDatQ <- tCompDat
             tCompDatQ[tCompDatQ < q] <- NA
             NAPDistr <- MissValPDistr(NumReps, sum(is.na(tCompDatQ)) /
@@ -378,7 +380,7 @@ FindFCandQlimAlternative <- function(Pvalue, LogRatios) {
     
     # Calculate mean of all estimated thresholds
     
-    return(c(mean(BestFCs), mean(BestHCs[i])))
+    return(c(mean(BestFCs), mean(BestHCs)))
 }
 
 
@@ -806,46 +808,60 @@ fit_and_getvals <- function(lm.fitted) {
     ))
 }
 
-#' Prepare Output Data for PolySTest Results
-#'
-#' This function processes the results of PolySTest, including log-ratios,
-#'  p-values, and q-values for each statistical test applied, and integrates
-#'  them into the rowData of the provided SummarizedExperiment object. It
-#'  optionally handles separate t-test q-values and unifies q-values across
-#'  multiple tests.
-#'
-#' @param fulldata A SummarizedExperiment object containing the initial dataset.
-#' @param Pvalue A matrix of p-values from the statistical tests.
-#' @param Qvalue A matrix of q-values corresponding to the p-values.
-#' @param LogRatios A matrix of log-ratio values for the comparisons.
-#' @param testNames A vector of names for each of the statistical tests
-#' performed.
-#' @param allComps A matrix specifying the pairs of conditions compared,
-#'        each row represents a pair.
-#'
-#' @details This function first checks for the presence of t-test results within
-#'          the provided data, segregates them if present, and then optionally
-#'          unifies q-values across tests if more than one test is specified.
-#'          It then organizes and renames the matrices of log-ratios, p-values,
-#'          and q-values according to the comparisons and tests performed, and
-#'          merges these matrices into the rowData of the provided
-#'          SummarizedExperiment object. Finally, it prints a summary of the
-#'          number of features with FDR < 0.01 for each test and comparison.
-#'
+# # Make this a hdden function as the arguments are too demanding
+# ' Prepare Output Data for PolySTest Results
+# '
+# ' This function processes the results of PolySTest, including log-ratios,
+# '  p-values, and q-values for each statistical test applied, and integrates
+# '  them into the rowData of the provided SummarizedExperiment object. It
+# '  optionally handles separate t-test q-values and unifies q-values across
+# '  multiple tests.
+# '
+# ' @param fulldata A SummarizedExperiment object containing the initial dataset.
+# ' @param Pvalue A matrix of p-values from the statistical tests with column
+# ' names starting with "p_values_"
+# ' @param Qvalue A matrix of q-values corresponding to the p-values with column
+# ' names starting with "FDR_"
+# ' @param LogRatios A matrix of log-ratio values for the comparisons with column
+# ' names starting with "log_ratios_
+# ' @param testNames A vector of names for each of the statistical tests
+# ' performed.
+# ' @param allComps A matrix specifying the pairs of conditions compared,
+# '        each row represents a pair.
+# '
+# ' @details This function first checks for the presence of t-test results within
+# '          the provided data, segregates them if present, and then optionally
+# '          unifies q-values across tests if more than one test is specified
+# '          (with Hommel correction for multiple testing).
+# '          It then organizes and renames the matrices of log-ratios, p-values,
+# '          and q-values according to the comparisons and tests performed, and
+# '          merges these matrices into the rowData of the provided
+# '          SummarizedExperiment object. Finally, it prints a summary of the
+# '          number of features with FDR < 0.01 for each test and comparison.
+# '
 #' @return The updated SummarizedExperiment object with additional columns in
-#'         rowData for log-ratios, p-values, and q-values.
-#'
-#' @examples
-#' # Assuming 'fulldat' is your SummarizedExperiment object, 'Pvalue', 'Qvalue',
-#' # and 'LogRatios' are matrices of your test results, 'testNames' is your
-#' # vector of test names, and 'allComps' specifies your condition pairs:
-#' # fulldat <- prepare_output_data(fulldat, Pvalue, Qvalue, LogRatios,
-#' #                                testNames, allComps)
-#'
-#' @importFrom SummarizedExperiment rowData
-#' 
-#' @importFrom knitr kable
-#' @export
+# '         rowData for log-ratios, p-values, and q-values.
+# '
+# ' @examples
+# ' # Assuming 'fulldat' is your SummarizedExperiment object, 'Pvalue', 'Qvalue',
+# ' # and 'LogRatios' are matrices of your test results, 'testNames' is your
+# ' # vector of test names, and 'allComps' specifies your condition pairs:
+# ' # fulldat <- prepare_output_data(fulldat, Pvalue, Qvalue, LogRatios,
+# ' #                                testNames, allComps)
+# ' data(liver_example)
+# ' rdata <- rowData(liver_example)
+# ' Pvalue <- rdata[, grep("p_value_", colnames(rdata))]
+# ' Qvalue <- rdata[, grep("FDR_", colnames(rdata))]
+# ' LogRatios <- rdata[, grep("log_ratios_", colnames(rdata))]
+# ' prepare_output_data(liver_example, Pvalue, 
+# '                     Qvalue, LogRatios,
+# '                    c("perm_test", "limma"), 
+# '                    c("FO.Rep.", "TTA.Rep."))
+# '
+# ' @importFrom SummarizedExperiment rowData
+# ' 
+# ' @importFrom knitr kable
+# ' @export
 prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios,
                                 testNames, allComps) {
     num_tests <- length(testNames)

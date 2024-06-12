@@ -9,12 +9,19 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+```
+
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 ```
+
+## Introduction
 
 Welcome to the PolySTest vignette. 
 
@@ -76,7 +83,6 @@ three replicates per diet.
 ```{r warning=F,message=F}
 library(PolySTest)
 library(SummarizedExperiment)
-
 # Load the data file "LiverAllProteins.csv" from the PolySTest package
 filename <- system.file("extdata", "LiverAllProteins.csv", 
                         package = "PolySTest")
