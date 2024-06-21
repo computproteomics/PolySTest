@@ -788,6 +788,7 @@ fit_and_getvals <- function(lm.fitted) {
                        nrow = nrow(plvalues), ncol = ncol(plvalues),
                        dimnames = dimnames(plvalues)
     )
+    plvalues[!is.finite(plvalues)] <- NA
     # qvalue correction
     for (i in seq_len(ncol(plvalues))) {
         tqs <- qvalue::qvalue(na.omit(plvalues[,i]))$qvalues

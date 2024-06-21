@@ -287,6 +287,7 @@ ttest_unpaired <- function(tData, trefData) {
         )
     }, numeric(1))
     names(tptvalues) <- rownames(tData)
+    tptvalues[!is.finite(tptvalues)] <- NA
     ptvalues <- tptvalues
     tqs <- qvalue::qvalue(na.omit(ptvalues))$qvalues
     qtvalues <- rep(NA, length(ptvalues))
