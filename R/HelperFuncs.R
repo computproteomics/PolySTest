@@ -2,6 +2,13 @@
 # generate from entire data
 
 #' @importFrom S4Vectors metadata
+#' @importFrom grDevices adjustcolor grey.colors rainbow
+#' @importFrom graphics abline axis hist layout legend lines
+#' @importFrom graphics mtext par text title
+#' @importFrom stats model.matrix na.omit p.adjust pgamma quantile runif
+#' @importFrom stats sd t.test
+#' @importFrom utils combn setTxtProgressBar txtProgressBar
+#' @importFrom S4Vectors metadata
 NULL
 
 #' Set number of threads (default is 4)
@@ -96,10 +103,11 @@ MissValPDistr <- function(NumReps, PercNA) {
     d <- NumReps
     
     # Calculate binomial terms
-    binTerms <- choose(d, 0:d) * p^(0:d) * (1 - p)^(d:0)
+    it <- seq_len(d+1) - 1
+    binTerms <- choose(d, it) * p^(it) * (1 - p)^(rev(it))
     
     # Compute D using vectorized operations
-    D <- vapply(0:d, function(i) sum(binTerms[1:(d-i+1)] * binTerms[(i+1):(d+1)]), numeric(1))
+    D <- vapply(it, function(i) sum(binTerms[seq_len(d-i+1)] * binTerms[seq.int(i+1,d+1)]), numeric(1))
     
     # Double the non-zero elements
     D[-1] <- 2 * D[-1]
@@ -460,54 +468,38 @@ FindFCandQlim <- function(Qvalue, LogRatios) {
                             ),
                             envir = environment()
     )
-
+    
     
     BestVals <- parallel::parLapply(cl, fcRange, function(fc) {
         # Initialize variables to track the best regulatory value and combination
         localBestRegs <- 0
         localBestComb <- c(0, 0)
         
-        # Function to update Qvalue based on fold change (FC) 
-        update_qvalue <- function(t) {
-            # Extract the relevant columns for the current test
+        for (t in seq_len(NumTests)) {
+            # Modify Qvalue based on FC for current test
             tvals <- Qvalue[, (t - 1) * NumCond + seq_len(NumCond), drop = FALSE]
-            # Set Qvalue to 1 where LogRatios are within the range -fc to fc
             tvals[LogRatios < fc & LogRatios > -fc] <- 1
-            # Update Qvalue for the current test
-            Qvalue[, (t - 1) * NumCond + seq_len(NumCond)] <<- tvals
-        }
-        
-        # Function to calculate the distribution of significant features for the current q-value threshold
-        calc_distr <- function(l, qlim) {
-            # Calculate the proportion of significant features for each condition
-            alldistr <- vapply(seq_len(NumCond), function(cond) {
-                # Calculate the distribution of significant features
-                distr <- table(rowSums(Qvalue[, (l - 1) * NumCond + cond, drop = FALSE] < qlim, na.rm = TRUE))
-                # Calculate the proportion of significant features
-                sum(distr[-1], na.rm = TRUE) / sum(distr, na.rm = TRUE)
-            }, numeric(1))
-            # Return the mean proportion of significant features
-            mean(alldistr, na.rm = TRUE)
-        }   
-        
-        # Iterate over all tests dynamically
-        lapply(seq_len(NumTests), function(t) {
-            # Update Qvalue for the current test
-            update_qvalue(t)
+            # Update Qvalue for current test
+            Qvalue[, (t - 1) * NumCond + seq_len(NumCond)] <- tvals
             
-            # Iterate over the q-value range
-            lapply(qrange, function(qlim) {
-                # Calculate the mean proportion of significant features for the current q-value threshold
-                distr_mean <- calc_distr(t, qlim)
+            # Iterate over q-value range
+            for (qlim in qrange) {
+                # Calculate distribution of significant features for current
+                # q-value threshold
+                alldistr <- vapply(seq_len(NumCond), function(cond) {
+                    distr <- table(rowSums(Qvalue[, (t - 1) * NumCond + cond,
+                                                  drop = FALSE
+                    ] < qlim, na.rm = TRUE))
+                    sum(distr[-1], na.rm = TRUE) / sum(distr, na.rm = TRUE)
+                }, numeric(1))
                 
-                # Update the best regulatory value and combination if the current mean is higher
-                if (distr_mean > localBestRegs) {
-                    localBestRegs <<- distr_mean
-                    localBestComb <<- c(fc, qlim)
+                if (mean(alldistr, na.rm = TRUE) > localBestRegs) {
+                    localBestRegs <- mean(alldistr, na.rm = TRUE)
+                    localBestComb <- c(fc, qlim)
                 }
-            })
-        })
-        
+            }
+            
+        }
         c(localBestRegs, localBestComb)
     })
     parallel::stopCluster(cl)
@@ -861,6 +853,7 @@ fit_and_getvals <- function(lm.fitted) {
 # ' @importFrom SummarizedExperiment rowData
 # ' 
 # ' @importFrom knitr kable
+# ' @importFrom S4Vectors metadata
 # ' @export
 prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios,
                                 testNames, allComps) {

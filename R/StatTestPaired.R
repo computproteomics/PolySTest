@@ -146,21 +146,20 @@ PolySTest_paired <- function(fulldata,
     
     # Run tests that do not depend on comparisons
     Sds <- NULL
-    lapply(statTests[statTests %in% names(test_funcs)], 
-                      function(test) {
-                          if (test %in% c("limma", "Miss_Test")) {
-                              message(paste("Running", test, "test"))
-                              res <- test_funcs[[test]](MAData)
-                              p_values[, grep(paste0("p_values_", test), 
-                                              colnames(p_values))] <<- res$pvals
-                              q_values[, grep(paste0("q_values_", test), 
-                                              colnames(q_values))] <<- res$qvals
-                              if (test == "limma") Sds <- res$Sds
-                              message(paste(test, "completed"))
-                          }
-                      })    
     
-    
+    for (test in statTests[statTests %in% names(test_funcs)]) {
+        if (test %in% c("limma", "Miss_Test")) {
+            message("Running", test, "test")
+            res <- test_funcs[[test]](MAData)
+            p_values[, grep(paste0("p_values_", test), 
+                            colnames(p_values))] <- res$pvals
+            q_values[, grep(paste0("q_values_", test), 
+                            colnames(q_values))] <- res$qvals
+            if (test == "limma") Sds <- res$Sds
+            message(test, "completed")
+        }
+    }
+
     
     lratios <- NULL
     pb <- txtProgressBar(0.9, NumCond)
@@ -176,16 +175,15 @@ PolySTest_paired <- function(fulldata,
         
         tMAData <- MAData[, MAReps == vs, drop=FALSE]
         
-        lapply(statTests[statTests %in% 
-                             c("t_test", "rank_products", "permutation_test")], 
-               function(test) {
-                   res <- test_funcs[[test]](tMAData)
-                   p_values[, grep(paste0("p_values_", test), 
-                                   colnames(p_values))[vs]] <<- res$pvals
-                   q_values[, grep(paste0("q_values_", test), 
-                                   colnames(q_values))[vs]] <<- res$qvals
-               })
         
+        for (test in statTests[statTests %in% c("t_test", "rank_products", "permutation_test")]) {
+            res <- test_funcs[[test]](tMAData)
+            p_values[, grep(paste0("p_values_", test), 
+                            colnames(p_values))[vs]] <- res$pvals
+            q_values[, grep(paste0("q_values_", test), 
+                            colnames(q_values))[vs]] <- res$qvals
+        }        
+
         
         lratios <- cbind(lratios, rowMeans(MAData[, MAReps == vs], 
                                            na.rm = TRUE))

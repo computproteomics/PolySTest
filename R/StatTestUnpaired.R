@@ -129,19 +129,20 @@ PolySTest_unpaired <- function(fulldata, allComps,
     
     # Run tests that do not depend on comparisons
     Sds <- NULL
-    results <- lapply(statTests[statTests %in% names(test_funcs)], 
-                      function(test) {
+    
+    for (test in statTests[statTests %in% names(test_funcs)]) {
         if (test %in% c("limma", "Miss_Test")) {
-            message(paste("Running", test, "tests"))
+            message("Running", test, "test")
             res <- test_funcs[[test]](Data, RRCateg)
             p_values[, grep(paste0("p_values_", test), 
-                            colnames(p_values))] <<- res$pvals
+                            colnames(p_values))] <- res$pvals
             q_values[, grep(paste0("q_values_", test), 
-                            colnames(q_values))] <<- res$qvals
+                            colnames(q_values))] <- res$qvals
             if (test == "limma") Sds <- res$Sds
-            message(paste(test, "completed"))
+            message(test, "completed")
         }
-    })
+    }
+    
     
     # Running the other tests separately for each comparison
     lratios <- NULL
@@ -159,15 +160,13 @@ PolySTest_unpaired <- function(fulldata, allComps,
         trefData <- Data[, Reps == RRCateg[2, vs]]
         
         
-        lapply(statTests[statTests %in% 
-                             c("t_test", "rank_products", "permutation_test")], 
-               function(test) {
+        for (test in statTests[statTests %in% c("t_test", "rank_products", "permutation_test")]) {
             res <- test_funcs[[test]](tData, trefData)
             p_values[, grep(paste0("p_values_", test), 
-                            colnames(p_values))[vs]] <<- res$pvals
+                            colnames(p_values))[vs]] <- res$pvals
             q_values[, grep(paste0("q_values_", test), 
-                            colnames(q_values))[vs]] <<- res$qvals
-        })
+                            colnames(q_values))[vs]] <- res$qvals
+        }       
         
         lratios <- cbind(
             lratios,
@@ -231,9 +230,9 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
     colnames(design) <- paste("i", c(seq_len(NumCond)), sep = "")
     contrasts <- NULL
     contrasts <- paste(
-        colnames(design)[RRCateg[2, 1:NumComps]],
+        colnames(design)[RRCateg[2, seq_len(NumComps)]],
         "-",
-        colnames(design)[RRCateg[1, 1:NumComps]],
+        colnames(design)[RRCateg[1, seq_len(NumComps)]],
         sep = ""
     )
     contrast.matrix <- limma::makeContrasts(
@@ -354,7 +353,8 @@ rp_unpaired <- function(tData, trefData) {
         # Up & down
         RPMAUp_pvalues <- RPStats(tRPMAData, NumReps)
         RPMADown_pvalues <- RPStats(-tRPMAData, NumReps)
-        ttt <- matrixStats::rowMins(cbind(RPMAUp_pvalues, RPMADown_pvalues), na.rm = TRUE) * 2
+        ttt <- matrixStats::rowMins(cbind(RPMAUp_pvalues, RPMADown_pvalues), 
+                                    na.rm = TRUE) * 2
         ttt[ttt > 1] <- 1
         names(ttt) <- names(RPMAUp_pvalues)
         return(ttt)
@@ -362,12 +362,11 @@ rp_unpaired <- function(tData, trefData) {
     stopCluster(cl)
 
      save(RPparOut, tData, trefData, file="/tmp/t.csv")
-    vapply(seq_len(NumRPPairs), function(p) {
-        names(RPparOut[[p]]) <- rownames(tData)
-        tpRPvalues[names(RPparOut[[p]]), p] <<- RPparOut[[p]]
-        return(TRUE)
-    }, logical(1))
-    
+     for (p in seq_len(NumRPPairs)) {
+         names(RPparOut[[p]]) <- rownames(tData)
+         tpRPvalues[names(RPparOut[[p]]), p] <- RPparOut[[p]]
+     }
+
     tpRPvalues[!is.finite(tpRPvalues)] <- NA
     pRPvalues <- rowMeans(tpRPvalues, na.rm = TRUE)
     qRPvalues <- rep(NA, length(pRPvalues))
