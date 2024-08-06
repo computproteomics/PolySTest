@@ -132,14 +132,14 @@ PolySTest_unpaired <- function(fulldata, allComps,
     
     for (test in statTests[statTests %in% names(test_funcs)]) {
         if (test %in% c("limma", "Miss_Test")) {
-            message("Running", test, "test")
+            message("Running ", test, "test")
             res <- test_funcs[[test]](Data, RRCateg)
             p_values[, grep(paste0("p_values_", test), 
                             colnames(p_values))] <- res$pvals
             q_values[, grep(paste0("q_values_", test), 
                             colnames(q_values))] <- res$qvals
             if (test == "limma") Sds <- res$Sds
-            message(test, "completed")
+            message(test, " completed")
         }
     }
     
@@ -224,10 +224,14 @@ PolySTest_unpaired <- function(fulldata, allComps,
 #' print(results$plvalues)
 #'
 limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
+    
     Reps <- rep(seq_len(NumCond), NumReps)
+    
+
     NumComps <- ncol(RRCateg)
     design <- model.matrix(~ 0 + factor(Reps - 1))
     colnames(design) <- paste("i", c(seq_len(NumCond)), sep = "")
+        
     contrasts <- NULL
     contrasts <- paste(
         colnames(design)[RRCateg[2, seq_len(NumComps)]],
@@ -239,7 +243,8 @@ limma_unpaired <- function(Data, NumCond, NumReps, RRCateg) {
         contrasts = contrasts,
         levels = design
     )
-    lm.fitted <- limma::lmFit(Data, design)
+    # Need to avoid warnings for NA coercion
+    lm.fitted <- suppressWarnings(limma::lmFit(Data, design))
     
     lm.contr <- limma::contrasts.fit(lm.fitted, contrast.matrix)
     
