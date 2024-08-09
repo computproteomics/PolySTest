@@ -31,7 +31,7 @@ get_numthreads <- function(threads = NULL) {
     shiny_threads <- as.numeric(Sys.getenv("SHINY_THREADS"))
     if (!is.na(shiny_threads)) {
         NumThreads <- shiny_threads
-        message("Set number of threads to", NumThreads)
+        message("Set number of threads to ", NumThreads)
     }
     if (!is.null(threads)) {
         NumThreads <- threads
