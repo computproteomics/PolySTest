@@ -58,6 +58,7 @@
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #' @importFrom SummarizedExperiment assays
 #' @importFrom SummarizedExperiment rowData
+#' @importFrom matrixStats rowMins
 PolySTest_paired <- function(fulldata,
                              allComps,
                              statTests = c(
@@ -67,15 +68,15 @@ PolySTest_paired <- function(fulldata,
                              )) {
     # Check if the fulldata object meets the requirements
     check_for_polystest(fulldata)
-
+    
     # Extracting the assay data
     Data <- assay(fulldata, "quant")
-
+    
     # Extract metadata from the SummarizedExperiment object
     NumReps <- metadata(fulldata)$NumReps
     NumCond <- metadata(fulldata)$NumCond
-
-
+    
+    
     # Validate specified statistical tests
     if (!all(statTests %in% c(
         "limma", "Miss_Test", "t_test", "rank_products",
@@ -85,142 +86,119 @@ PolySTest_paired <- function(fulldata,
          limma, Miss_Test, t_test, rank_products, permutation_test")
     }
     tests <- statTests
-
-
+    
+    
     # Create the ratios matrix
     MAData <- create_ratio_matrix(fulldata, allComps)
     MAReps <- rep(seq_len(nrow(allComps)), NumReps)
-
-    # Extrating contrast details
-    Reps <- rep(seq_len(NumCond), NumReps)
+    
+    # Extracting contrast details
     conditions <- unique(colData(fulldata)$Condition)
     NumComps <- nrow(allComps)
     # Make indices for pairings
     RRCateg <- matrix(NA, ncol = nrow(allComps), nrow = 2)
-    for (i in seq_len(nrow(allComps))) {
-        RRCateg[1, i] <- as.numeric(which(conditions == allComps[i, 1]))
-        RRCateg[2, i] <- as.numeric(which(conditions == allComps[i, 2]))
-    }
-
+    RRCateg[1, ] <- match(allComps[, 1], conditions)
+    RRCateg[2, ] <- match(allComps[, 2], conditions)
+    
     # Prepare output data
-    p_values <- q_values <- matrix(NA,
-        nrow = nrow(MAData),
-        ncol = length(tests) * NumComps
-    )
+    
+    p_values <- q_values <- matrix(NA, nrow = nrow(MAData), 
+                                   ncol = length(statTests) * NumComps)
     rownames(p_values) <- rownames(q_values) <- rownames(MAData)
-    colnames(p_values) <- paste0(
-        "p_values_", rep(tests, each = NumComps), "_",
-        rep(seq_len(NumComps), length(tests))
-    )
-    colnames(q_values) <- paste0(
-        "q_values_", rep(tests, each = NumComps), "_",
-        rep(seq_len(NumComps), length(tests))
-    )
-
+    colnames(p_values) <- paste0("p_values_", rep(statTests, each = NumComps), 
+                                 "_", rep(seq_len(NumComps),
+                                          length(statTests)))
+    colnames(q_values) <- paste0("q_values_", rep(statTests, each = NumComps),
+                                 "_", rep(seq_len(NumComps), 
+                                          length(statTests)))
+    
+    
+    # Define a list of test functions
+    test_funcs <- list(
+        limma = function(tMAData) {
+            limma_out <- limma_paired(tMAData, NumComps, NumReps)
+            list(pvals = limma_out$plvalues, qvals = limma_out$qlvalues, Sds = limma_out$Sds)
+        },
+        Miss_Test = function(tMAData) {
+            MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
+            list(pvals = MissingStats$pNAvalues, qvals = MissingStats$qNAvalues)
+        },
+        t_test = function(tMAData) {
+            ttest_out <- ttest_paired(tMAData)
+            list(pvals = ttest_out$ptvalues, qvals = ttest_out$qtvalues)
+        },
+        rank_products = function(tMAData) {
+            RPMAUp_pvalues <- RPStats(tMAData, NumReps)
+            RPMADown_pvalues <- RPStats(-tMAData, NumReps)
+            ttt <- rowMins(cbind(RPMAUp_pvalues, RPMADown_pvalues), 
+                           na.rm = TRUE) * 2
+            ttt[ttt > 1] <- 1
+            tqs <- rep(NA, length(ttt))
+            tqs[!is.na(ttt)] <- p.adjust(na.omit(ttt), method = "BH")
+            list(pvals = ttt, qvals = tqs)
+        },
+        permutation_test = function(tMAData) {
+            perm_out <- permtest_paired(tMAData)
+            list(pvals = perm_out$pPermutvalues, 
+                 qvals = perm_out$qPermutvalues)
+        }
+    )        
+    
+    # Run tests that do not depend on comparisons
     Sds <- NULL
-    if (any("limma" %in% tests)) {
-        message("Running limma tests")
-        ## limma with ratios
-        limma_out <- limma_paired(MAData, NumComps, NumReps)
-        p_values[, grep("p_values_limma", colnames(p_values))] <-
-            limma_out$plvalues
-        q_values[, grep("q_values_limma", colnames(q_values))] <-
-            limma_out$qlvalues
-        Sds <- limma_out$Sds
-        message("limma completed")
+    
+    for (test in statTests[statTests %in% names(test_funcs)]) {
+        if (test %in% c("limma", "Miss_Test")) {
+            message("Running", test, "test")
+            res <- test_funcs[[test]](MAData)
+            p_values[, grep(paste0("p_values_", test), 
+                            colnames(p_values))] <- res$pvals
+            q_values[, grep(paste0("q_values_", test), 
+                            colnames(q_values))] <- res$qvals
+            if (test == "limma") Sds <- res$Sds
+            message(test, "completed")
+        }
     }
 
-    if (any("Miss_Test" %in% tests)) {
-        message("Running Miss test")
-        MissingStats <- MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
-        p_values[, grep("p_values_Miss_Test", colnames(p_values))] <-
-            MissingStats$pNAvalues
-        q_values[, grep("q_values_Miss_Test", colnames(q_values))] <-
-            MissingStats$qNAvalues
-        message("Miss test completed")
-    }
-
-    message("Running rank products and permutations tests ...")
+    
     lratios <- NULL
-    if (any("rank_products" %in% tests)) {
-        message("Running rank products ...")
-    }
-    if (any("t_test" %in% tests)) {
-        message("Running t-tests ...")
-    }
-    if (any("permutation_test" %in% tests)) {
-        message("Running permutation tests ...")
-    }
     pb <- txtProgressBar(0.9, NumCond)
     for (vs in seq_len(NumComps)) {
         if (!is.null(shiny::getDefaultReactiveDomain())) {
             shiny::setProgress(0.1 + 0.3 / NumComps * vs,
-                detail = paste(
-                    "tests for comparison",
-                    vs, "of", NumComps
-                )
+                               detail = paste(
+                                   "tests for comparison",
+                                   vs, "of", NumComps
+                               )
             )
         }
+        
+        tMAData <- MAData[, MAReps == vs, drop=FALSE]
+        
+        
+        for (test in statTests[statTests %in% c("t_test", "rank_products", "permutation_test")]) {
+            res <- test_funcs[[test]](tMAData)
+            p_values[, grep(paste0("p_values_", test), 
+                            colnames(p_values))[vs]] <- res$pvals
+            q_values[, grep(paste0("q_values_", test), 
+                            colnames(q_values))[vs]] <- res$qvals
+        }        
 
-        tMAData <- MAData[, MAReps == vs]
-
-        ## t-tests
-        if (any("t_test" %in% tests)) {
-            ttest_out <- ttest_paired(tMAData)
-            p_values[, grep("p_values_t_test", colnames(p_values))[vs]] <-
-                ttest_out$ptvalues
-            q_values[, grep("q_values_t_test", colnames(q_values))[vs]] <-
-                ttest_out$qtvalues
-        }
-
-        ## rank products
-        if (any("rank_products" %in% tests)) {
-            # Up
-            RPMAUp_pvalues <- RPStats(tMAData, NumReps)
-            # Down
-            RPMADown_pvalues <- RPStats(-tMAData, NumReps)
-            ttt <- rowMins(cbind(RPMAUp_pvalues, RPMADown_pvalues),
-                na.rm = TRUE
-            ) * 2
-            ttt[ttt > 1] <- 1
-            p_values[names(RPMAUp_pvalues), grep(
-                "p_values_rank_products",
-                colnames(p_values)
-            )[vs]] <- ttt
-            tqs <- p.adjust(na.omit(ttt), method = "BH")
-            q_values[names(tqs), grep(
-                "q_values_rank_products",
-                colnames(q_values)
-            )[vs]] <- tqs
-        }
-
-        ## Permutation tests
-        if (any("permutation_test" %in% tests)) {
-            perm_out <- permtest_paired(tMAData)
-            p_values[, grep(
-                "p_values_permutation_test",
-                colnames(p_values)
-            )[vs]] <-
-                perm_out$pPermutvalues
-            q_values[, grep(
-                "q_values_permutation_test",
-                colnames(q_values)
-            )[vs]] <-
-                perm_out$qPermutvalues
-        }
-
-        lratios <- cbind(lratios, rowMeans(MAData[, MAReps == i], na.rm = TRUE))
+        
+        lratios <- cbind(lratios, rowMeans(MAData[, MAReps == vs], 
+                                           na.rm = TRUE))
+        
         setTxtProgressBar(pb, vs)
     }
-    message("rank products and permutation test completed")
+    message("tests completed")
     close(pb)
-
+    
     # Prepare output data
     fulldata <- prepare_output_data(
         fulldata, p_values, q_values,
         lratios, tests, allComps
     )
-
+    
     return(fulldata)
 }
 
@@ -244,8 +222,8 @@ PolySTest_paired <- function(fulldata,
 #' head(limma_res$qlvalues)
 #'
 #' @keywords limma paired analysis
-#' @import limma
-#' @import qvalue
+#' @importFrom limma lmFit eBayes topTable
+#' @importFrom qvalue qvalue
 #' @export
 limma_paired <- function(MAData, NumCond, NumReps) {
     MAReps <- rep(seq_len(NumCond), NumReps)
@@ -255,22 +233,11 @@ limma_paired <- function(MAData, NumCond, NumReps) {
         design <- cbind(design, as.numeric(MAReps == c))
     }
     lm.fittedMA <- limma::lmFit(MAData, design)
-    lm.bayesMA <- limma::eBayes(lm.fittedMA)
-    topTable(lm.bayesMA)
-    plvalues <- lm.bayesMA$p.value
-    qlvalues <- matrix(NA,
-        nrow = nrow(plvalues), ncol = ncol(plvalues),
-        dimnames = dimnames(plvalues)
-    )
-    # qvalue correction
-    for (i in seq_len(ncol(plvalues))) {
-        tqs <- qvalue::qvalue(na.omit(plvalues[, i]))$qvalues
-        qlvalues[names(tqs), i] <- tqs
-    }
-    return(list(
-        plvalues = plvalues, qlvalues = qlvalues,
-        Sds = sqrt(lm.bayesMA$s2.post)
-    ))
+    
+    res <- fit_and_getvals(lm.fittedMA)
+    
+    return(res)    
+    
 }
 
 #' Perform paired t-tests
@@ -283,7 +250,7 @@ limma_paired <- function(MAData, NumCond, NumReps) {
 #' @return A list containing the p-values and q-values (qvalue package)
 #' @keywords t-test paired analysis
 #' @export
-#' @import qvalue
+#' @importFrom qvalue qvalue
 #' @examples
 #' tMAData <- matrix(rnorm(1000), nrow = 100)
 #' tout <- ttest_paired(tMAData)
@@ -292,8 +259,8 @@ ttest_paired <- function(tMAData) {
     ## t-tests
     ptvalues <- vapply(seq_len(nrow(tMAData)), function(pep) {
         ifelse(sum(!is.na(tMAData[pep, ])) > 1,
-            t.test(tMAData[pep, ])$p.value,
-            NA_real_
+               t.test(tMAData[pep, ])$p.value,
+               NA_real_
         )
     }, numeric(1))
     names(ptvalues) <- rownames(tMAData)
@@ -302,7 +269,7 @@ ttest_paired <- function(tMAData) {
     qtvalues <- rep(NA, length(ptvalues))
     names(qtvalues) <- names(ptvalues)
     qtvalues[names(tqs)] <- tqs
-
+    
     return(list(ptvalues = ptvalues, qtvalues = qtvalues))
 }
 
@@ -317,12 +284,7 @@ ttest_paired <- function(tMAData) {
 #' @return A list containing the p-values and q-values (Benjamini-Hochberg)
 #' @keywords permutation paired analysis
 #' @export
-#' @import parallel
-#' @importFrom parallel makeCluster
-#' @importFrom parallel clusterExport
-#' @importFrom parallel stopCluster
-#' @importFrom parallel parLapply
-#' @importFrom parallel clusterEvalQ
+#' @importFrom parallel detectCores  makeCluster clusterExport stopCluster parLapply clusterEvalQ
 #' 
 #' @examples
 #' tMAData <- matrix(rnorm(100), nrow = 10)
@@ -343,14 +305,14 @@ permtest_paired <- function(tMAData) {
     } else {
         NTests <- 1000
     }
-
+    
     # if necessary, add columns from randomized full set to reach min.
     # NumPermCols replicates randomizing also sign to avoid tendencies to one or
     # the other side
     if (ncol(tMAData) < NumPermCols) {
         AddDat <- matrix(sample(as.vector(tMAData),
-            (NumPermCols - ncol(tMAData)) * nrow(tMAData),
-            replace = TRUE
+                                (NumPermCols - ncol(tMAData)) * nrow(tMAData),
+                                replace = TRUE
         ), nrow = nrow(tMAData))
         PermMAData <- cbind(tMAData, AddDat)
     } else {
@@ -368,32 +330,31 @@ permtest_paired <- function(tMAData) {
         ),
         envir = environment()
     )
-    #parallel::clusterEvalQ(cl = cl)
-
+    
     # calculate t-values for permuted data
     PermutOut <- parallel::parLapply(cl, seq_len(NTests), function(x) {
         indat <- apply(
             PermMAData, 1,
             function(y) {
                 sample(y, NumReps) * sample(c(1, -1), NumReps,
-                    replace = TRUE
+                                            replace = TRUE
                 )
             }
         )
         StatsForPermutTest(t(indat), TRUE)
     })
     parallel::stopCluster(cl)
-
+    
     # calculate p-values
     PermutOut <- matrix(unlist(PermutOut), nrow = nrow(tMAData))
     pPermutvalues <- apply(
         cbind(RealStats, PermutOut), 1,
         function(x) {
             ifelse(is.na(x[1]), NA,
-                (1 + sum(x[1] < x[-1],
-                    na.rm = TRUE
-                )) /
-                    (sum(!is.na(x)))
+                   (1 + sum(x[1] < x[-1],
+                            na.rm = TRUE
+                   )) /
+                       (sum(!is.na(x)))
             )
         }
     )
@@ -402,6 +363,6 @@ permtest_paired <- function(tMAData) {
     # Benjamini-Hochberg FDR correction
     tqs <- p.adjust(na.omit(pPermutvalues), method = "BH")
     qPermutvalues[names(tqs)] <- tqs
-
+    
     return(list(pPermutvalues = pPermutvalues, qPermutvalues = qPermutvalues))
 }

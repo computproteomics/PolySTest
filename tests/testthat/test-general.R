@@ -35,13 +35,13 @@ test_that("overall test of full workflow", {
   assay(fulldata, "quant") <- dat
 
   ####### Defining conditions from names
-  fulldata <- update_conditions_with_lcs(fulldata)
+  fulldata <- PolySTest:::update_conditions_with_lcs(fulldata)
   conditions <- unique(colData(fulldata)$Condition)
 
   ####### Defining comparison for statistical tests
   FullReg <- allComps <- NULL
 
-  allComps <- create_pairwise_comparisons(conditions, 2)
+  allComps <- PolySTest:::create_pairwise_comparisons(conditions, 2)
 
   # Run paired tests
   fulldata <- PolySTest_paired(fulldata, allComps)

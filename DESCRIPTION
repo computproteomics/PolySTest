@@ -1,7 +1,7 @@
 Package: PolySTest
 Title: PolySTest: Detection of differentially regulated features. Combined 
       statistical testing for data with few replicates and missing values
-Version: 1.99.0
+Version: 0.99.8
 Authors@R: 
     person("Veit", "Schwämmle", , "veits@bmb.sdu.dk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9708-6722"))
@@ -15,6 +15,8 @@ Description: The complexity of high-throughput quantitative omics
 License: GPL-2
 Encoding: UTF-8
 biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
+BugReports: https://github.com/computproteomics/PolySTest/issues
+URL: https://github.com/computproteomics/PolySTest
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
@@ -37,8 +39,10 @@ Imports:
     stats (>= 4.1.0),
     utils (>= 4.1.0)
 Suggests: 
-    testthat (>= 3.0.0)
-VignetteBuilder: knitr
+    testthat (>= 3.0.0),
+    BiocStyle
+VignetteBuilder: 
+    knitr
 Config/testthat/edition: 3
 Depends: 
-    R (>= 4.3.0)
+    R (>= 4.4.0)
