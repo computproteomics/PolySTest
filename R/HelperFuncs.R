@@ -927,9 +927,9 @@ prepare_output_data <- function(fulldata, Pvalue, Qvalue, LogRatios,
     )
     
     # Adding test details to metadata
-    metadata(fulldata)$testNames <- testNames2
-    metadata(fulldata)$allComps <- allComps
-    metadata(fulldata)$compNames <- paste0(allComps[, 2], "_vs_", allComps[, 1])
+    S4Vectors::metadata(fulldata)$testNames <- testNames2
+    S4Vectors::metadata(fulldata)$allComps <- allComps
+    S4Vectors::metadata(fulldata)$compNames <- paste0(allComps[, 2], "_vs_", allComps[, 1])
     
     return(fulldata)
 }
