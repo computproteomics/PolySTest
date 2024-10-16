@@ -21,6 +21,6 @@ RUN rm -rf /srv/shiny-server/*
 RUN mkdir /tmp/polystest
 COPY .  /tmp/polystest/
 COPY inst/shiny  /srv/shiny-server
-RUN cd /tmp/polystest && R -e "devtools::install()"
+RUN cd /tmp/polystest && R -e "devtools::install_github('computproteomics/PolySTest')"
 RUN chmod a+x /tmp/polystest/inst/cmdline/*
 RUN cp /tmp/polystest/inst/cmdline/* /usr/bin/
