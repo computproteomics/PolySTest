@@ -294,7 +294,19 @@ ttest_unpaired <- function(tData, trefData) {
     names(tptvalues) <- rownames(tData)
     tptvalues[!is.finite(tptvalues)] <- NA
     ptvalues <- tptvalues
-    tqs <- qvalue::qvalue(na.omit(ptvalues))$qvalues
+    
+    p_vals <- na.omit(ptvalues)
+    
+    # Use tryCatch to attempt qvalue first and fall back to p.adjust with "BH" method
+    tqs <- tryCatch({
+        # Try qvalue method
+        qvalue::qvalue(p_vals)$qvalues
+    }, error = function(e) {
+        message("qvalue failed, falling back to Benjamini-Hochberg: ", e$message)
+        # Fallback to Benjamini-Hochberg method
+        p.adjust(p_vals, method = "BH")
+    })    
+    
     qtvalues <- rep(NA, length(ptvalues))
     names(qtvalues) <- names(ptvalues)
     qtvalues[names(tqs)] <- tqs
