@@ -789,9 +789,21 @@ fit_and_getvals <- function(lm.fitted) {
                        dimnames = dimnames(plvalues)
     )
     plvalues[!is.finite(plvalues)] <- NA
+    
     # qvalue correction
     for (i in seq_len(ncol(plvalues))) {
-        tqs <- qvalue::qvalue(na.omit(plvalues[,i]))$qvalues
+        p_vals <- na.omit(plvalues[, i])
+        
+        # Use tryCatch to attempt qvalue first and fall back to p.adjust with "BH" method
+        tqs <- tryCatch({
+            # Try qvalue method
+            qvalue::qvalue(p_vals)$qvalues
+        }, error = function(e) {
+            message("qvalue failed, falling back to Benjamini-Hochberg: ", e$message)
+            # Fallback to Benjamini-Hochberg method
+            p.adjust(p_vals, method = "BH")
+        })    
+        
         qlvalues[names(tqs), i] <- tqs
     }
     
