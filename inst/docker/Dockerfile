@@ -12,7 +12,7 @@ RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngrad
 
 RUN R -e "install.packages('BiocManager',ask=F); \
   update.packages(ask=F); \
-  BiocManager::install(c('dplyr','plotly','devtools'),ask=F)"
+  BiocManager::install(c('dplyr','plotly','devtools','SummarizedExperiment','S4Vectors'),ask=F)"
 RUN R -e "library(BiocManager); BiocManager::install(c('readxl','matrixStats','fdrtool','parallel','qvalue','circlize','DT','UpSetR','heatmaply','gplots','shinyBS','shinydashboard','limma','shinyjs'\
 ),ask=F)"
 
@@ -20,7 +20,8 @@ RUN R -e "library(BiocManager); BiocManager::install(c('readxl','matrixStats','f
 RUN rm -rf /srv/shiny-server/*
 RUN mkdir /tmp/polystest
 COPY .  /tmp/polystest/
-COPY inst/shiny  /srv/shiny-server
-RUN cd /tmp/polystest && R -e "devtools::install_github('computproteomics/PolySTest')"
+RUN R CMD INSTALL /tmp/polystest
+RUN cp -r /tmp/polystest/inst/shiny/*  /srv/shiny-server
+# RUN cd /tmp/polystest && R -e "devtools::install_github('computproteomics/PolySTest')"
 RUN chmod a+x /tmp/polystest/inst/cmdline/*
 RUN cp /tmp/polystest/inst/cmdline/* /usr/bin/
