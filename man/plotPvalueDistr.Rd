@@ -7,7 +7,7 @@
 plotPvalueDistr(
   fulldata,
   compNames = "all",
-  testNames = c("limma", "Miss test", "rank products", "permutation test", "t-test"),
+  testNames = c("limma", "Miss Test", "rank products", "permutation test", "t-test"),
   testCols = c("#33AAAA", "#33AA33", "#AA3333", "#AA33AA", "#AAAA33", "#3333AA"),
   ...
 )
@@ -16,15 +16,20 @@ plotPvalueDistr(
 \item{fulldata}{A \code{SummarizedExperiment} object containing the dataset and
 FDR/q-values from PolySTest.}
 
-\item{compNames}{A character vector of comparison names. "all" selects all comparisons.}
+\item{compNames}{A character vector of comparison names. "all" selects all
+comparisons.}
 
-\item{testNames}{A character vector of test names used in the analysis. Default
-values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
-and "t-test".}
+\item{testNames}{A character vector of test names used in the analysis.
+Default values are "PolySTest", "limma", "Miss test", "rank products",
+"permutation test", and "t-test".}
 
-\item{testCols}{A character vector of colors for each test. Defaults to c("#33AAAA", "#33AA33", "#AA3333", "#AA33AA", "#AAAA33", "#3333AA").}
+\item{testCols}{A character vector of colors for each test. Defaults to
+c("#33AAAA", "#33AA33", "#AA3333", "#AA33AA", "#AAAA33", "#3333AA").}
 
 \item{...}{Additional arguments passed to \code{hist()}.}
+}
+\value{
+Creates histograms of p-value distributions for the specified tests
 }
 \description{
 Generates histograms of p-value distributions for each test and comparison.
@@ -32,6 +37,8 @@ Generates histograms of p-value distributions for each test and comparison.
 \examples{
 # Assuming `fulldata` is a properly prepared `SummarizedExperiment` object
 data(liver_example)
-plotPvalueDistr(liver_example, compNames = c("TTA.Rep._vs_HF.Rep.", "TTA.FO.Rep._vs_HF.Rep."),
-                testCols = rainbow(5))
+plotPvalueDistr(liver_example,
+    compNames = c("HF.Rep._vs_TTA.Rep."),
+    testCols = rainbow(5)
+)
 }

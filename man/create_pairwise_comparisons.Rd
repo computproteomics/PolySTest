@@ -9,25 +9,27 @@ create_pairwise_comparisons(conditions, refCond)
 \arguments{
 \item{conditions}{A character vector of condition names.}
 
-\item{refCond}{An integer indicating the index of the reference condition within the
-\code{conditions} vector. If \code{refCond} is greater than 0, comparisons are made between the
-reference condition and all other conditions. If \code{refCond} is 0, all possible pairwise
-comparisons are made. Default is 0.}
+\item{refCond}{An integer indicating the index of the reference condition
+within the
+\code{conditions} vector. If \code{refCond} is greater than 0, comparisons are made
+between the reference condition and all other conditions. If \code{refCond} is 0,
+all possible pairwise comparisons are made. Default is 0.}
 }
 \value{
-A matrix with two columns, representing all possible pairwise comparisons
-between the specified conditions. If a reference condition is specified, it appears
-in the first column of every row.
+A matrix with two columns, representing all possible pairwise
+comparisons between the specified conditions. If a reference condition is
+specified, it appears in the first column of every row.
 }
 \description{
-This function generates a matrix of all pairwise comparisons between the provided conditions.
-Optionally, a reference condition can be specified, and comparisons will be made between
-the reference condition and all other conditions.
+This function generates a matrix of all pairwise comparisons between the
+provided conditions.
+Optionally, a reference condition can be specified, and comparisons will be
+made between the reference condition and all other conditions.
 }
 \examples{
 conditions <- c("Cond1", "Cond2", "Cond3")
 # Generate all pairwise comparisons
-allComps <- create_pairwise_comparisons(conditions)
+allComps <- create_pairwise_comparisons(conditions, refCond = 0)
 allComps
 
 # Generate comparisons with a specific condition as reference

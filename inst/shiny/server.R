@@ -33,7 +33,7 @@ shinyServer(function(input, output, clientData, session) {
   addCompButton <- 0  # Check whether new comparison button needs to be added
   NumTests <- 6  # Number of different statistical tests including the combined PolySTest
   TestCols <- c("#33AAAA","#33AA33","#AA3333","#AA33AA","#AAAA33","#3333AA")  # Colors for tests
-  testNames <- c("limma","Miss test","rank products","permutation test","t-test")
+  testNames <- c("limma","Miss Test","rank products","permutation test","t-test")
   testNames2 <- c("PolySTest",testNames)
   names(TestCols) <- testNames2
   addInfo <- NULL  # Additional information from the original table to be re-added after analysis
@@ -49,6 +49,7 @@ shinyServer(function(input, output, clientData, session) {
   output$description <- renderText("The methods are designed to carry out
                                    statistical tests on data with few
                                    replicates and high amounts of missing values.")
+
   output$description2 <- renderText("We recommend this method for datasets with a minimum of 1000 features (rows of the table) and at least 3 replicates. The method is based on ratios between features within the replicate, i.e. the tests are carried out on paired tests.")
   output$description3 <- renderText("For details, see <i>manuscript in preparation</i>")
   output$description4 <- renderText("Data input: Data table of <b>log-transformed</b> (quantitative) omics data (csv file) with separate columns for feature information and quantification values. If row names is set, then the first column of the csv file provides unique features names (no duplicates). Columns with quantifications follow after all other columns and start with columns number <i>First column for quantification</i>. The quantification values should be log-transformed intensity/abundance values (not ratios) which have been normalized to be comparable. Be aware that not normalized or wrongly normalized data might increase the number of false positives. The order of the columns is required to either be A1, A2, A3, ..., B1, B2, B3, ... or A1, B1, C1, ..., where 1,2,3 ... are the conditions and A,B,... denote replicates. We require identical number of replicates per condtion. In the case of slight differing replicate numbers, add empty columns. The tests check for differentially regulated features versus the \"reference\" condition. For each comparison (log-ratio), we provide various visualizations for further investigation.")
@@ -468,9 +469,9 @@ shinyServer(function(input, output, clientData, session) {
 
               updateCheckboxGroupInput(session,"selTests",choices = testNames2, selected = "PolySTest")
               updateCheckboxGroupInput(session,"selComps",choices = compNames, selected=compNames[1])
-              Qvalue <- as.matrix(rowData(fulldata)[, grep("^FDR", colnames(rowData(fulldata)))])
-              Pvalue <- as.matrix(rowData(fulldata)[, grep("^p_values", colnames(rowData(fulldata)))])
-              LogRatios <- as.matrix(rowData(fulldata)[, grep("^log_ratios", colnames(rowData(fulldata)))])
+              Qvalue <- as.matrix(rowData(fulldata)[, grep("^FDR", colnames(rowData(fulldata))), drop=F])
+              Pvalue <- as.matrix(rowData(fulldata)[, grep("^p_values", colnames(rowData(fulldata))), drop=F])
+              LogRatios <- as.matrix(rowData(fulldata)[, grep("^log_ratios", colnames(rowData(fulldata))), drop=F])
               colnames(Qvalue) <- paste("FDR",rep(testNames2,each=NumComps),rep(compNames,length(testNames2)), sep="_")
               FullReg(cbind(rowData(fulldata),assay(fulldata)))
 
@@ -478,7 +479,8 @@ shinyServer(function(input, output, clientData, session) {
 
               # Calculate best fc and qlim combination for all tests but the t-test
               setProgress(0.7, detail = paste("Calculating favorable FDR and fc thresholds"))
-              tcomb <- FindFCandQlim(Qvalue[, grep("(^FDR_PolySTest_)|(^FDR_limma_)|(^FDR_Miss_Test_)",names(Qvalue))],
+              #print(Qvalue[, grep("(^FDR_PolySTest)|(^FDR_limma)|(^FDR_Miss_Test)",colnames(Qvalue)),drop=F])
+              tcomb <- FindFCandQlim(Qvalue[, grep("(^FDR_PolySTest)|(^FDR_limma)|(^FDR_Miss_Test)",colnames(Qvalue)),drop=F],
                                      LogRatios)
               setProgress(0.9, detail = paste("Creating figures"))
 
@@ -600,7 +602,7 @@ shinyServer(function(input, output, clientData, session) {
       fclim <- c(input$fcval1, input$fcval2)
       NumComps <- Comps$num
       rdat <- rowData(fulldata)
-      FCRegs <- filterFC(rdat, NumTests, NumComps, fclim)
+      FCRegs <- PolySTest:::filterFC(rdat, NumTests, NumComps, fclim)
       selFeat <- which(rowSums(FCRegs[,which(colnames(FCRegs) %in% selCols),drop=F]<input$qval)>0)
       proxy %>% DT::selectRows(NULL)
       if (length(selFeat) > 0)
@@ -652,7 +654,7 @@ shinyServer(function(input, output, clientData, session) {
         withProgress(message="Creating expression profiles ...", min=0,max=1, {
           setProgress(0.5)
 
-          # par(mfrow=c(1,3))
+#          par(mfrow=c(1,3))
           plotExpression(fulldata, compNames, testNames2, sel_prots, input$profiles_scale, qlim, fclim)
 
           output$downloadExprPdf <- downloadHandler(
@@ -661,6 +663,7 @@ shinyServer(function(input, output, clientData, session) {
             },
             content = function(file) {
               pdf(file,height=8,width=25)
+              par(mfrow=c(1,3))
               plotExpression(fulldata, compNames, testNames2, selProts, input$profiles_scale, qlim, fclim)
               dev.off()
 
@@ -685,14 +688,14 @@ shinyServer(function(input, output, clientData, session) {
       qlim <- input$qval
       fclim <- c(input$fcval, input$fcval2)
       isolate({
-        p <- plotHeatmaply(fulldata, NumComps, sel_prots, input$heatmap_scale)
+        p <- plotHeatmaply(fulldata, sel_prots = sel_prots, heatmap_scale = ifelse(input$heatmap_scale, "row", "none"))
       })
       output$downloadHeatmapPdf <- downloadHandler(
         filename = function() {
           paste("Heatmap", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
-          plotHeatmaply(fulldata, NumComps, sel_prots, input$heatmap_scale, file=file)
+          plotHeatmaply(fulldata, sel_prots = sel_prots, heatmap_scale = input$heatmap_scale, file=file)
         })
       p
     }
@@ -700,6 +703,7 @@ shinyServer(function(input, output, clientData, session) {
 
   output$plotregdistr <- renderPlot({
     triggerUpdate()
+    proxy
     fulldata <- currse()
     if(!is.null(fulldata) & !is.null(FullReg())) {
       compNames <- Comps$compNames
@@ -711,14 +715,14 @@ shinyServer(function(input, output, clientData, session) {
       fclim <- c(input$fcval1, input$fcval2)
       input$button
       isolate({
-        print(plotUpset(fulldata, compNames, testNames2, qlim, fclim))
+        print(plotUpset(fulldata, qlim, fclim))
         output$downloadUpSetPdf <- downloadHandler(
           filename = function() {
             paste("UpSetProfiles", Sys.Date(), ".pdf", sep="");
           },
           content = function(file) {
             pdf(file,height=8,width=8)
-            print(plotUpset(fulldata, compNames, testNames2, qlim, fclim))
+            print(plotUpset(fulldata, qlim, fclim))
             dev.off()
           })
       })
@@ -731,20 +735,19 @@ shinyServer(function(input, output, clientData, session) {
     triggerUpdate()
 
     if(!is.null(fulldata) & !is.null(FullReg())) {
-      NumComps <- length(Comps$compNames)
 
       print("Plot q-value number")
       qlim <- input$qval
       fclim <- c(input$fcval1, input$fcval2)
       input$button
-      plotRegNumber(fulldata, NumComps, testNames2, qlim, fclim)
+      plotRegNumber(fulldata, Comps$compNames, testNames2, qlim, fclim)
       output$downloadRegDistrPdf <- downloadHandler(
         filename = function() {
           paste("RegDistrPlots", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
           pdf(file,height=8,width=8)
-          plotRegNumber(fulldata, NumComps, testNames2, qlim, fclim)
+          plotRegNumber(fulldata, Comps$compNames, testNames2, qlim, fclim)
           dev.off()
         })
     }

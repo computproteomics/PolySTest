@@ -17,8 +17,8 @@ plotUpset(fulldata, qlim = 0.05, fclim = c(0, 0))
 An UpSet plot visualizing the intersections of significant features.
 }
 \description{
-Visualizes the intersections of significant features across multiple comparisons
-using an UpSet plot. Summarizes all comparisons from all tests
+Visualizes the intersections of significant features across multiple
+comparisons using an UpSet plot. Summarizes all comparisons from all tests
 }
 \examples{
 data(liver_example)

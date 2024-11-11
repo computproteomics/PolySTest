@@ -6,7 +6,6 @@
 \usage{
 plotHeatmaply(
   fulldata,
-  NumComps,
   sel_prots = "all",
   heatmap_scale = "none",
   file = NULL,
@@ -16,26 +15,31 @@ plotHeatmaply(
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the dataset.}
 
-\item{NumComps}{Integer, number of comparisons.}
+\item{sel_prots}{Character vector specifying selected features to include in
+the heatmap or "all" to include all proteins.}
 
-\item{sel_prots}{Character vector specifying selected features to include in the heatmap or "all" to include all proteins.}
+\item{heatmap_scale}{Character, indicating if and how the data should be
+scaled. Possible values are "none", "row", or "column".}
 
-\item{heatmap_scale}{Character, indicating if and how the data should be scaled. Possible values are "none", "row", or "column".}
-
-\item{file}{Optional character string specifying the path to save the heatmap plot. If NULL, the plot is rendered interactively.}
+\item{file}{Optional character string specifying the path to save the heatmap
+plot. If NULL, the plot is rendered interactively.}
 
 \item{...}{Arguments passed further to heatmaply function}
 }
 \value{
-A plotly object if \code{file} is NULL. Otherwise, the heatmap is saved to the specified file.
+A plotly object if \code{file} is NULL. Otherwise, the heatmap is saved
+to the specified file.
 }
 \description{
-This function generates a heatmap for selected features across comparisons using the heatmaply package.
+This function generates a heatmap for selected features across
+comparisons using the heatmaply package.
 It provides options for scaling and saving the plot to a file.
 }
 \examples{
-  data(liver_example)
-  plotHeatmaply(fulldata = liver_example, NumComps = 6, sel_prots = "all", heatmap_scale = "row")
-
+data(liver_example)
+plotHeatmaply(
+    fulldata = liver_example, sel_prots = "all",
+    heatmap_scale = "row"
+)
 
 }

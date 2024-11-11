@@ -28,16 +28,16 @@ and comparisons to ensure that the requested analyses have been carried out.
 }
 \details{
 This function is used to ensure that the requested statistical tests
-and comparisons have been correctly named and executed prior to further analysis.
-It verifies that the names provided match those stored within the metadata of
-the \code{SummarizedExperiment} object. If the names do not match or the necessary
-metadata is missing, the function stops execution and returns an error message
-indicating the issue.
+and comparisons have been correctly named and executed prior to further
+analysis. It verifies that the names provided match those stored within the
+metadata of the \code{SummarizedExperiment} object. If the names do not match or
+the necessary metadata is missing, the function stops execution and returns
+an error message indicating the issue.
 }
 \examples{
-# Assuming `fulldata` is a `SummarizedExperiment` object
-compNames <- c("ConditionA_vs_ConditionB", "ConditionC_vs_ConditionD")
-testNames <- c("limma", "t-test")
-check_stat_names(fulldata, compNames, testNames)
-#'
+data(liver_example)
+compNames <- "all"
+testNames <- c("limma", "t_test")
+check_stat_names(liver_example, compNames, testNames)
+
 }

@@ -20,11 +20,13 @@ testing is based on comparing the t-values of the real data with the t-values
 of the permuted data.
 }
 \details{
-The function adds columns from the randomized full set to reach the minimum number of
-permutation columns (NumPermCols) replicates. It randomizes the sign as well to avoid
-tendencies to one or the other side. In the unpaired case, it also normalizes by the
-mean of the entire sample to avoid strange effects. The function then performs permutation
-testing using parallel computing, and calculates the p-values and q-values based on the permutation results.
+The function adds columns from the randomized full set to reach the
+minimum number of permutation columns (NumPermCols) replicates. It
+randomizes the sign as well to avoid tendencies to one or the other side.
+In the unpaired case, it also normalizes by the mean of the entire sample to
+avoid strange effects. The function then performs permutation
+testing using parallel computing, and calculates the p-values and q-values
+based on the permutation results.
 Both groups needs to consist of the same number of samples (columns).
 }
 \examples{

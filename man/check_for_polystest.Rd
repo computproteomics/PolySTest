@@ -10,7 +10,8 @@ check_for_polystest(se)
 \item{se}{A SummarizedExperiment object.}
 }
 \value{
-Invisible TRUE if checks pass; otherwise, warnings or errors are thrown.
+Invisible TRUE if checks pass; otherwise, warnings or errors are
+thrown.
 }
 \description{
 Performs checks on a SummarizedExperiment object to ensure it is properly

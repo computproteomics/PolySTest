@@ -10,8 +10,8 @@ ttest_unpaired(tData, trefData)
 \item{tData}{A matrix or data frame with the quantitative features (via rows)
 of the first group}
 
-\item{trefData}{A matrix or data frame with the quantitative features (via rows)
-of the second group}
+\item{trefData}{A matrix or data frame with the quantitative features
+(via rows) of the second group}
 }
 \value{
 A list containing the p-values and q-values for each row

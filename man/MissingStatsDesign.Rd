@@ -8,16 +8,20 @@ groups and thus does not have distinction for pairwise testing.}
 MissingStatsDesign(Data, RRCateg, NumCond, NumReps)
 }
 \arguments{
-\item{Data}{A matrix containing the expression data with rows as features and columns as samples}
+\item{Data}{A matrix containing the expression data with rows as features and
+columns as samples}
 
-\item{RRCateg}{A matrix containing the indices of the conditions to compare (each row is a pairing)}
+\item{RRCateg}{A matrix containing the indices of the conditions to compare
+(each row is a pairing)}
 
 \item{NumCond}{The number of conditions in the dataset}
 
-\item{NumReps}{The number of replicates for each condition (needs to be same for all conditions)}
+\item{NumReps}{The number of replicates for each condition (needs to be same
+for all conditions)}
 }
 \value{
-A list containing the calculated p-values and q-values (Benjamini-Hochbeg) for missingness statistics
+A list containing the calculated p-values and q-values
+(Benjamini-Hochbeg) for missingness statistics
 }
 \description{
 Function of calculation of Miss tests. This happens between full
@@ -26,7 +30,7 @@ groups and thus does not have distinction for pairwise testing.
 \examples{
 Data <- matrix(rnorm(120), nrow = 10)
 # Introduce some missingness
-Data[sample(seq_len(120, 40))] <- NA
+Data[sample(seq_len(120), 40)] <- NA
 RRCateg <- matrix(c(1, 2, 1, 3, 1, 4, 2, 3, 2, 4, 3, 4), nrow = 2, ncol = 6)
 NumCond <- 4
 NumReps <- 3

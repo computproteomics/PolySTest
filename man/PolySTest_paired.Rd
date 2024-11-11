@@ -19,12 +19,14 @@ Each row represents a pair for comparison.}
 
 \item{statTests}{A character vector specifying the statistical tests to
 be applied. Available tests include "limma", "Miss_Test",
-"t-test", "rank_products", and "permutation_test". The function
+"t-test", "rank_products", and "permutation_test". The
+function
 will perform each specified test and integrate the results.}
 }
 \value{
 A \code{SummarizedExperiment} object augmented with p-values and q-values
-in its \code{rowData}, reflecting the outcomes of the specified statistical analyses.
+in its \code{rowData}, reflecting the outcomes of the specified
+statistical analyses.
 }
 \description{
 Integrates various statistical tests for analyzing paired data within
@@ -33,9 +35,10 @@ specified by the user to calculate p-values and q-values for each comparison.
 }
 \details{
 Executes specified statistical tests on the dataset contained in
-\code{fulldata} using the condition pairs outlined in \code{allComps}. Calculates
-p-values and q-values for each genomic feature (e.g., genes, proteins)
-included in the analysis. Results are added to the \code{rowData} of the
+\code{fulldata} using the condition pairs outlined in \code{allComps}.
+Calculates p-values and q-values for each genomic feature (e.g.,
+genes, proteins) included in the analysis. Results are added to the
+\code{rowData} of the
 \code{SummarizedExperiment} object, enhancing it with detailed statistics
 from the paired tests.
 }
@@ -43,19 +46,23 @@ from the paired tests.
 library(SummarizedExperiment)
 
 # Mock quantitative data and metadata for samples
-quantData <- matrix(rnorm(2000), nrow=200, ncol=10)
-colnames(quantData) <- c(paste("Sample", 1:5, "_Condition_A", sep=""),
-                         paste("Sample", 1:5, "_Condition_B", sep=""))
+quantData <- matrix(rnorm(2000), nrow = 200, ncol = 10)
+colnames(quantData) <- c(
+    paste("Sample", 1:5, "_Condition_A", sep = ""),
+    paste("Sample", 1:5, "_Condition_B", sep = "")
+)
 rownames(quantData) <- paste("Gene", 1:200)
-sampleMetadata <- data.frame(Condition=rep(c("A", "B"), each=5))
+sampleMetadata <- data.frame(Condition = rep(c("A", "B"), each = 5))
 
 # Creating the SummarizedExperiment object
-fulldata <- SummarizedExperiment(assays=list(quant=quantData),
-                                 colData=sampleMetadata)
-metadata(fulldata) <- list(NumReps=5, NumCond=2)
+fulldata <- SummarizedExperiment(
+    assays = list(quant = quantData),
+    colData = sampleMetadata
+)
+metadata(fulldata) <- list(NumReps = 5, NumCond = 2)
 
 # Specifying pairs of conditions to compare
-allComps <- matrix(c("A", "B"), ncol=2, byrow=TRUE)
+allComps <- matrix(c("A", "B"), ncol = 2, byrow = TRUE)
 
 # Specify statistical tests to apply
 statTests <- c("limma", "t_test", "rank_products")

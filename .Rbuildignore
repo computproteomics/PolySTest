@@ -1,3 +1,2 @@
-^PolySTest\.Rproj$
+^.*\.Rproj$
 ^\.Rproj\.user$
-^\.github$

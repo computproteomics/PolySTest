@@ -16,7 +16,7 @@ shinyUI(dashboardPage(skin="blue",
                                         headerText = paste0("Version: ", version),
 
                                         notificationItem("source code and installation instructions", icon = icon("file"),
-                                                         href = "http://bitbucket.com/veitveit/polystest"),
+                                                         href = "http://github.com/computproteomics/polystest"),
                                         notificationItem("paper", icon = icon("scroll"),
                                                          href = "https://doi.org/10.1074/mcp.RA119.001777"),
                                         notificationItem("author", icon = icon("address-card"),

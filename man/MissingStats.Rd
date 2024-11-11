@@ -8,14 +8,17 @@ columns as samples and rows as features.}
 MissingStats(Data, NumCond, NumReps)
 }
 \arguments{
-\item{Data}{A matrix containing the expression data with rows as features and columns as samples}
+\item{Data}{A matrix containing the expression data with rows as features and
+columns as samples}
 
 \item{NumCond}{The number of conditions in the dataset}
 
-\item{NumReps}{The number of replicates for each condition (needs to be same for all conditions)}
+\item{NumReps}{The number of replicates for each condition (needs to be same
+for all conditions)}
 }
 \value{
-A list containing the calculated p-values and q-values (Benjamini-Hochbeg) for missingness statistics
+A list containing the calculated p-values and q-values
+(Benjamini-Hochberg) for missingness statistics
 }
 \description{
 Calculates the p-values and q-values for missing values in a data frame with

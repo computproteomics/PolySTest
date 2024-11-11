@@ -7,7 +7,7 @@
 plotExpression(
   fulldata,
   compNames = "all",
-  testNames = c("PolySTest", "limma", "Miss test", "rank products", "permutation test",
+  testNames = c("PolySTest", "limma", "Miss Test", "rank products", "permutation test",
     "t-test"),
   sel_prots = "all",
   profiles_scale = TRUE,
@@ -18,16 +18,18 @@ plotExpression(
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the data.}
 
-\item{compNames}{A character vector of comparison names. "all" selects all comparisons.}
+\item{compNames}{A character vector of comparison names. "all" selects all
+comparisons.}
 
-\item{testNames}{A character vector of test names used in the analysis. Default
-values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
-and "t-test".}
+\item{testNames}{A character vector of test names used in the analysis.
+Default values are "PolySTest", "limma", "Miss test", "rank products",
+"permutation test", and "t-test".}
 
 \item{sel_prots}{A numeric vector with the indices of the selected features.
 Default is "all". These will still be filterd}
 
-\item{profiles_scale}{Logical indicating if profiles should be scaled. Default is TRUE.}
+\item{profiles_scale}{Logical indicating if profiles should be scaled.
+Default is TRUE.}
 
 \item{qlim}{A numeric value indicating the q-value limit for significance.}
 
@@ -37,13 +39,13 @@ Default is "all". These will still be filterd}
 Plots expression profiles for the selected features.
 }
 \description{
-This function plots expression profiles for selected features across different
-conditions and comparisons. It supports both scaling and unscaled profiles.
-It adds a circular plot to compare the different statistical tests
+This function plots expression profiles for selected features across
+different conditions and comparisons. It supports both scaling and unscaled
+profiles. It adds a circular plot to compare the different statistical tests
 }
 \examples{
 data(liver_example)
-compNames <- c("TTA.Rep._vs_HF.Rep.", "TTA.FO.Rep._vs_HF.Rep.")
-plotExpression(liver_example, compNames)
+compNames <- c("HF.Rep._vs_TTA.Rep.")
+plotExpression(liver_example)
 
 }

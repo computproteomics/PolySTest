@@ -15,7 +15,8 @@ StatsForPermutTest(Data, Paired)
 A numeric vector containing the calculated statistics.
 }
 \description{
-This function calculates the statistics for a permutation test based on the input data.
+This function calculates the statistics for a permutation test based on the
+input data.
 }
 \examples{
 Data <- matrix(rnorm(100), ncol = 10)
