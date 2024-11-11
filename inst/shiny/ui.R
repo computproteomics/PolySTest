@@ -7,7 +7,8 @@ title <- tags$img(src="Logo.svg",style="width:200px")
 version <- installed.packages()["PolySTest","Version"]
 
 shinyUI(dashboardPage(skin="blue",
-                      dashboardHeader(title=title,
+                      dashboardHeader(title=title, 
+				      windowTitle = "PolySTest",
                                       dropdownMenu(
                                         type = "notifications",
                                         icon = icon("question-circle"),
