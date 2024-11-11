@@ -1,0 +1,55 @@
+{% set version = "1.5.2" %}
+
+package:
+  name: polystest
+  version: {{ version }}
+
+build:
+  number: 0
+  noarch: generic
+
+source:
+  url: https://github.com/computproteomics/PolySTest/release-{{ version }}.tar.gz
+  sha256: fc8af56ab989379dc8a970cdbb4bc69be2830d24454bd48e0370d3697c428940
+
+requirements:
+  run:
+    - r-base
+    - r-matrixstats
+    - r-fdrtool
+    - bioconductor-qvalue
+    - r-circlize
+    - r-dt
+    - r-readxl
+    - r-upsetr
+    - r-heatmaply
+    - r-gplots
+    - r-shiny
+    - r-shinybs
+    - r-yaml
+    - r-knitr
+    - r-shinydashboard
+    - bioconductor-limma
+#    - bioconductor-polystest
+
+test:
+  commands:
+     - cp $PREFIX/share/polystest/LiverAllProteins.csv .; runPolySTestCLI.R $PREFIX/share/polystest/polystest.yml
+
+about:
+  home: https://github.com/computproteomics/polystest/src/master/
+  license: 'GPL (>=2)'
+  license_family: GPL
+  license_file: LICENSE
+  summary: Interactive tool for statistical testing, data browsing and interactive visualization of quantitative omics data
+  description: |
+    PolySTest is a web service (shiny app) and command-line tool for statistical testing, data browsing and interactive visualization of quantitative omics data. It contains multiple statistical tests and a new method to incorporate missing values. 
+
+
+extra:
+  notes: |
+      PolySTest is available as shiny app via run_polystest_app.R or as command-line tool: runPolySTestCLI.R
+  identifiers:
+    - biotools:polystest
+    - doi:10.1074/mcp.RA119.001777
+

@@ -6,7 +6,7 @@
 \usage{
 plotExpression(
   fulldata,
-  compNames,
+  compNames = "all",
   testNames = c("PolySTest", "limma", "Miss test", "rank products", "permutation test",
     "t-test"),
   sel_prots = "all",
@@ -18,13 +18,14 @@ plotExpression(
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the data.}
 
-\item{compNames}{A character vector of comparison names.}
+\item{compNames}{A character vector of comparison names. "all" selects all comparisons.}
 
 \item{testNames}{A character vector of test names used in the analysis. Default
 values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
 and "t-test".}
 
-\item{sel_prots}{A numeric vector with the indices of the selected features. Default is "all".}
+\item{sel_prots}{A numeric vector with the indices of the selected features.
+Default is "all". These will still be filterd}
 
 \item{profiles_scale}{Logical indicating if profiles should be scaled. Default is TRUE.}
 

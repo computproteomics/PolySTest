@@ -775,10 +775,11 @@ shinyServer(function(input, output, clientData, session) {
     # make table in right format
     if (input$retrieve_output == "Get data" & !is.null(fulldata) & !is.null(FullReg())) {
       print("Sending data back")
+      version <- installed.packages()["PolySTest","Version"]
       fulldata <- currse()
       outdata <- as.data.frame(rowData(fulldata))
       print(head(outdata, 1))
-      BackMessage <- toJSON(list(expr_matrix=as.list(outdata)))
+      BackMessage <- toJSON(list(expr_matrix=as.list(outdata), version = version))
       js$send_results(dat=BackMessage)
     }
   }))

@@ -31,7 +31,7 @@ jobs:
         else
           IMAGE_NAME=veitveit/polystest:latest
         fi
-        docker build -t $IMAGE_NAME .
+        docker build -t $IMAGE_NAME -f inst/docker/Dockerfile .
         docker push $IMAGE_NAME
       env:
         DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}

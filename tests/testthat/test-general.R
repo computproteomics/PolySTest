@@ -1,4 +1,5 @@
 test_that("overall test of full workflow", {
+  library(SummarizedExperiment)
   # package raw data file
   filename <- system.file("extdata", "LiverAllProteins.csv", package = "PolySTest")
   NumReps <- 3

@@ -4,14 +4,10 @@
 \alias{plotUpset}
 \title{Plot UpSet}
 \usage{
-plotUpset(fulldata, NumTests, NumComps, qlim = 0.05, fclim = c(0, 0))
+plotUpset(fulldata, qlim = 0.05, fclim = c(0, 0))
 }
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the data.}
-
-\item{NumTests}{Integer, the number of tests conducted.}
-
-\item{NumComps}{Integer, the number of comparisons made.}
 
 \item{qlim}{A numeric value, the q-value threshold for significance.}
 
@@ -22,11 +18,11 @@ An UpSet plot visualizing the intersections of significant features.
 }
 \description{
 Visualizes the intersections of significant features across multiple comparisons
-using an UpSet plot.
+using an UpSet plot. Summarizes all comparisons from all tests
 }
 \examples{
 data(liver_example)
 
-plotUpset(liver_example, 6, 3, qlim = 0.05)
+plotUpset(liver_example, qlim = 0.05)
 
 }

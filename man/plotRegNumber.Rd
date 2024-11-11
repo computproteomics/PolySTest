@@ -6,7 +6,7 @@
 \usage{
 plotRegNumber(
   fulldata,
-  NumComps,
+  compNames = "all",
   testNames = c("PolySTest", "limma", "Miss test", "rank products", "permutation test",
     "t-test"),
   qlim = 0.05,
@@ -18,8 +18,6 @@ plotRegNumber(
 \arguments{
 \item{fulldata}{A \code{SummarizedExperiment} object containing the dataset.}
 
-\item{NumComps}{Integer, number of comparisons.}
-
 \item{testNames}{Character vector, names of the statistical tests used.}
 
 \item{qlim}{Numeric, q-value (FDR) threshold.}
@@ -29,6 +27,8 @@ plotRegNumber(
 \item{TestCols}{Character vector, colors to use for each test in the plot.}
 
 \item{...}{Arguments passed further to plot/lines calls}
+
+\item{NumComps}{Integer, number of comparisons.}
 }
 \value{
 Invisible. The function generates plots.

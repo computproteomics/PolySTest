@@ -6,7 +6,7 @@
 \usage{
 plotPvalueDistr(
   fulldata,
-  compNames,
+  compNames = "all",
   testNames = c("limma", "Miss test", "rank products", "permutation test", "t-test"),
   testCols = c("#33AAAA", "#33AA33", "#AA3333", "#AA33AA", "#AAAA33", "#3333AA"),
   ...
@@ -16,9 +16,11 @@ plotPvalueDistr(
 \item{fulldata}{A \code{SummarizedExperiment} object containing the dataset and
 FDR/q-values from PolySTest.}
 
-\item{compNames}{A character vector of comparison names.}
+\item{compNames}{A character vector of comparison names. "all" selects all comparisons.}
 
-\item{testNames}{A character vector of test names. Defaults to c("limma", "Miss test", "rank products", "permutation test", "t-test").}
+\item{testNames}{A character vector of test names used in the analysis. Default
+values are "PolySTest", "limma", "Miss test", "rank products", "permutation test",
+and "t-test".}
 
 \item{testCols}{A character vector of colors for each test. Defaults to c("#33AAAA", "#33AA33", "#AA3333", "#AA33AA", "#AAAA33", "#3333AA").}
 

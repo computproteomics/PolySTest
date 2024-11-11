@@ -4,10 +4,11 @@ library(heatmaply)
 library(shinydashboard)
 library(shinyjs)
 title <- tags$img(src="Logo.svg",style="width:200px")
-version <- "1.3.4"
+version <- installed.packages()["PolySTest","Version"]
 
 shinyUI(dashboardPage(skin="blue",
-                      dashboardHeader(title=title,
+                      dashboardHeader(title=title, 
+				      windowTitle = "PolySTest",
                                       dropdownMenu(
                                         type = "notifications",
                                         icon = icon("question-circle"),

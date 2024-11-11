@@ -1,0 +1,13 @@
+# PolySTest NEWS
+
+All notable changes to the PolySTest package will be documented in this file.
+
+## PolySTest 1.6.1 (2024-03-15)
+
+### NEW FEATURES
+
+- Initial release as a Bioconductor package.
+- Factorization into small functions for different statistical tests and all visualizations
+- Introduced `PolySTest_paired` and `PolySTest_unpaired` functions for performing overall paired and unpaired statistical tests, respectively.
+- Added a `SummarizedExperiment` interface for seamless integration with Bioconductor workflows.
+
