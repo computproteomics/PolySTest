@@ -1,7 +1,11 @@
 Package: PolySTest
 Title: PolySTest: Detection of differentially regulated features. Combined 
       statistical testing for data with few replicates and missing values
+<<<<<<< HEAD
 Version: 1.0.1
+=======
+Version: 1.1.0
+>>>>>>> main
 Authors@R: 
     person("Veit", "Schwämmle", , "veits@bmb.sdu.dk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9708-6722"))
@@ -18,7 +22,7 @@ biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
 BugReports: https://github.com/computproteomics/PolySTest/issues
 URL: https://github.com/computproteomics/PolySTest
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     fdrtool (>= 1.2.15),
     limma (>= 3.44.3),
