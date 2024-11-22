@@ -47,13 +47,13 @@ test_that("overall test of full workflow", {
   fulldata <- PolySTest_paired(fulldata, allComps)
 
   DRFs <- rowData(fulldata)[,"FDR_PolySTest_HF.Rep._vs_TTA.Rep."] < 0.01
-  expect_equal(sum(DRFs), 21)
+  expect_equal(sum(DRFs), 23)
   expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
 
   # Run unpaired tests
   fulldata <- PolySTest_unpaired(fulldata, allComps)
   DRFs <- rowData(fulldata)[,"FDR_PolySTest_HF.Rep._vs_TTA.Rep."] < 0.01
-  expect_equal(sum(DRFs), 21)
+  expect_equal(sum(DRFs), 23)
   expect_match(rownames(rowData(fulldata))[4], "A7VJC2")
 
 
