@@ -132,7 +132,7 @@ PolySTest_unpaired <- function(fulldata, allComps,
     
     for (test in statTests[statTests %in% names(test_funcs)]) {
         if (test %in% c("limma", "Miss_Test")) {
-            message("Running ", test, "test")
+            message("Running ", test, " test")
             res <- test_funcs[[test]](Data, RRCateg)
             p_values[, grep(paste0("p_values_", test), 
                             colnames(p_values))] <- res$pvals

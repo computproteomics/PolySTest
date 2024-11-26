@@ -149,14 +149,14 @@ PolySTest_paired <- function(fulldata,
     
     for (test in statTests[statTests %in% names(test_funcs)]) {
         if (test %in% c("limma", "Miss_Test")) {
-            message("Running", test, "test")
+            message("Running ", test, " test")
             res <- test_funcs[[test]](MAData)
             p_values[, grep(paste0("p_values_", test), 
                             colnames(p_values))] <- res$pvals
             q_values[, grep(paste0("q_values_", test), 
                             colnames(q_values))] <- res$qvals
             if (test == "limma") Sds <- res$Sds
-            message(test, "completed")
+            message(test, " completed")
         }
     }
 
