@@ -332,12 +332,13 @@ plotExpression <- function(fulldata, compNames = "all",
             legend = strtrim(rownames(SubSet), 20), lwd = 3,
             title = "Features"
         )
+        
         plotCI(seq_len(NumCond) + runif(1, -0.1, 0.1), MeanSet[1, ],
             pch = 16,
             xlab = "Conditions", xlim = c(0.7, (NumCond + 1) - 0.7),
             ylab = "expression values",
             col = rainbow(nrow(MeanSet), alpha = 0.8, s = 0.7)[1],
-            uiw = SDSet[1, ], type = "b", barcol = "#000000AA",
+            uiw = SDSet[1, ] , type = "b", barcol = "#000000AA",
             ylim = range(cbind(MeanSet + SDSet, MeanSet - SDSet), na.rm = TRUE),
             xaxt = "none", lwd = 1.5
         )
@@ -421,11 +422,16 @@ plotExpression <- function(fulldata, compNames = "all",
                     ylim <- circlize::get.cell.meta.data("ylim")
                     xdiff <- (xlim[2] - xlim[1]) / nfeat
                     for (j in seq_len(nfeat)) {
+                        xl <- xlim[1] + (j - 1) * xdiff
+                        xr <- xlim[2] - (nfeat - j) * xdiff
+                        yb <- ylim[1]
+                        yt <- ylim[2]
+                        if (xl < xr && yb < yt)
                       circlize::circos.rect(
-                            xleft = xlim[1] + (j - 1) * xdiff,
-                            ybottom = ylim[1],
-                            xright = xlim[2] - (nfeat - j) * xdiff,
-                            ytop = ylim[2],
+                            xleft = xl,
+                            ybottom = yb,
+                            xright = xr,
+                            ytop = yt,
                             col = fccols[(SubSetLR[j, i] /
                                 max(LogRatios, na.rm = TRUE)) *
                                 500 + 500], border = 0
@@ -514,7 +520,7 @@ plotUpset <- function(fulldata, qlim = 0.05, fclim = c(0, 0)) {
                 mainbar.y.label = "Significant features",
                 nintersects = NA, keep.order = FALSE,
                 sets = colnames(WhereRegs),
-                text.scale = 1.5, mb.ratio = c(0.55, 0.45),
+                text.scale = 1.3, mb.ratio = c(0.55, 0.45),
                 set.metadata = list(
                     data = data.frame(
                         set = colnames(WhereRegs), cols = tcolnames,
