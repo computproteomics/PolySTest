@@ -21,7 +21,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports:
     fdrtool (>= 1.2.15),
-    limma (>= 3.44.3),
+    limma (>= 3.61.3),
     matrixStats (>= 0.57.0),
     qvalue (>= 2.22.0),
     shiny (>= 1.5.0),

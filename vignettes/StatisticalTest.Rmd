@@ -219,6 +219,7 @@ An upset plot provides this information
 
 ```{r fig.width=7, fig.height=4}
 plotUpset(fulldata_unpaired, qlim=0.01)
+
 ```
 
 PolySTest also provides a combined plot of expression changes and overlap 
