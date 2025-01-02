@@ -1,4 +1,4 @@
-//let result_data = "empty";
+let result_data = "empty";
 
 // Add a custom message handler to reset file inputs
 Shiny.addCustomMessageHandler("resetFileInputHandler", function(id) {      

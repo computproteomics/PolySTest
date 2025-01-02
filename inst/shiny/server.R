@@ -776,6 +776,7 @@ shinyServer(function(input, output, clientData, session) {
   observeEvent(input$retrieve_output, isolate({
     #print(input$retrieve_output)
     # make table in right format
+      fulldata <- currse()
     if (input$retrieve_output == "Get data" & !is.null(fulldata) & !is.null(FullReg())) {
       print("Sending data back")
       version <- installed.packages()["PolySTest","Version"]
