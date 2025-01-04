@@ -1,4 +1,4 @@
-let result_data = "empty";
+
 
 // Add a custom message handler to reset file inputs
 Shiny.addCustomMessageHandler("resetFileInputHandler", function(id) {      
@@ -11,6 +11,8 @@ Shiny.addCustomMessageHandler("resetFileInputHandler", function(id) {
   $(idProgress).addClass("active");
   $(idFile).replaceWith(idFile = $(idFile).clone(true));
 });
+
+
 
 // Add an event listener to read data when it is sent to the app
 $(document).on("shiny:connected", function() {
@@ -45,25 +47,13 @@ $(document).on("shiny:connected", function() {
   }
 });
 
- 
+
+
+
  // check ext window and retrieve results
 shinyjs.send_results = function(params)
 {
-  //params = shinyjs.getParams(params)
-  console.log(params);
-
-  var message = params.dat;
+  
   result_data = params.dat;
-  console.log(params.dat);
-//  var extWindow = window.extWindow; 
-  //console.log(extWindow);
-  //console.log(result_data);
-  //setTimeout(sendData, 1000);
-
-  /*function sendData() {
-    extWindow.postMessage(JSON.stringify(message), '*');
-    console.log(message);
-    console.log("PolySTest data sent");
-  }*/
 };
-
+ 

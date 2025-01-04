@@ -18,7 +18,7 @@ RUN mkdir /tmp/polystest
 COPY .  /tmp/polystest/
 COPY inst/shiny  /srv/shiny-server
 RUN R -e "BiocManager::install(c('S4Vectors','XVector','S4Arrays'))"
-RUN R -e "BiocManager::install(c('SparseArray','shinyBS','shinydashboard','shinyjs','limma'))"
+RUN R -e "BiocManager::install(c('SparseArray','shinyBS','shinydashboard','shinyjs','limma','DT'))"
 RUN cd /tmp/polystest && R -e "devtools::install()"
 RUN chmod a+x /tmp/polystest/inst/cmdline/*
 RUN cp /tmp/polystest/inst/cmdline/* /usr/bin/

@@ -10,6 +10,7 @@ library(heatmaply)
 library(SummarizedExperiment)
 library(gplots)
 library(jsonlite)
+library(shinyjs)
 library(PolySTest)
 
 validate <- shiny::validate
@@ -78,7 +79,6 @@ shinyServer(function(input, output, clientData, session) {
     if (!is.null(input$extdata)) {
       isolate({
         jsonmessage <- fromJSON(input$extdata)
-        print(js$send_results)
         # Loading parameters
         NumCond <- jsonmessage[["numcond"]]
         NumReps <- jsonmessage[["numrep"]]
