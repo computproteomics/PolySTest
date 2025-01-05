@@ -504,34 +504,152 @@ shinyServer(function(input, output, clientData, session) {
 
               # Arrange table header
               sketch = htmltools::withTags(table(
-                class = 'display',
-                thead(
-                  tr(
-                    th('',style="text-align: center;"),
-                    if(!is.null(addInfo))
-                      th(colspan = ncol(addInfo), 'Metadata',style="text-align: center;border-left:thin solid;"),
-                    th(colspan = NumComps, 'log_ratios',style="text-align: center;border-left:thin solid;"),
-                    th(colspan = NumComps*NumTests, 'FDRs',style="text-align: center;border-left:thin solid;")
-                  ),
-                  tr(
-                    th('',style="text-align: center;"),
-                    if(!is.null(addInfo))
-                      th(colspan = ncol(addInfo), ''),
-                    th(colspan = NumComps, '',style="text-align: center;border-left:thin solid;border-left:thin solid;"),
-                    th(colspan = NumComps, 'PolySTest',style="text-align: center;border-left:thin solid;color: #AA3333;"),
-                    th(colspan = NumComps, 'limma',style="text-align: center;border-left:thin solid;"),
-                    th(colspan = NumComps, 'Miss test',style="text-align: center;border-left:thin solid;"),
-                    th(colspan = NumComps, 'rank products',style="text-align: center;border-left:thin solid;"),
-                    th(colspan = NumComps, 'permutation test',style="text-align: center;border-left:thin solid;"),
-                    th(colspan = NumComps, 't-test',style="text-align: center;border-left:thin solid;")
-                  ),
-                  tr(
-                    th('Feature',style="text-align: center;"),
-                    if(!is.null(addInfo))
-                      lapply(colnames(addInfo),th,style="text-align: center;border-left:thin solid;"),
-                    lapply(rep(compNames,NumTests+1), th,style="text-align: center;border-left:thin solid;")
+                  class = 'display',
+                  thead(
+                      # ==================== 1) FIRST HEADER ROW ====================
+                      tr(
+                          th('', style="text-align: center;"),
+                          if (!is.null(addInfo))
+                              th(colspan = ncol(addInfo), 'Metadata',
+                                 style = "text-align: center; border-left: thin solid;"),
+                          
+                          th(colspan = NumComps, 'log-ratios',
+                             style = "text-align: center; border-left: thin solid;"),
+                          
+                          # FDR block: 6 tests x NumComps
+                          th(colspan = NumComps * NumTests, 'FDRs',
+                             style = "text-align: center; border-left: thin solid;"),
+                          
+                          # p-values block: again 6 tests x NumComps
+                          th(colspan = NumComps * NumTests, 'Uncorrected p-values',
+                             style = "text-align: center; border-left: thin solid;"),
+                          
+                          # original data: all columns for each replicate & condition
+                          th(colspan = NumCond * NumReps, 'Original data',
+                             style = "text-align: center; border-left: thin solid;")
+                      ),
+                      
+                      # ==================== 2) SECOND HEADER ROW ====================
+                      tr(
+                          th('', style = "text-align: center;"),
+                          if (!is.null(addInfo))
+                              th(colspan = ncol(addInfo), '',
+                                 style = "text-align: center; border-left: thin solid;"),
+                          
+                          # log-ratios block (no subheading needed, just an empty block)
+                          th(colspan = NumComps, '',
+                             style = "text-align: center; border-left: thin solid;"),
+                          
+                          # -- FDR block subdivided by test --
+                          # Each test gets NumComps columns
+                          th(colspan = NumComps, 'PolySTest',
+                             style = "text-align: center; border-left: thin solid; color: #AA3333;"),
+                          th(colspan = NumComps, 'limma',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 'Miss test',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 'rank products',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 'permutation test',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 't-test',
+                             style = "text-align: center; border-left: thin solid;"),
+                          
+                          # -- p-values block, also subdivided by test --
+                          th(colspan = NumComps, 'limma',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 'Miss test',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 'rank products',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 'permutation test',
+                             style = "text-align: center; border-left: thin solid;"),
+                          th(colspan = NumComps, 't-test',
+                             style = "text-align: center; border-left: thin solid;"),
+                          
+                          # original data block (just a single chunk):
+                          # Original data grouped by condition: each condition has NumReps columns
+                          # For example, if NumCond=4 => we create 4 blocks
+                          lapply(seq_len(NumReps), function(cond_i) {
+                              th(colspan = NumCond,
+                                 paste0("Replicate ", cond_i),
+                                 style = "text-align: center; border-left: thin solid;")
+                          })
+                      ),
+                      
+                      # ==================== 3) THIRD HEADER ROW ====================
+                      tr(
+                          # Feature column
+                          th('Feature', style="text-align: center;"),
+                          
+                          # If there's metadata, label each column
+                          if (!is.null(addInfo)) {
+                              lapply(colnames(addInfo), function(metaCol) {
+                                  th(metaCol, style = "text-align: center; border-left: thin solid;")
+                              })
+                          },
+                          
+                          # log-ratios -> one column per comparison
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          
+                          # FDR block -> 6 tests, each having NumComps columns
+                          # PolySTest
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # limma
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # Miss test
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # rank products
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # permutation test
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # t-test
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          
+                          # p-value block -> 6 tests, each with NumComps columns
+                          # limma
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # Miss test
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # rank products
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # permutation test
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          # t-test
+                          lapply(compNames, function(cn) {
+                              th(cn, style = "text-align: center; border-left: thin solid;")
+                          }),
+                          
+                          # original data -> each column of the final numeric matrix 
+                          # or simply replicate it if you prefer to label them e.g. C1R1, C1R2, ...
+                          # original data => label each of the columns in dat
+                          # Each condition has NumReps columns, so we do something like colnames(dat)[i]
+                          lapply(seq_len(NumCond * NumReps), function(i) {
+                              th(colnames(dat)[i], style = "text-align: center; border-left: thin solid;")
+                          })                      )
                   )
-                )
               ))
               output$stat_table <- DT::renderDataTable({
                 FullReg(as.data.frame(FullReg()))

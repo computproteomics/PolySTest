@@ -170,8 +170,8 @@ PolySTest_unpaired <- function(fulldata, allComps,
         
         lratios <- cbind(
             lratios,
-            rowMeans(Data[, Reps == RRCateg[1, vs], drop=FALSE], na.rm = TRUE) -
-                rowMeans(Data[, Reps == RRCateg[2, vs], drop=FALSE], 
+            rowMeans(Data[, Reps == RRCateg[2, vs], drop=FALSE], na.rm = TRUE) -
+                rowMeans(Data[, Reps == RRCateg[1, vs], drop=FALSE], 
                          na.rm = TRUE)
         )
         setTxtProgressBar(pb, vs)
