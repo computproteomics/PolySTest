@@ -379,7 +379,7 @@ rp_unpaired <- function(tData, trefData) {
     })
     stopCluster(cl)
 
-     save(RPparOut, tData, trefData, file="/tmp/t.csv")
+#save(RPparOut, tData, trefData, file="/tmp/t.csv")
      for (p in seq_len(NumRPPairs)) {
          names(RPparOut[[p]]) <- rownames(tData)
          tpRPvalues[names(RPparOut[[p]]), p] <- RPparOut[[p]]
