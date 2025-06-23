@@ -321,7 +321,10 @@ plotExpression <- function(fulldata, compNames = "all",
         if (profiles_scale) {
             MeanSet <- MeanSet - rowMeans(MeanSet, na.rm = TRUE)
         }
-
+        
+        # If NA set SDSet to 0
+        SDSet[is.na(SDSet)] <- 0
+        
         layout(t(c(1, 1, 2, 2, 3, 3)))
         plot(0, 0,
             type = "n", bty = "n", xaxt = "n", yaxt = "n",
@@ -744,6 +747,12 @@ plotHeatmaply <- function(fulldata, sel_prots = "all", heatmap_scale = "none",
                     tqvals <- tqvals[-to_remove, , drop = FALSE]
                     tdat <- tdat[-to_remove, , drop = FALSE]
                 }
+                
+                if (length(tdat) == 0) {
+                    message("No data left after filtering for missing values.")
+                    return(NULL)
+                }
+                
                 # setting colors of p-values
                 pcols <- rev(c(0.001, 0.01, 0.05, 1))
                 ttt <- tqvals
