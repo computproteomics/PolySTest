@@ -1,4 +1,5 @@
 [![Conda Version](https://img.shields.io/conda/v/bioconda/polystest.svg?style=flat-square)](https://anaconda.org/bioconda/polystest)
+[![bio.tools](https://img.shields.io/badge/bio.tools-PolySTest-005472)](https://bio.tools/polystest)
 
 
 **Welcome to the repository of PolySTest**
