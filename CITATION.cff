@@ -1,0 +1,118 @@
+cff-version: 1.2.0
+title: PolySTest
+version: null
+type: software
+repository: !!python/object:bridge.core.biotools.UrlftpType
+  __dict__:
+    root: http://computproteomics.bmb.sdu.dk/app_direct/PolySTest
+  __pydantic_fields_set__: !!set
+    root: null
+identifiers:
+- type: other
+  value: !!python/object:bridge.core.biotools.BiotoolsIdType
+    __dict__:
+      root: PolySTest
+    __pydantic_fields_set__: !!set
+      root: null
+  description: bio.tools
+license: !!python/object/apply:bridge.core.biotools.License
+- GPL-2.0
+keywords:
+- !!python/object:bridge.core.biotools.TopicItem
+  __dict__:
+    term: Proteomics
+    uri: http://edamontology.org/topic_0121
+  __pydantic_extra__: null
+  __pydantic_fields_set__: !!set
+    uri: null
+    term: null
+  __pydantic_private__: null
+- !!python/object:bridge.core.biotools.TopicItem
+  __dict__:
+    term: Proteomics experiment
+    uri: http://edamontology.org/topic_3520
+  __pydantic_extra__: null
+  __pydantic_fields_set__: !!set
+    uri: null
+    term: null
+  __pydantic_private__: null
+- !!python/object:bridge.core.biotools.TopicItem
+  __dict__:
+    term: Statistics and probability
+    uri: http://edamontology.org/topic_2269
+  __pydantic_extra__: null
+  __pydantic_fields_set__: !!set
+    uri: null
+    term: null
+  __pydantic_private__: null
+abstract: Robust statistical testing of quantitative proteomics data. The tool comprises
+  and combines different tests and includes a new method for combined statistics of
+  quantitative and missing values.
+message: If you use this software, please cite it and the Primary publications below.
+preferred-citation: &id001 !!python/object:bridge.core.publication.Publication
+  __dict__:
+    doi: 10.1074/mcp.ra119.001777
+    title: 'PolySTest: Robust Statistical Testing of Proteomics Data with Missing
+      Values Improves Detection of Biologically Relevant Features.'
+    authors:
+    - !!python/object:bridge.core.publication.Author
+      __dict__:
+        first_name: Veit
+        last_name: "Schw\xE4mmle"
+        name: null
+      __pydantic_extra__: null
+      __pydantic_fields_set__: !!set
+        first_name: null
+        last_name: null
+      __pydantic_private__: null
+    - !!python/object:bridge.core.publication.Author
+      __dict__:
+        first_name: Christina E
+        last_name: Hagensen
+        name: null
+      __pydantic_extra__: null
+      __pydantic_fields_set__: !!set
+        first_name: null
+        last_name: null
+      __pydantic_private__: null
+    - !!python/object:bridge.core.publication.Author
+      __dict__:
+        first_name: Adelina
+        last_name: Rogowska-Wrzesinska
+        name: null
+      __pydantic_extra__: null
+      __pydantic_fields_set__: !!set
+        first_name: null
+        last_name: null
+      __pydantic_private__: null
+    - !!python/object:bridge.core.publication.Author
+      __dict__:
+        first_name: Ole N
+        last_name: Jensen
+        name: null
+      __pydantic_extra__: null
+      __pydantic_fields_set__: !!set
+        first_name: null
+        last_name: null
+      __pydantic_private__: null
+    year: 2020
+    journal: null
+    volume: null
+    issue: null
+    page_start: 1396
+    page_end: 1408
+    pub_type: article
+  __pydantic_extra__: null
+  __pydantic_fields_set__: !!set
+    authors: null
+    page_end: null
+    year: null
+    volume: null
+    journal: null
+    issue: null
+    title: null
+    doi: null
+    page_start: null
+  __pydantic_private__: null
+references:
+- *id001
