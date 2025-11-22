@@ -517,6 +517,12 @@ plotUpset <- function(fulldata, qlim = 0.05, fclim = c(0, 0)) {
         names(tcols) <- rep(paste("A", seq_len(NumComps)), 1)
 
         if (length(WhereRegs) > 0) {
+            # Reduce to first comparison when too many comparisons
+            if (ncol(WhereRegs) > 18) {
+                WhereRegs <- WhereRegs[, seq_len(18), drop = FALSE]
+                tcolnames <- tcolnames[seq_len(18)]
+                tcols <- tcols[seq_len(18)]
+            }
             message("Plotting upset plots")
             upset_plot <- UpSetR::upset(as.data.frame(WhereRegs),
                 nsets = ncol(WhereRegs),
