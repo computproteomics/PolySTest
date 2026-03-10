@@ -747,7 +747,7 @@ shinyServer(function(input, output, clientData, session) {
           paste("VolcanoPlots", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
-          pdf(file,height=12,width=20)
+          pdf(file,height=4*Comps$num,width=20)
           plotVolcano(fulldata, compNames, testNames2, sel_prots, qlim, fclim)
           dev.off()
         }
@@ -917,7 +917,7 @@ shinyServer(function(input, output, clientData, session) {
           paste("PvalueDistrPlots", Sys.Date(), ".pdf", sep="");
         },
         content = function(file) {
-          pdf(file,height=12,width=20)
+          pdf(file,height=4*Comps$num,width=20)
           plotPvalueDistr(fulldata, compNames, testNames)
           dev.off()
         }
