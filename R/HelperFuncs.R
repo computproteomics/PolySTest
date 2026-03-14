@@ -1082,8 +1082,7 @@ check_stat_names <- function(fulldata, compNames, testNames) {
 #' generate the p-values. 
 #' @return A numeric vector of q-values corresponding to the input p-values.
 #' @examples
-#' pvals <- c(0.01, 0.04, 0.
-#' 05, 0.20, 0.50, NA)
+#' pvals <- c(0.01, 0.04, 0.05, 0.20, 0.50, NA)
 #' qvals <- calculate_qvalues(pvals)
 #' print(qvals)
 #' @export
