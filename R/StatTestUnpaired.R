@@ -298,14 +298,7 @@ ttest_unpaired <- function(tData, trefData) {
     p_vals <- na.omit(ptvalues)
     
     # Use tryCatch to attempt qvalue first and fall back to p.adjust with "BH" method
-    tqs <- tryCatch({
-        # Try qvalue method
-        qvalue::qvalue(p_vals)$qvalues
-    }, error = function(e) {
-        message("qvalue failed, falling back to Benjamini-Hochberg: ", e$message)
-        # Fallback to Benjamini-Hochberg method
-        p.adjust(p_vals, method = "BH")
-    })    
+    tqs <- calculate_qvalues(p_vals, "t-test")
     
     qtvalues <- rep(NA, length(ptvalues))
     names(qtvalues) <- names(ptvalues)
@@ -389,7 +382,7 @@ rp_unpaired <- function(tData, trefData) {
     pRPvalues <- rowMeans(tpRPvalues, na.rm = TRUE)
     qRPvalues <- rep(NA, length(pRPvalues))
     names(qRPvalues) <- names(pRPvalues)
-    tqs <- p.adjust(na.omit(pRPvalues), method = "BH")
+    tqs <- calculate_qvalues(na.omit(pRPvalues), "rank_products")
     qRPvalues[names(tqs)] <- tqs
     
     return(list(pRPvalues = pRPvalues, qRPvalues = qRPvalues))
@@ -511,7 +504,7 @@ perm_unpaired <- function(tData, trefData) {
     )
     qPermutvalues <- rep(NA, length(pPermutvalues))
     names(qPermutvalues) <- names(pPermutvalues)
-    tqs <- qvalue::qvalue(na.omit(pPermutvalues))$qvalues
+    tqs <- calculate_qvalues(na.omit(pPermutvalues), "permutation_test")
     qPermutvalues[names(tqs)] <- tqs
     
     return(list(pPermutvalues = pPermutvalues, qPermutvalues = qPermutvalues))

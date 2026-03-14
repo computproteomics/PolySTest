@@ -264,8 +264,8 @@ ttest_paired <- function(tMAData) {
         )
     }, numeric(1))
     names(ptvalues) <- rownames(tMAData)
-    # Storey FDR correction
-    tqs <- qvalue::qvalue(na.omit(ptvalues))$qvalues
+    
+    tqs <- calculate_qvalues(na.omit(ptvalues), "t-test")
     qtvalues <- rep(NA, length(ptvalues))
     names(qtvalues) <- names(ptvalues)
     qtvalues[names(tqs)] <- tqs
@@ -360,8 +360,7 @@ permtest_paired <- function(tMAData) {
     )
     qPermutvalues <- rep(NA, length(pPermutvalues))
     names(qPermutvalues) <- names(pPermutvalues)
-    # Benjamini-Hochberg FDR correction
-    tqs <- p.adjust(na.omit(pPermutvalues), method = "BH")
+    tqs <- calculate_qvalues(na.omit(pPermutvalues), "permutation_test")
     qPermutvalues[names(tqs)] <- tqs
     
     return(list(pPermutvalues = pPermutvalues, qPermutvalues = qPermutvalues))
