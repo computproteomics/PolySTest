@@ -267,7 +267,8 @@ MissingStatsDesign <- function(Data, RRCateg, NumCond, NumReps) {
         
         
         pNAvalues[, vs] <- rowMins(pvals) * (NumReps + 1)
-        qNAvalues[, vs] <- p.adjust(pNAvalues[, vs], method = "BH")
+        qNAvalues[, vs] <- calculate_qvalues(pNAvalues[, vs], "Miss_test")
+        # qNAvalues[, vs] <- p.adjust(pNAvalues[, vs], method = "BH")
         setTxtProgressBar(pb, vs)
     }
     close(pb)
@@ -332,7 +333,8 @@ MissingStats <- function(Data, NumCond, NumReps) {
             return(pvals_q)
         }, numeric(nrow(tCompDat)))
         pNAvalues[, vs - 1] <- rowMins(pvals) * (NumReps + 1)
-        qNAvalues[, vs - 1] <- p.adjust(pNAvalues[, vs - 1], method = "BH")
+        qNAvalues[, vs - 1] <- calculate_qvalues(pNAvalues[, vs - 1], "Miss_test")
+        # qNAvalues[, vs - 1] <- p.adjust(pNAvalues[, vs - 1], method = "BH")
     }
     
     pNAvalues[pNAvalues > 1] <- 1
@@ -794,16 +796,7 @@ fit_and_getvals <- function(lm.fitted) {
     for (i in seq_len(ncol(plvalues))) {
         p_vals <- na.omit(plvalues[, i])
         
-        # Use tryCatch to attempt qvalue first and fall back to p.adjust with "BH" method
-        tqs <- tryCatch({
-            # Try qvalue method
-            qvalue::qvalue(p_vals)$qvalues
-        }, error = function(e) {
-            message("qvalue failed, falling back to Benjamini-Hochberg: ", e$message)
-            # Fallback to Benjamini-Hochberg method
-            p.adjust(p_vals, method = "BH")
-        })    
-        
+        tqs <- calculate_qvalues(p_vals, "limmma")
         qlvalues[names(tqs), i] <- tqs
     }
     
@@ -1079,4 +1072,35 @@ check_stat_names <- function(fulldata, compNames, testNames) {
     }
     
     return(compNames)
+}
+
+#' Calculate FDRs for a given vector of p-values with qvalue, fallback to BH
+#' adjustment if qvalue fails. Default to BH in case of less than 200 p-values.
+#' 
+#' @param pvals A numeric vector of p-values for which to calculate FDRs.
+#' @param stat_test A character string indicating the statistical test used to
+#' generate the p-values. 
+#' @return A numeric vector of q-values corresponding to the input p-values.
+#' @examples
+#' pvals <- c(0.01, 0.04, 0.05, 0.20, 0.50, NA)
+#' qvals <- calculate_qvalues(pvals)
+#' print(qvals)
+#' @export
+calculate_qvalues <- function(pvals, stat_test = "limma") {
+    
+    if (length(pvals) < 200) {
+        message(stat_test, ": Less than 200 p-values, using Benjamini-Hochberg method for FDR correction.")
+        return(p.adjust(pvals, method = "BH"))
+    } 
+        
+   # Use tryCatch to attempt qvalue first and fall back to p.adjust with "BH" method
+    tqs <- tryCatch({
+        # Try qvalue method
+        qvalue::qvalue(pvals)$qvalues
+    }, error = function(e) {
+        message(stat_test, ": qvalue failed, falling back to Benjamini-Hochberg: ", e$message)
+        # Fallback to Benjamini-Hochberg method
+        p.adjust(pvals, method = "BH")
+    }) 
+    return(tqs)
 }
