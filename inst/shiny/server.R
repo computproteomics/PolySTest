@@ -178,18 +178,17 @@ shinyServer(function(input, output, clientData, session) {
         dat <- read.csv(actFileName,row.names=1)
         # limiting to only 500 rows
         dat <- dat[1:500, ]
+        updateCollapse(session,"Input", open = "Statistical testing", close="Data input")
         updateNumericInput(session,"NumCond",value=4)
         NumCond <- 4
         updateNumericInput(session,"NumReps",value=3)
         NumReps <- 3
         updateCheckboxInput(session,"qcol_order",value=T)
-        updateCollapse(session,"Input",open = "Statistical testing",close="Data input")
         ndatcol <- 12
       } else  {
         FullReg(NULL)
         if (input$row.names){
-          output$input_stats <- renderText("Duplicated feature names in first column! You can avoid them by not using the option 'Row names'")
-          validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,""))
+          validate(need(sum(duplicated(dat[,1]),na.rm=T)==0,"Duplicated feature names in first column! You can avoid them by not using the option 'Row names'"))
           rownames(dat) <- dat[,1]
           dat <- dat[,2:ncol(dat)]
           # updateSliderInput(session,"QuantCol",max=ncol(dat)-2)
@@ -201,7 +200,7 @@ shinyServer(function(input, output, clientData, session) {
             for (c in 1:ncol(addInfo))
               addInfo[,c] <- as.character(addInfo[,c])
             # print(head(addInfo))
-            dat <- dat[,-(1:(input$ColQuant-2))]
+            dat <- dat[,-(seq_len(input$ColQuant-2))]
           } else {
             addInfo <- NULL
           }
@@ -238,7 +237,6 @@ shinyServer(function(input, output, clientData, session) {
         updateNumericInput(session,"NumCond",max=ncol(dat))
         updateNumericInput(session,"NumReps",max=ncol(dat))
         updateCollapse(session,"Input",open = "Data layout",close="Data input")
-
       }
       conditions <- paste("C",1:NumCond,sep="")
 
