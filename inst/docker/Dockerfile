@@ -7,7 +7,7 @@ LABEL description="Docker image of PolySTest implementation on top of shiny-serv
 #RUN rm -rf /var/cache/apt/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
 #RUN apt-get clean && apt-get update && apt-get install -y apt-utils
 
-RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update && apt-get install -y libssl-dev liblzma-dev libbz2-dev libicu-dev && apt-get clean
+RUN apt-get -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update && apt-get install -y libwebpmux3 libssl-dev liblzma-dev libbz2-dev libicu-dev && apt-get clean
 
 
 RUN R -e "update.packages(ask=F); install.packages('BiocManager',ask=F); \
