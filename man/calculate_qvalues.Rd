@@ -21,8 +21,7 @@ Calculate FDRs for a given vector of p-values with qvalue, fallback to BH
 adjustment if qvalue fails. Default to BH in case of less than 200 p-values.
 }
 \examples{
-pvals <- c(0.01, 0.04, 0.
-05, 0.20, 0.50, NA)
+pvals <- c(0.01, 0.04, 0.05, 0.20, 0.50, NA)
 qvals <- calculate_qvalues(pvals)
 print(qvals)
 }

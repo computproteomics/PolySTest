@@ -1,10 +1,10 @@
 * using log directory ‘/home/veit/devel/Bioinformatics/DataAnalysis/ShinyApps/PolySTest/..Rcheck’
-* using R version 4.4.1 (2024-06-14)
+* using R version 4.5.2 (2025-10-31)
 * using platform: x86_64-pc-linux-gnu
 * R was compiled by
-    gcc (Ubuntu 13.2.0-23ubuntu4) 13.2.0
-    GNU Fortran (Ubuntu 13.2.0-23ubuntu4) 13.2.0
-* running under: Ubuntu 24.04.1 LTS
+    gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+    GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+* running under: Ubuntu 25.10
 * using session charset: UTF-8
 * checking for file ‘./DESCRIPTION’ ... ERROR
 Required fields missing or empty:

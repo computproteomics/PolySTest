@@ -18,7 +18,7 @@ biocViews: MassSpectrometry, Proteomics, Software, DifferentialExpression
 BugReports: https://github.com/computproteomics/PolySTest/issues
 URL: https://github.com/computproteomics/PolySTest
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
     fdrtool (>= 1.2.15),
     limma (>= 3.61.3),
